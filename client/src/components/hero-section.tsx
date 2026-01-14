@@ -61,27 +61,24 @@ export function HeroSection() {
           </div>
 
           <div className="relative lg:pl-8">
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">Example Impact Coins</h3>
-              <div className="grid grid-cols-4 gap-3">
-                {exampleCoins.map((coin, index) => (
-                  <div 
-                    key={index} 
-                    className="group flex flex-col items-center"
-                    data-testid={`example-coin-${index}`}
-                  >
-                    <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-primary/30 shadow-lg group-hover:border-primary/60 transition-all group-hover:scale-105">
-                      <img 
-                        src={coin.image} 
-                        alt={coin.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="mt-2 text-xs font-medium text-center">{coin.name}</span>
-                    <span className="text-xs text-muted-foreground text-center">{coin.cause}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {exampleCoins.map((coin, index) => (
+                <div 
+                  key={index} 
+                  className="relative w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-primary/30 shadow-xl hover:border-primary/60 transition-all hover:scale-110 hover:shadow-2xl cursor-pointer"
+                  style={{ 
+                    animationDelay: `${index * 0.1}s`,
+                    transform: `rotate(${(index - 1.5) * 5}deg)`
+                  }}
+                  data-testid={`example-coin-${index}`}
+                >
+                  <img 
+                    src={coin.image} 
+                    alt="Impact coin"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
