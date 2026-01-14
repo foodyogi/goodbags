@@ -2,16 +2,18 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  tokenLaunchFormSchema, 
-  customCharitySchema,
   CHARITY_FEE_PERCENTAGE, 
   PLATFORM_FEE_PERCENTAGE,
-  CHARITY_STATUS,
-  IMPACT_CATEGORIES,
+  tokenLaunchFormSchema,
   type Charity,
 } from "@shared/schema";
 import { z } from "zod";
 import { randomUUID } from "crypto";
+
+// Extend the shared schema with creatorWallet for server-side validation
+const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
+  creatorWallet: z.string().min(32, "Invalid wallet address"),
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -34,67 +36,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get charities by category
-  app.get("/api/charities/category/:category", async (req, res) => {
-    try {
-      const { category } = req.params;
-      const charities = await storage.getCharitiesByCategory(category);
-      res.json(charities);
-    } catch (error) {
-      console.error("Get charities by category error:", error);
-      res.status(500).json({ error: "Failed to fetch charities" });
-    }
-  });
-
-  // Get impact categories
-  app.get("/api/categories", async (_req, res) => {
-    res.json(IMPACT_CATEGORIES);
-  });
-
-  // Submit custom charity (requires admin review)
-  app.post("/api/charities/submit", async (req, res) => {
-    try {
-      const validated = customCharitySchema.parse(req.body);
-      const creatorWallet = req.body.creatorWallet;
-      
-      // Create charity with pending status
-      const charity = await storage.createCharity({
-        name: validated.name,
-        description: validated.description || null,
-        category: validated.category,
-        website: validated.website || null,
-        email: validated.email || null,
-        walletAddress: validated.walletAddress || null,
-        status: CHARITY_STATUS.PENDING,
-        createdBy: creatorWallet,
-      });
-
-      // Log the action
-      await storage.createAuditLog({
-        action: "CHARITY_SUBMITTED",
-        entityType: "charity",
-        entityId: charity.id,
-        actorWallet: creatorWallet,
-        details: JSON.stringify({ name: validated.name, hasWallet: !!validated.walletAddress }),
-      });
-
-      res.json({
-        success: true,
-        charity,
-        message: validated.walletAddress 
-          ? "Charity submitted for verification" 
-          : "Charity submitted - we'll contact them to set up a Solana wallet",
-      });
-    } catch (error) {
-      console.error("Submit charity error:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: error.errors.map(e => e.message).join(", ") });
-      } else {
-        res.status(500).json({ error: "Failed to submit charity" });
-      }
-    }
-  });
-
   // Get charity by ID
   app.get("/api/charities/:id", async (req, res) => {
     try {
@@ -114,32 +55,10 @@ export async function registerRoutes(
   // Launch a new token
   app.post("/api/tokens/launch", async (req, res) => {
     try {
-      const body = req.body;
-      
-      // Validate the request body
-      const launchSchema = tokenLaunchFormSchema.extend({
-        creatorWallet: z.string().min(32, "Invalid wallet address"),
-      });
-      
-      const validated = launchSchema.parse(body);
+      const validated = tokenLaunchRequestSchema.parse(req.body);
       
       // Get the selected charity
-      let charity: Charity | undefined;
-      if (validated.charityId === "custom" && validated.customCharity) {
-        // Create a new pending charity
-        charity = await storage.createCharity({
-          name: validated.customCharity.name,
-          description: validated.customCharity.description || null,
-          category: validated.customCharity.category,
-          website: validated.customCharity.website || null,
-          email: validated.customCharity.email || null,
-          walletAddress: validated.customCharity.walletAddress || null,
-          status: CHARITY_STATUS.PENDING,
-          createdBy: validated.creatorWallet,
-        });
-      } else {
-        charity = await storage.getCharityById(validated.charityId);
-      }
+      let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
       
       if (!charity) {
         // Fall back to default charity

@@ -130,16 +130,6 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   createdAt: true,
 });
 
-// Validation schema for custom charity submission
-export const customCharitySchema = z.object({
-  name: z.string().min(1, "Charity name is required").max(100),
-  description: z.string().max(500).optional(),
-  category: z.string().min(1, "Category is required"),
-  website: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  email: z.string().email("Must be a valid email").optional().or(z.literal("")),
-  walletAddress: z.string().min(32, "Invalid wallet address").optional().or(z.literal("")),
-});
-
 // Validation schema for token launch form
 export const tokenLaunchFormSchema = z.object({
   name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
@@ -150,8 +140,7 @@ export const tokenLaunchFormSchema = z.object({
     const num = parseFloat(val);
     return !isNaN(num) && num >= 0;
   }, "Initial buy amount must be a valid number"),
-  charityId: z.string().min(1, "Please select a charity or cause"),
-  customCharity: customCharitySchema.optional(),
+  charityId: z.string().min(1, "Please select a charity"),
 });
 
 // Types
@@ -164,17 +153,30 @@ export type Donation = typeof donations.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
-export type CustomCharityForm = z.infer<typeof customCharitySchema>;
 
 // Fee constants
 export const CHARITY_FEE_PERCENTAGE = 1; // 1% royalty to charity
 export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee
 
-// Default charity - Food Yoga International (will be seeded in DB)
-export const DEFAULT_CHARITY = {
-  name: "Food Yoga International",
-  wallet: "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP",
-  category: "hunger",
-  description: "Providing plant-based meals to the hungry worldwide",
-  website: "https://ffl.org",
-};
+// Vetted charities - personally managed
+export const VETTED_CHARITIES = [
+  {
+    id: "food-yoga-international",
+    name: "Food Yoga International",
+    wallet: "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP",
+    category: "hunger",
+    description: "Providing plant-based meals to the hungry worldwide",
+    website: "https://ffl.org",
+  },
+  {
+    id: "julianas-animal-sanctuary",
+    name: "Juliana's Animal Sanctuary",
+    wallet: "JULSxvKLfEDpMqR7ePNvXxGGcNAPtYvWqmCjXhKBVPZ",
+    category: "animals",
+    description: "Rescuing and caring for farm animals in Colombia",
+    website: "https://julianasanimalsanctuary.org",
+  },
+] as const;
+
+// Default charity (first in the list)
+export const DEFAULT_CHARITY = VETTED_CHARITIES[0];

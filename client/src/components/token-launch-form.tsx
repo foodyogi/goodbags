@@ -23,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, Copy, CheckCircle2, Loader2, ExternalLink, Heart, Plus, Building2, Globe, Mail } from "lucide-react";
-import { tokenLaunchFormSchema, type TokenLaunchForm, CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, IMPACT_CATEGORIES, type Charity } from "@shared/schema";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart } from "lucide-react";
+import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, VETTED_CHARITIES, tokenLaunchFormSchema, type TokenLaunchForm } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -47,23 +47,10 @@ interface LaunchResult {
   error?: string;
 }
 
-const categoryIcons: Record<string, string> = {
-  hunger: "🍲",
-  environment: "🌱",
-  education: "📚",
-  health: "❤️‍🩹",
-  animals: "🐾",
-  disaster: "🛟",
-  community: "👥",
-  other: "💝",
-};
-
 export function TokenLaunchForm() {
   const { connected, publicKey } = useWallet();
   const { toast } = useToast();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
-  const [showCustomCharity, setShowCustomCharity] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   const form = useForm<TokenLaunchForm>({
     resolver: zodResolver(tokenLaunchFormSchema),
@@ -73,12 +60,8 @@ export function TokenLaunchForm() {
       description: "",
       imageUrl: "",
       initialBuyAmount: "0",
-      charityId: "",
+      charityId: VETTED_CHARITIES[0].id,
     },
-  });
-
-  const { data: charities = [], isLoading: charitiesLoading } = useQuery<Charity[]>({
-    queryKey: ["/api/charities"],
   });
 
   const launchMutation = useMutation({
@@ -101,8 +84,6 @@ export function TokenLaunchForm() {
           description: `${data.token.name} (${data.token.symbol}) is now live on Solana`,
         });
         form.reset();
-        setShowCustomCharity(false);
-        setSelectedCategory("");
       }
     },
     onError: (error: Error) => {
@@ -118,12 +99,8 @@ export function TokenLaunchForm() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const filteredCharities = selectedCategory 
-    ? charities.filter(c => c.category === selectedCategory)
-    : charities;
-
   const selectedCharityId = form.watch("charityId");
-  const selectedCharity = charities.find(c => c.id === selectedCharityId);
+  const selectedCharity = VETTED_CHARITIES.find(c => c.id === selectedCharityId);
 
   if (launchResult?.success && launchResult.token) {
     return (
@@ -161,15 +138,11 @@ export function TokenLaunchForm() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">{launchResult.charity.name}</span>
-                <Badge variant={launchResult.charity.hasWallet ? "default" : "secondary"}>
-                  {launchResult.charity.hasWallet ? "Verified" : "Pending Wallet"}
+                <Badge variant="default">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Verified
                 </Badge>
               </div>
-              {!launchResult.charity.hasWallet && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  We&apos;ll contact this charity to set up their Solana wallet
-                </p>
-              )}
             </div>
           )}
           
@@ -329,218 +302,62 @@ export function TokenLaunchForm() {
               )}
             />
 
-            <div className="space-y-3">
-              <FormLabel className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-pink-500" />
-                Choose Your Impact
-              </FormLabel>
-              
-              <div className="flex flex-wrap gap-2">
-                {IMPACT_CATEGORIES.map((cat) => (
-                  <Button
-                    key={cat.id}
-                    type="button"
-                    variant={selectedCategory === cat.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(selectedCategory === cat.id ? "" : cat.id)}
-                    data-testid={`button-category-${cat.id}`}
-                  >
-                    <span className="mr-1">{categoryIcons[cat.id]}</span>
-                    {cat.name}
-                  </Button>
-                ))}
-              </div>
-
-              <FormField
-                control={form.control}
-                name="charityId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Charity</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        if (value === "custom") {
-                          setShowCustomCharity(true);
-                          field.onChange("custom");
-                        } else {
-                          setShowCustomCharity(false);
-                          field.onChange(value);
-                        }
-                      }} 
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger data-testid="select-charity">
-                          <SelectValue placeholder={charitiesLoading ? "Loading..." : "Select a charity or cause"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredCharities.map((charity) => (
-                          <SelectItem key={charity.id} value={charity.id}>
-                            <div className="flex items-center gap-2">
-                              <span>{categoryIcons[charity.category] || "💝"}</span>
-                              <span>{charity.name}</span>
-                              {charity.isFeatured && (
-                                <Badge variant="secondary" className="ml-1 text-xs">Featured</Badge>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="custom">
+            <FormField
+              control={form.control}
+              name="charityId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-pink-500" />
+                    Choose Your Cause
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-charity">
+                        <SelectValue placeholder="Select a charity" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {VETTED_CHARITIES.map((charity) => (
+                        <SelectItem key={charity.id} value={charity.id}>
                           <div className="flex items-center gap-2">
-                            <Plus className="h-4 w-4" />
-                            <span>Add Custom Charity</span>
+                            <span>{charity.category === "hunger" ? "🍲" : "🐾"}</span>
+                            <span>{charity.name}</span>
                           </div>
                         </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              {selectedCharity && !showCustomCharity && (
-                <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{selectedCharity.name}</p>
-                      {selectedCharity.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{selectedCharity.description}</p>
-                      )}
-                    </div>
-                    {selectedCharity.walletAddress && (
-                      <Badge variant="outline" className="text-xs">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Verified
-                      </Badge>
-                    )}
+            {selectedCharity && (
+              <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{selectedCharity.category === "hunger" ? "🍲" : "🐾"}</span>
+                    <span className="font-medium">{selectedCharity.name}</span>
                   </div>
+                  <Badge variant="outline" className="text-xs">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
                 </div>
-              )}
-
-              {showCustomCharity && (
-                <Card className="border-dashed">
-                  <CardContent className="pt-4 space-y-3">
-                    <FormField
-                      control={form.control}
-                      name="customCharity.name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1 text-sm">
-                            <Building2 className="h-3 w-3" />
-                            Charity Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Organization name" 
-                              {...field}
-                              data-testid="input-custom-charity-name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="customCharity.category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">Category</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-custom-charity-category">
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {IMPACT_CATEGORIES.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.id}>
-                                  {categoryIcons[cat.id]} {cat.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="customCharity.website"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1 text-sm">
-                            <Globe className="h-3 w-3" />
-                            Website (optional)
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="https://..." 
-                              {...field}
-                              data-testid="input-custom-charity-website"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="customCharity.email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1 text-sm">
-                            <Mail className="h-3 w-3" />
-                            Contact Email
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="email"
-                              placeholder="contact@charity.org" 
-                              {...field}
-                              data-testid="input-custom-charity-email"
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            We&apos;ll contact them to set up a Solana wallet
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="customCharity.walletAddress"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1 text-sm">
-                            <Wallet className="h-3 w-3" />
-                            Solana Wallet (optional)
-                          </FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Charity's Solana wallet address" 
-                              className="font-mono text-sm"
-                              {...field}
-                              data-testid="input-custom-charity-wallet"
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            If known, otherwise we&apos;ll help them set one up
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                <p className="text-sm text-muted-foreground">{selectedCharity.description}</p>
+                {selectedCharity.website && (
+                  <a 
+                    href={selectedCharity.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline mt-2 inline-block"
+                  >
+                    {selectedCharity.website}
+                  </a>
+                )}
+              </div>
+            )}
 
             <div className="rounded-lg border border-muted bg-muted/30 p-4">
               <div className="flex items-center justify-between text-sm">

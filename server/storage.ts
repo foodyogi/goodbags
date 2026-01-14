@@ -12,7 +12,7 @@ import {
   type AuditLog,
   type InsertAuditLog,
   CHARITY_STATUS,
-  DEFAULT_CHARITY,
+  VETTED_CHARITIES,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -125,18 +125,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async seedDefaultCharities(): Promise<void> {
-    const existing = await this.getDefaultCharity();
-    if (!existing) {
-      await this.createCharity({
-        name: DEFAULT_CHARITY.name,
-        description: DEFAULT_CHARITY.description,
-        category: DEFAULT_CHARITY.category,
-        website: DEFAULT_CHARITY.website,
-        walletAddress: DEFAULT_CHARITY.wallet,
-        status: CHARITY_STATUS.VERIFIED,
-        isDefault: true,
-        isFeatured: true,
-      });
+    // Seed all vetted charities
+    for (let i = 0; i < VETTED_CHARITIES.length; i++) {
+      const charity = VETTED_CHARITIES[i];
+      const existing = await this.getCharityById(charity.id);
+      if (!existing) {
+        await db.insert(charities).values({
+          id: charity.id,
+          name: charity.name,
+          description: charity.description,
+          category: charity.category,
+          website: charity.website,
+          walletAddress: charity.wallet,
+          status: CHARITY_STATUS.VERIFIED,
+          isDefault: i === 0, // First one is default
+          isFeatured: true,
+        });
+      }
     }
   }
 
