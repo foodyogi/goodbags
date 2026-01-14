@@ -3,6 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Rocket, Heart, Coins, TrendingUp, Shield } from "lucide-react";
 import { CHARITY_FEE_PERCENTAGE } from "@shared/schema";
 
+import charitableDogCoin from "@assets/generated_images/charitable_dog_meme_coin.png";
+import dogFeedingCoin from "@assets/generated_images/dog_feeding_charity_coin.png";
+import educationCatCoin from "@assets/generated_images/education_charity_cat_coin.png";
+import environmentalPandaCoin from "@assets/generated_images/environmental_panda_coin.png";
+
+const exampleCoins = [
+  { image: charitableDogCoin, name: "HeroDog", cause: "Animal Rescue" },
+  { image: dogFeedingCoin, name: "FeedPup", cause: "Fighting Hunger" },
+  { image: educationCatCoin, name: "ScholarCat", cause: "Education" },
+  { image: environmentalPandaCoin, name: "EcoPanda", cause: "Environment" },
+];
+
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-16 md:py-24">
@@ -49,6 +61,29 @@ export function HeroSection() {
           </div>
 
           <div className="relative lg:pl-8">
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Example Impact Coins</h3>
+              <div className="grid grid-cols-4 gap-3">
+                {exampleCoins.map((coin, index) => (
+                  <div 
+                    key={index} 
+                    className="group flex flex-col items-center"
+                    data-testid={`example-coin-${index}`}
+                  >
+                    <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-primary/30 shadow-lg group-hover:border-primary/60 transition-all group-hover:scale-105">
+                      <img 
+                        src={coin.image} 
+                        alt={coin.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="mt-2 text-xs font-medium text-center">{coin.name}</span>
+                    <span className="text-xs text-muted-foreground text-center">{coin.cause}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <FeatureCard
                 icon={Coins}
