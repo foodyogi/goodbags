@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ThemeToggle } from "./theme-toggle";
-import { Rocket, LayoutDashboard, Heart, Menu, X } from "lucide-react";
+import { Rocket, LayoutDashboard, Heart, Menu, X, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { CHARITY_NAME } from "@shared/schema";
@@ -13,6 +13,7 @@ export function Header() {
   const navItems = [
     { href: "/", label: "Launch", icon: Rocket },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/impact", label: "Impact", icon: Award },
   ];
 
   return (

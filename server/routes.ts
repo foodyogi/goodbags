@@ -122,5 +122,103 @@ export async function registerRoutes(
     }
   });
 
+  // Get tokens by creator wallet
+  app.get("/api/tokens/creator/:wallet", async (req, res) => {
+    try {
+      const { wallet } = req.params;
+      const tokens = await storage.getTokensByCreator(wallet);
+      res.json(tokens);
+    } catch (error) {
+      console.error("Get creator tokens error:", error);
+      res.status(500).json({ error: "Failed to fetch creator tokens" });
+    }
+  });
+
+  // Get token impact data
+  app.get("/api/tokens/:mint/impact", async (req, res) => {
+    try {
+      const { mint } = req.params;
+      const token = await storage.getLaunchedTokenByMint(mint);
+      
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+
+      const impact = await storage.getTokenImpact(mint);
+      
+      res.json({
+        token: {
+          id: token.id,
+          name: token.name,
+          symbol: token.symbol,
+          mintAddress: token.mintAddress,
+          imageUrl: token.imageUrl,
+          creatorWallet: token.creatorWallet,
+          launchedAt: token.launchedAt,
+        },
+        impact: impact || {
+          totalDonated: "0",
+          donationCount: 0,
+          recentDonations: [],
+        },
+        charityInfo: {
+          name: "Food Yoga International",
+          wallet: CHARITY_WALLET,
+          feePercentage: CHARITY_FEE_PERCENTAGE,
+        },
+      });
+    } catch (error) {
+      console.error("Get token impact error:", error);
+      res.status(500).json({ error: "Failed to fetch token impact" });
+    }
+  });
+
+  // Get creator impact summary (all tokens for a wallet)
+  app.get("/api/creator/:wallet/impact", async (req, res) => {
+    try {
+      const { wallet } = req.params;
+      const tokens = await storage.getTokensByCreator(wallet);
+      
+      let totalDonated = 0;
+      let totalDonationCount = 0;
+      const tokenImpacts = [];
+
+      for (const token of tokens) {
+        const impact = await storage.getTokenImpact(token.mintAddress);
+        if (impact) {
+          totalDonated += parseFloat(impact.totalDonated);
+          totalDonationCount += impact.donationCount;
+          tokenImpacts.push({
+            token: {
+              id: token.id,
+              name: token.name,
+              symbol: token.symbol,
+              mintAddress: token.mintAddress,
+              imageUrl: token.imageUrl,
+            },
+            donated: impact.totalDonated,
+            donationCount: impact.donationCount,
+          });
+        }
+      }
+
+      res.json({
+        creatorWallet: wallet,
+        totalTokens: tokens.length,
+        totalDonated: totalDonated.toFixed(9),
+        totalDonationCount,
+        tokens: tokenImpacts,
+        charityInfo: {
+          name: "Food Yoga International",
+          wallet: CHARITY_WALLET,
+        },
+        certified: totalDonated >= 0.001, // Certified if at least 0.001 SOL donated
+      });
+    } catch (error) {
+      console.error("Get creator impact error:", error);
+      res.status(500).json({ error: "Failed to fetch creator impact" });
+    }
+  });
+
   return httpServer;
 }

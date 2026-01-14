@@ -18,6 +18,8 @@ export const launchedTokens = pgTable("launched_tokens", {
   tradingVolume: decimal("trading_volume", { precision: 18, scale: 9 }).default("0"),
   transactionSignature: text("transaction_signature"),
   launchedAt: timestamp("launched_at").defaultNow().notNull(),
+  donationCount: integer("donation_count").default(0),
+  lastDonationAt: timestamp("last_donation_at"),
 });
 
 // Donation tracking table - blockchain verified
@@ -72,7 +74,7 @@ export type InsertDonation = z.infer<typeof insertDonationSchema>;
 export type Donation = typeof donations.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 
-// Charity wallet constant - Fujo International placeholder
-export const CHARITY_WALLET = "FuJoWaLLetP1aCeHoLdErAdDrEsS111111111111";
-export const CHARITY_NAME = "Fujo International";
+// Charity wallet constant - Food Yoga International
+export const CHARITY_WALLET = "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP";
+export const CHARITY_NAME = "Food Yoga International";
 export const CHARITY_FEE_PERCENTAGE = 1; // 1% royalty to charity

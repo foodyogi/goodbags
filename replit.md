@@ -2,7 +2,7 @@
 
 ## Overview
 
-SolLaunch is a Solana-based memecoin launcher platform that enables users to create and launch their own memecoins with built-in charity donations. The platform automatically donates 1% of trading fees to Fujo International, with all donations tracked and verified on the blockchain. The application provides a token launch form, dashboard for tracking launched tokens, and transparent donation tracking.
+SolLaunch is a Solana-based memecoin launcher platform that enables users to create and launch their own memecoins with built-in charity donations. The platform automatically donates 1% of trading fees to Food Yoga International (wallet: 8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP), with all donations tracked and verified on the blockchain. The application provides a token launch form, dashboard for tracking launched tokens, impact reporting for token creators, and transparent donation tracking.
 
 ## User Preferences
 
