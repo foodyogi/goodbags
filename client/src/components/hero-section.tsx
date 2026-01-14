@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Rocket, Heart, Coins, TrendingUp, Shield } from "lucide-react";
-import { CHARITY_NAME, CHARITY_FEE_PERCENTAGE } from "@shared/schema";
+import { CHARITY_FEE_PERCENTAGE } from "@shared/schema";
 
 export function HeroSection() {
   return (
@@ -16,7 +16,7 @@ export function HeroSection() {
             <div className="inline-flex items-center gap-2 w-fit rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5">
               <Heart className="h-4 w-4 text-pink-500" />
               <span className="text-sm font-medium text-primary">
-                {CHARITY_FEE_PERCENTAGE}% of fees go to {CHARITY_NAME}
+                {CHARITY_FEE_PERCENTAGE}% of fees go to your chosen charity
               </span>
             </div>
             
@@ -30,7 +30,7 @@ export function HeroSection() {
             
             <p className="text-lg text-muted-foreground max-w-lg">
               Create and launch your own Solana memecoins with built-in charity donations. 
-              Every trade supports {CHARITY_NAME} through blockchain-verified donations.
+              Choose your cause and every trade supports it through blockchain-verified donations.
             </p>
             
             <div className="flex flex-wrap gap-4">

@@ -1,5 +1,4 @@
 import { Heart, ExternalLink } from "lucide-react";
-import { CHARITY_NAME } from "@shared/schema";
 import { SiSolana } from "react-icons/si";
 
 export function Footer() {
@@ -10,8 +9,8 @@ export function Footer() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Built with</span>
             <Heart className="h-4 w-4 text-pink-500" />
-            <span>for</span>
-            <span className="font-medium text-foreground">{CHARITY_NAME}</span>
+            <span>by</span>
+            <span className="font-medium text-foreground">Solimpact</span>
           </div>
 
           <div className="flex items-center gap-6">

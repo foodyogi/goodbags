@@ -1,8 +1,16 @@
-# SolLaunch - Solana Memecoin Launcher
+# Solimpact - Solana Memecoin Launcher for Social Impact
 
 ## Overview
 
-SolLaunch is a Solana-based memecoin launcher platform that enables users to create and launch their own memecoins with built-in charity donations. The platform automatically donates 1% of trading fees to Food Yoga International (wallet: 8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP), with all donations tracked and verified on the blockchain. The application provides a token launch form, dashboard for tracking launched tokens, impact reporting for token creators, and transparent donation tracking.
+Solimpact is a Solana-based memecoin launcher platform that enables users to create and launch their own memecoins with built-in charity donations. Token creators choose their own impact cause during launch, selecting from verified charities across categories like hunger, environment, education, health, animals, disaster relief, and community.
+
+### Key Features
+- **Multi-charity system**: Creators choose their cause from verified charities by category
+- **Custom charity submission**: Submit new charities with verification workflow
+- **Fee structure**: 0.25% platform fee + 1% charity donation from trading fees
+- **Impact Dashboard**: Track donations with blockchain-verified transparency
+- **Charity verification**: Pending → Contacted → Verified → Active workflow
+- **Audit logging**: All charity submissions and token launches tracked for compliance
 
 ## User Preferences
 
@@ -35,8 +43,10 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 - **Database**: PostgreSQL via Drizzle ORM
 - **Tables**:
-  - `launched_tokens`: Stores token metadata, mint addresses, creator info, and statistics
+  - `launched_tokens`: Stores token metadata, mint addresses, creator info, charity selection, and statistics
   - `donations`: Tracks blockchain-verified charity donations with transaction signatures
+  - `charities`: Registry of charities with verification status, wallet addresses, and categories
+  - `audit_logs`: Security and compliance tracking for charity submissions and token launches
 - **Schema Location**: `shared/schema.ts` contains all table definitions and Zod schemas
 
 ### Key Design Patterns

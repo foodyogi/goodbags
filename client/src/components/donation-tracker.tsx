@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ExternalLink, CheckCircle2, Clock } from "lucide-react";
 import { format } from "date-fns";
-import { CHARITY_NAME, CHARITY_WALLET, type Donation } from "@shared/schema";
+import { type Donation } from "@shared/schema";
 
 interface DonationTrackerProps {
   donations?: Donation[];
@@ -51,7 +51,7 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
           Blockchain-Verified Donations
         </CardTitle>
         <CardDescription>
-          All donations to {CHARITY_NAME} tracked transparently on Solana
+          All charity donations tracked transparently on Solana
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,17 +112,10 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
 
         <div className="mt-4 pt-4 border-t border-border/50">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Charity Wallet</span>
-            <a
-              href={`https://solscan.io/account/${CHARITY_WALLET}?cluster=devnet`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-mono text-primary hover:underline"
-              data-testid="link-charity-wallet"
-            >
-              {truncateAddress(CHARITY_WALLET)}
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            <span className="text-muted-foreground">Total Donations</span>
+            <span className="font-medium text-pink-500">
+              {donations?.length || 0} transactions
+            </span>
           </div>
         </div>
       </CardContent>

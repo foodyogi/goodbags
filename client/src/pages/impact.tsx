@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
-import { CHARITY_NAME, CHARITY_WALLET, type Donation } from "@shared/schema";
+import { type Donation } from "@shared/schema";
 
 interface TokenImpact {
   token: {
@@ -149,7 +149,7 @@ export default function ImpactPage() {
               {formatSol(impactData?.totalDonated || "0")}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              to {CHARITY_NAME}
+              to your chosen charities
             </p>
           </CardContent>
         </Card>
@@ -200,7 +200,7 @@ export default function ImpactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">
-                    {truncateAddress(publicKey?.toBase58() || "")} is {impactData?.certified ? '' : 'not yet '}{CHARITY_NAME} certified.
+                    {truncateAddress(publicKey?.toBase58() || "")} is {impactData?.certified ? '' : 'not yet '}Solimpact certified.
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {impactData?.certified 
@@ -273,17 +273,17 @@ export default function ImpactPage() {
               Export Data
             </Button>
             <a
-              href={`https://solscan.io/account/${CHARITY_WALLET}?cluster=devnet`}
+              href={`https://solscan.io/account/${publicKey?.toBase58()}?cluster=devnet`}
               target="_blank"
               rel="noopener noreferrer"
             >
               <Button 
                 variant="outline" 
                 className="w-full justify-start gap-2"
-                data-testid="button-view-charity"
+                data-testid="button-view-wallet"
               >
                 <ExternalLink className="h-4 w-4" />
-                View Charity Wallet on Solscan
+                View Your Wallet on Solscan
               </Button>
             </a>
           </CardContent>

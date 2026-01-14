@@ -1,7 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { tokenLaunchFormSchema, CHARITY_WALLET, CHARITY_FEE_PERCENTAGE } from "@shared/schema";
+import { 
+  tokenLaunchFormSchema, 
+  customCharitySchema,
+  CHARITY_FEE_PERCENTAGE, 
+  PLATFORM_FEE_PERCENTAGE,
+  CHARITY_STATUS,
+  IMPACT_CATEGORIES,
+  type Charity,
+} from "@shared/schema";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
@@ -9,6 +17,99 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Seed default charities on startup
+  await storage.seedDefaultCharities();
+
+  // === CHARITY ENDPOINTS ===
+  
+  // Get all verified charities
+  app.get("/api/charities", async (req, res) => {
+    try {
+      const charities = await storage.getVerifiedCharities();
+      res.json(charities);
+    } catch (error) {
+      console.error("Get charities error:", error);
+      res.status(500).json({ error: "Failed to fetch charities" });
+    }
+  });
+
+  // Get charities by category
+  app.get("/api/charities/category/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const charities = await storage.getCharitiesByCategory(category);
+      res.json(charities);
+    } catch (error) {
+      console.error("Get charities by category error:", error);
+      res.status(500).json({ error: "Failed to fetch charities" });
+    }
+  });
+
+  // Get impact categories
+  app.get("/api/categories", async (_req, res) => {
+    res.json(IMPACT_CATEGORIES);
+  });
+
+  // Submit custom charity (requires admin review)
+  app.post("/api/charities/submit", async (req, res) => {
+    try {
+      const validated = customCharitySchema.parse(req.body);
+      const creatorWallet = req.body.creatorWallet;
+      
+      // Create charity with pending status
+      const charity = await storage.createCharity({
+        name: validated.name,
+        description: validated.description || null,
+        category: validated.category,
+        website: validated.website || null,
+        email: validated.email || null,
+        walletAddress: validated.walletAddress || null,
+        status: CHARITY_STATUS.PENDING,
+        createdBy: creatorWallet,
+      });
+
+      // Log the action
+      await storage.createAuditLog({
+        action: "CHARITY_SUBMITTED",
+        entityType: "charity",
+        entityId: charity.id,
+        actorWallet: creatorWallet,
+        details: JSON.stringify({ name: validated.name, hasWallet: !!validated.walletAddress }),
+      });
+
+      res.json({
+        success: true,
+        charity,
+        message: validated.walletAddress 
+          ? "Charity submitted for verification" 
+          : "Charity submitted - we'll contact them to set up a Solana wallet",
+      });
+    } catch (error) {
+      console.error("Submit charity error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors.map(e => e.message).join(", ") });
+      } else {
+        res.status(500).json({ error: "Failed to submit charity" });
+      }
+    }
+  });
+
+  // Get charity by ID
+  app.get("/api/charities/:id", async (req, res) => {
+    try {
+      const charity = await storage.getCharityById(req.params.id);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      res.json(charity);
+    } catch (error) {
+      console.error("Get charity error:", error);
+      res.status(500).json({ error: "Failed to fetch charity" });
+    }
+  });
+
+  // === TOKEN ENDPOINTS ===
   
   // Launch a new token
   app.post("/api/tokens/launch", async (req, res) => {
@@ -22,13 +123,44 @@ export async function registerRoutes(
       
       const validated = launchSchema.parse(body);
       
+      // Get the selected charity
+      let charity: Charity | undefined;
+      if (validated.charityId === "custom" && validated.customCharity) {
+        // Create a new pending charity
+        charity = await storage.createCharity({
+          name: validated.customCharity.name,
+          description: validated.customCharity.description || null,
+          category: validated.customCharity.category,
+          website: validated.customCharity.website || null,
+          email: validated.customCharity.email || null,
+          walletAddress: validated.customCharity.walletAddress || null,
+          status: CHARITY_STATUS.PENDING,
+          createdBy: validated.creatorWallet,
+        });
+      } else {
+        charity = await storage.getCharityById(validated.charityId);
+      }
+      
+      if (!charity) {
+        // Fall back to default charity
+        charity = await storage.getDefaultCharity();
+      }
+      
+      if (!charity) {
+        return res.status(400).json({
+          success: false,
+          error: "No charity selected and no default available",
+        });
+      }
+      
       // Generate a mock mint address for now (in production, this comes from the SDK)
       const mockMintAddress = `mint${randomUUID().replace(/-/g, "").slice(0, 40)}`;
       const mockTxSignature = `tx${randomUUID().replace(/-/g, "")}`;
       
-      // Calculate initial charity donation (1% of initial buy)
+      // Calculate fees
       const initialBuy = parseFloat(validated.initialBuyAmount) || 0;
       const charityDonation = (initialBuy * CHARITY_FEE_PERCENTAGE / 100).toFixed(9);
+      const platformFee = (initialBuy * PLATFORM_FEE_PERCENTAGE / 100).toFixed(9);
       
       // Create the token record
       const token = await storage.createLaunchedToken({
@@ -38,18 +170,34 @@ export async function registerRoutes(
         imageUrl: validated.imageUrl || null,
         mintAddress: mockMintAddress,
         creatorWallet: validated.creatorWallet,
+        charityId: charity.id,
         initialBuyAmount: validated.initialBuyAmount,
         charityDonated: charityDonation,
+        platformFeeCollected: platformFee,
         tradingVolume: validated.initialBuyAmount,
         transactionSignature: mockTxSignature,
       });
+
+      // Log the launch
+      await storage.createAuditLog({
+        action: "TOKEN_LAUNCHED",
+        entityType: "token",
+        entityId: token.id,
+        actorWallet: validated.creatorWallet,
+        details: JSON.stringify({ 
+          name: validated.name, 
+          charityId: charity.id, 
+          charityName: charity.name,
+          initialBuy,
+        }),
+      });
       
-      // Record the donation if there was an initial buy
-      if (initialBuy > 0) {
+      // Record the donation if there was an initial buy and charity has a wallet
+      if (initialBuy > 0 && charity.walletAddress) {
         await storage.createDonation({
           tokenMint: mockMintAddress,
           amount: charityDonation,
-          charityWallet: CHARITY_WALLET,
+          charityWallet: charity.walletAddress,
           transactionSignature: `donation${randomUUID().replace(/-/g, "")}`,
         });
       }
@@ -62,6 +210,12 @@ export async function registerRoutes(
           symbol: token.symbol,
           mintAddress: token.mintAddress,
           transactionSignature: token.transactionSignature,
+        },
+        charity: {
+          id: charity.id,
+          name: charity.name,
+          status: charity.status,
+          hasWallet: !!charity.walletAddress,
         },
       });
     } catch (error) {
@@ -146,6 +300,15 @@ export async function registerRoutes(
 
       const impact = await storage.getTokenImpact(mint);
       
+      // Get the charity for this token
+      let charity: Charity | undefined;
+      if (token.charityId) {
+        charity = await storage.getCharityById(token.charityId);
+      }
+      if (!charity) {
+        charity = await storage.getDefaultCharity();
+      }
+      
       res.json({
         token: {
           id: token.id,
@@ -155,17 +318,22 @@ export async function registerRoutes(
           imageUrl: token.imageUrl,
           creatorWallet: token.creatorWallet,
           launchedAt: token.launchedAt,
+          charityId: token.charityId,
         },
         impact: impact || {
           totalDonated: "0",
           donationCount: 0,
           recentDonations: [],
         },
-        charityInfo: {
-          name: "Food Yoga International",
-          wallet: CHARITY_WALLET,
+        charityInfo: charity ? {
+          id: charity.id,
+          name: charity.name,
+          wallet: charity.walletAddress,
+          category: charity.category,
+          status: charity.status,
           feePercentage: CHARITY_FEE_PERCENTAGE,
-        },
+          platformFeePercentage: PLATFORM_FEE_PERCENTAGE,
+        } : null,
       });
     } catch (error) {
       console.error("Get token impact error:", error);
@@ -182,9 +350,22 @@ export async function registerRoutes(
       let totalDonated = 0;
       let totalDonationCount = 0;
       const tokenImpacts = [];
+      const charitiesMap = new Map<string, Charity>();
 
       for (const token of tokens) {
         const impact = await storage.getTokenImpact(token.mintAddress);
+        
+        // Get charity info for this token
+        let charity: Charity | undefined;
+        if (token.charityId) {
+          if (charitiesMap.has(token.charityId)) {
+            charity = charitiesMap.get(token.charityId);
+          } else {
+            charity = await storage.getCharityById(token.charityId);
+            if (charity) charitiesMap.set(token.charityId, charity);
+          }
+        }
+        
         if (impact) {
           totalDonated += parseFloat(impact.totalDonated);
           totalDonationCount += impact.donationCount;
@@ -196,6 +377,11 @@ export async function registerRoutes(
               mintAddress: token.mintAddress,
               imageUrl: token.imageUrl,
             },
+            charity: charity ? {
+              id: charity.id,
+              name: charity.name,
+              category: charity.category,
+            } : null,
             donated: impact.totalDonated,
             donationCount: impact.donationCount,
           });
@@ -208,11 +394,13 @@ export async function registerRoutes(
         totalDonated: totalDonated.toFixed(9),
         totalDonationCount,
         tokens: tokenImpacts,
-        charityInfo: {
-          name: "Food Yoga International",
-          wallet: CHARITY_WALLET,
-        },
-        certified: totalDonated >= 0.001, // Certified if at least 0.001 SOL donated
+        charities: Array.from(charitiesMap.values()).map(c => ({
+          id: c.id,
+          name: c.name,
+          category: c.category,
+          wallet: c.walletAddress,
+        })),
+        certified: totalDonated >= 0.001,
       });
     } catch (error) {
       console.error("Get creator impact error:", error);

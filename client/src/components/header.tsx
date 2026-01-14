@@ -4,7 +4,6 @@ import { ThemeToggle } from "./theme-toggle";
 import { Rocket, LayoutDashboard, Heart, Menu, X, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { CHARITY_NAME } from "@shared/schema";
 
 export function Header() {
   const [location] = useLocation();
@@ -24,10 +23,10 @@ export function Header() {
             <Rocket className="h-5 w-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold leading-tight">SolLaunch</span>
+            <span className="text-lg font-bold leading-tight">Solimpact</span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Heart className="h-2.5 w-2.5 text-pink-500" />
-              Supporting {CHARITY_NAME}
+              Launch tokens for good
             </span>
           </div>
         </Link>

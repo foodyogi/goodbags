@@ -1,20 +1,41 @@
 import { 
   launchedTokens, 
   donations,
+  charities,
+  auditLogs,
   type LaunchedToken, 
   type InsertLaunchedToken,
   type Donation,
-  type InsertDonation 
+  type InsertDonation,
+  type Charity,
+  type InsertCharity,
+  type AuditLog,
+  type InsertAuditLog,
+  CHARITY_STATUS,
+  DEFAULT_CHARITY,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 
 export interface IStorage {
+  // Charity methods
+  createCharity(charity: InsertCharity): Promise<Charity>;
+  getCharities(): Promise<Charity[]>;
+  getVerifiedCharities(): Promise<Charity[]>;
+  getCharitiesByCategory(category: string): Promise<Charity[]>;
+  getCharityById(id: string): Promise<Charity | undefined>;
+  updateCharityStatus(id: string, status: string, verifiedAt?: Date): Promise<Charity | undefined>;
+  getDefaultCharity(): Promise<Charity | undefined>;
+  seedDefaultCharities(): Promise<void>;
+  
+  // Token methods
   createLaunchedToken(token: InsertLaunchedToken): Promise<LaunchedToken>;
   getLaunchedTokens(): Promise<LaunchedToken[]>;
   getLaunchedTokenByMint(mintAddress: string): Promise<LaunchedToken | undefined>;
   getTokensByCreator(creatorWallet: string): Promise<LaunchedToken[]>;
   updateTokenStats(mintAddress: string, volume: string, donated: string): Promise<LaunchedToken | undefined>;
+  
+  // Donation methods
   createDonation(donation: InsertDonation): Promise<Donation>;
   getDonations(): Promise<Donation[]>;
   getDonationsByToken(tokenMint: string): Promise<Donation[]>;
@@ -22,15 +43,121 @@ export interface IStorage {
     totalTokens: number;
     totalDonated: string;
     totalVolume: string;
+    totalPlatformFees: string;
   }>;
   getTokenImpact(mintAddress: string): Promise<{
     totalDonated: string;
     donationCount: number;
     recentDonations: Donation[];
   } | null>;
+  
+  // Audit methods
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(limit?: number): Promise<AuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Charity methods
+  async createCharity(charity: InsertCharity): Promise<Charity> {
+    const [newCharity] = await db
+      .insert(charities)
+      .values(charity)
+      .returning();
+    return newCharity;
+  }
+
+  async getCharities(): Promise<Charity[]> {
+    return db
+      .select()
+      .from(charities)
+      .orderBy(desc(charities.isFeatured), charities.name);
+  }
+
+  async getVerifiedCharities(): Promise<Charity[]> {
+    return db
+      .select()
+      .from(charities)
+      .where(eq(charities.status, CHARITY_STATUS.VERIFIED))
+      .orderBy(desc(charities.isFeatured), charities.name);
+  }
+
+  async getCharitiesByCategory(category: string): Promise<Charity[]> {
+    return db
+      .select()
+      .from(charities)
+      .where(and(
+        eq(charities.category, category),
+        eq(charities.status, CHARITY_STATUS.VERIFIED)
+      ))
+      .orderBy(desc(charities.isFeatured), charities.name);
+  }
+
+  async getCharityById(id: string): Promise<Charity | undefined> {
+    const [charity] = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.id, id));
+    return charity || undefined;
+  }
+
+  async updateCharityStatus(id: string, status: string, verifiedAt?: Date): Promise<Charity | undefined> {
+    const updateData: Record<string, unknown> = {
+      status,
+      updatedAt: new Date(),
+    };
+    if (verifiedAt) {
+      updateData.verifiedAt = verifiedAt;
+    }
+    const [updated] = await db
+      .update(charities)
+      .set(updateData)
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getDefaultCharity(): Promise<Charity | undefined> {
+    const [charity] = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.isDefault, true));
+    return charity || undefined;
+  }
+
+  async seedDefaultCharities(): Promise<void> {
+    const existing = await this.getDefaultCharity();
+    if (!existing) {
+      await this.createCharity({
+        name: DEFAULT_CHARITY.name,
+        description: DEFAULT_CHARITY.description,
+        category: DEFAULT_CHARITY.category,
+        website: DEFAULT_CHARITY.website,
+        walletAddress: DEFAULT_CHARITY.wallet,
+        status: CHARITY_STATUS.VERIFIED,
+        isDefault: true,
+        isFeatured: true,
+      });
+    }
+  }
+
+  // Audit methods
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [newLog] = await db
+      .insert(auditLogs)
+      .values(log)
+      .returning();
+    return newLog;
+  }
+
+  async getAuditLogs(limit: number = 100): Promise<AuditLog[]> {
+    return db
+      .select()
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit);
+  }
+
+  // Token methods
   async createLaunchedToken(token: InsertLaunchedToken): Promise<LaunchedToken> {
     const [newToken] = await db
       .insert(launchedTokens)
@@ -113,12 +240,14 @@ export class DatabaseStorage implements IStorage {
     totalTokens: number;
     totalDonated: string;
     totalVolume: string;
+    totalPlatformFees: string;
   }> {
     const [tokenStats] = await db
       .select({
         count: sql<number>`count(*)`,
         totalVolume: sql<string>`coalesce(sum(${launchedTokens.tradingVolume}::numeric), 0)`,
         totalDonated: sql<string>`coalesce(sum(${launchedTokens.charityDonated}::numeric), 0)`,
+        totalPlatformFees: sql<string>`coalesce(sum(${launchedTokens.platformFeeCollected}::numeric), 0)`,
       })
       .from(launchedTokens);
 
@@ -126,6 +255,7 @@ export class DatabaseStorage implements IStorage {
       totalTokens: Number(tokenStats?.count ?? 0),
       totalDonated: String(tokenStats?.totalDonated ?? "0"),
       totalVolume: String(tokenStats?.totalVolume ?? "0"),
+      totalPlatformFees: String(tokenStats?.totalPlatformFees ?? "0"),
     };
   }
 

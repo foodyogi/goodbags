@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Award, Heart } from "lucide-react";
-import { CHARITY_NAME } from "@shared/schema";
 
 interface CreatorImpactData {
   creatorWallet: string;
@@ -47,7 +46,7 @@ export default function WidgetBadge() {
           </div>
           <div>
             <h3 className="font-semibold text-white text-sm leading-tight">
-              {truncateAddress(wallet || "")} is {CHARITY_NAME} {impactData?.certified ? 'certified' : 'supporter'}.
+              {truncateAddress(wallet || "")} is a Solimpact {impactData?.certified ? 'certified creator' : 'supporter'}.
             </h3>
             <p className="text-xs text-gray-400 mt-1">
               {impactData?.certified 
@@ -59,9 +58,9 @@ export default function WidgetBadge() {
         <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1 text-pink-400">
             <Heart className="h-3 w-3" />
-            <span>{CHARITY_NAME}</span>
+            <span>Verified Impact</span>
           </div>
-          <span className="text-gray-500">SolLaunch</span>
+          <span className="text-gray-500">Solimpact</span>
         </div>
       </div>
     </div>
