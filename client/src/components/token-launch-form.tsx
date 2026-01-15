@@ -1,7 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { VersionedTransaction } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,10 +49,18 @@ interface LaunchResult {
   error?: string;
 }
 
+type LaunchStep = "idle" | "preparing" | "signing-config" | "signing-launch" | "recording" | "complete";
+
 export function TokenLaunchForm() {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, signTransaction, signAllTransactions } = useWallet();
+  const { connection } = useConnection();
   const { toast } = useToast();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
+  const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
+
+  const { data: bagsStatus } = useQuery<{ configured: boolean }>({
+    queryKey: ["/api/bags/status"],
+  });
 
   const form = useForm<TokenLaunchForm>({
     resolver: zodResolver(tokenLaunchFormSchema),
@@ -67,14 +77,87 @@ export function TokenLaunchForm() {
   const launchMutation = useMutation({
     mutationFn: async (data: TokenLaunchForm) => {
       if (!publicKey) throw new Error("Wallet not connected");
+      if (!signTransaction) throw new Error("Wallet does not support signing");
       
-      const response = await apiRequest("POST", "/api/tokens/launch", {
+      const creatorWallet = publicKey.toBase58();
+      
+      // Step 1: Prepare token metadata
+      setLaunchStep("preparing");
+      const prepareResponse = await apiRequest("POST", "/api/tokens/prepare", {
         ...data,
-        creatorWallet: publicKey.toBase58(),
+        creatorWallet,
       });
-      return await response.json() as LaunchResult;
+      const prepareResult = await prepareResponse.json();
+      
+      if (!prepareResult.success) {
+        throw new Error(prepareResult.error || "Failed to prepare token");
+      }
+
+      const { tokenMint, metadataUrl, mock } = prepareResult;
+      let transactionSignature = "";
+
+      // If SDK is configured (not mock mode), handle signing
+      if (!mock) {
+        // Step 2: Create and sign fee share config transactions
+        setLaunchStep("signing-config");
+        const configResponse = await apiRequest("POST", "/api/tokens/config", {
+          tokenMint,
+          creatorWallet,
+        });
+        const configResult = await configResponse.json();
+        
+        if (!configResult.success) {
+          throw new Error(configResult.error || "Failed to create config");
+        }
+
+        // Sign and send config transactions if any
+        if (configResult.transactions && configResult.transactions.length > 0) {
+          for (const txBase64 of configResult.transactions) {
+            const txBuffer = Buffer.from(txBase64, "base64");
+            const tx = VersionedTransaction.deserialize(txBuffer);
+            const signedTx = await signTransaction(tx);
+            const sig = await connection.sendRawTransaction(signedTx.serialize());
+            await connection.confirmTransaction(sig, "confirmed");
+          }
+        }
+
+        // Step 3: Create and sign launch transaction
+        setLaunchStep("signing-launch");
+        const launchTxResponse = await apiRequest("POST", "/api/tokens/launch-tx", {
+          tokenMint,
+          metadataUrl,
+          configKey: configResult.configKey,
+          creatorWallet,
+          initialBuyAmountSol: data.initialBuyAmount,
+        });
+        const launchTxResult = await launchTxResponse.json();
+        
+        if (!launchTxResult.success) {
+          throw new Error(launchTxResult.error || "Failed to create launch transaction");
+        }
+
+        if (launchTxResult.transaction) {
+          const txBuffer = Buffer.from(launchTxResult.transaction, "base64");
+          const tx = VersionedTransaction.deserialize(txBuffer);
+          const signedTx = await signTransaction(tx);
+          transactionSignature = await connection.sendRawTransaction(signedTx.serialize());
+          await connection.confirmTransaction(transactionSignature, "confirmed");
+        }
+      }
+
+      // Step 4: Record the launch in our database
+      setLaunchStep("recording");
+      const recordResponse = await apiRequest("POST", "/api/tokens/launch", {
+        ...data,
+        creatorWallet,
+        mintAddress: tokenMint,
+        transactionSignature: transactionSignature || `mock_tx_${Date.now()}`,
+      });
+      
+      return await recordResponse.json() as LaunchResult;
     },
     onSuccess: (data) => {
+      setLaunchStep("complete");
       if (data.success && data.token) {
         setLaunchResult(data);
         queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
@@ -87,6 +170,7 @@ export function TokenLaunchForm() {
       }
     },
     onError: (error: Error) => {
+      setLaunchStep("idle");
       toast({
         title: "Launch Failed",
         description: error.message,
@@ -94,6 +178,21 @@ export function TokenLaunchForm() {
       });
     },
   });
+
+  const getStepMessage = () => {
+    switch (launchStep) {
+      case "preparing":
+        return "Creating token metadata...";
+      case "signing-config":
+        return "Please sign the fee configuration transaction...";
+      case "signing-launch":
+        return "Please sign the launch transaction...";
+      case "recording":
+        return "Recording launch to database...";
+      default:
+        return "Launching...";
+    }
+  };
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -148,7 +247,7 @@ export function TokenLaunchForm() {
           
           <div className="flex flex-col gap-2">
             <a
-              href={`https://solscan.io/token/${launchResult.token.mintAddress}?cluster=devnet`}
+              href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full"
@@ -181,6 +280,11 @@ export function TokenLaunchForm() {
         <CardDescription>
           Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {PLATFORM_FEE_PERCENTAGE}% platform fee
         </CardDescription>
+        {bagsStatus?.configured === false && (
+          <div className="mt-2 rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400">
+            Development mode: Tokens will be simulated (Bags SDK not configured)
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -387,7 +491,7 @@ export function TokenLaunchForm() {
                 {launchMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Launching...
+                    {getStepMessage()}
                   </>
                 ) : (
                   <>

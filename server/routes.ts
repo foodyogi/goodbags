@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { randomUUID } from "crypto";
+import * as bagsSDK from "./bags-sdk";
 
 // Extend the shared schema with creatorWallet for server-side validation
 const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
@@ -51,30 +52,191 @@ export async function registerRoutes(
   });
 
   // === TOKEN ENDPOINTS ===
-  
-  // Launch a new token
-  app.post("/api/tokens/launch", async (req, res) => {
+
+  // Check if Bags SDK is configured
+  app.get("/api/bags/status", async (req, res) => {
+    res.json({
+      configured: bagsSDK.isConfigured(),
+    });
+  });
+
+  // Step 1: Create token metadata on Bags.fm
+  app.post("/api/tokens/prepare", async (req, res) => {
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       
       // Get the selected charity
       let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
-      
       if (!charity) {
-        // Fall back to default charity
         charity = await storage.getDefaultCharity();
       }
-      
       if (!charity) {
         return res.status(400).json({
           success: false,
           error: "No charity selected and no default available",
         });
       }
+
+      // Check if Bags SDK is configured
+      if (!bagsSDK.isConfigured()) {
+        // Return mock data for development
+        const mockMintAddress = `mock${randomUUID().replace(/-/g, "").slice(0, 40)}`;
+        return res.json({
+          success: true,
+          mock: true,
+          tokenMint: mockMintAddress,
+          metadataUrl: `https://example.com/metadata/${mockMintAddress}`,
+          charity: {
+            id: charity.id,
+            name: charity.name,
+            walletAddress: charity.walletAddress,
+          },
+        });
+      }
+
+      // Create token info using Bags SDK
+      const tokenInfo = await bagsSDK.createTokenInfoAndMetadata({
+        name: validated.name,
+        symbol: validated.symbol,
+        description: validated.description,
+        imageUrl: validated.imageUrl,
+        creatorWallet: validated.creatorWallet,
+      });
+
+      res.json({
+        success: true,
+        mock: false,
+        tokenMint: tokenInfo.tokenMint,
+        metadataUrl: tokenInfo.metadataUrl,
+        charity: {
+          id: charity.id,
+          name: charity.name,
+          walletAddress: charity.walletAddress,
+        },
+      });
+    } catch (error) {
+      console.error("Token prepare error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: error.errors.map(e => e.message).join(", "),
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to prepare token",
+        });
+      }
+    }
+  });
+
+  // Step 2: Create fee share config and get transactions to sign
+  app.post("/api/tokens/config", async (req, res) => {
+    try {
+      const { tokenMint, creatorWallet } = req.body;
       
-      // Generate a mock mint address for now (in production, this comes from the SDK)
-      const mockMintAddress = `mint${randomUUID().replace(/-/g, "").slice(0, 40)}`;
-      const mockTxSignature = `tx${randomUUID().replace(/-/g, "")}`;
+      if (!tokenMint || !creatorWallet) {
+        return res.status(400).json({
+          success: false,
+          error: "tokenMint and creatorWallet are required",
+        });
+      }
+
+      if (!bagsSDK.isConfigured()) {
+        // Return mock data
+        return res.json({
+          success: true,
+          mock: true,
+          configKey: `config${randomUUID().replace(/-/g, "").slice(0, 40)}`,
+          transactions: [],
+        });
+      }
+
+      const config = await bagsSDK.createFeeShareConfig(tokenMint, creatorWallet);
+
+      res.json({
+        success: true,
+        mock: false,
+        configKey: config.configKey,
+        transactions: config.transactions,
+      });
+    } catch (error) {
+      console.error("Config creation error:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to create config",
+      });
+    }
+  });
+
+  // Step 3: Create launch transaction
+  app.post("/api/tokens/launch-tx", async (req, res) => {
+    try {
+      const { tokenMint, metadataUrl, configKey, creatorWallet, initialBuyAmountSol } = req.body;
+      
+      if (!tokenMint || !metadataUrl || !configKey || !creatorWallet) {
+        return res.status(400).json({
+          success: false,
+          error: "tokenMint, metadataUrl, configKey, and creatorWallet are required",
+        });
+      }
+
+      if (!bagsSDK.isConfigured()) {
+        // Return mock data
+        return res.json({
+          success: true,
+          mock: true,
+          transaction: null,
+        });
+      }
+
+      const initialBuyLamports = bagsSDK.lamportsFromSol(parseFloat(initialBuyAmountSol) || 0);
+      const launchTx = await bagsSDK.createLaunchTransaction(
+        tokenMint,
+        metadataUrl,
+        configKey,
+        creatorWallet,
+        initialBuyLamports
+      );
+
+      res.json({
+        success: true,
+        mock: false,
+        transaction: launchTx.transaction,
+      });
+    } catch (error) {
+      console.error("Launch transaction error:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to create launch transaction",
+      });
+    }
+  });
+  
+  // Step 4: Record successful launch after client broadcasts transaction
+  app.post("/api/tokens/launch", async (req, res) => {
+    try {
+      const validated = tokenLaunchRequestSchema.parse(req.body);
+      const { mintAddress, transactionSignature } = req.body;
+      
+      if (!mintAddress) {
+        return res.status(400).json({
+          success: false,
+          error: "mintAddress is required",
+        });
+      }
+      
+      // Get the selected charity
+      let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
+      if (!charity) {
+        charity = await storage.getDefaultCharity();
+      }
+      if (!charity) {
+        return res.status(400).json({
+          success: false,
+          error: "No charity selected and no default available",
+        });
+      }
       
       // Calculate fees
       const initialBuy = parseFloat(validated.initialBuyAmount) || 0;
@@ -87,14 +249,14 @@ export async function registerRoutes(
         symbol: validated.symbol,
         description: validated.description || null,
         imageUrl: validated.imageUrl || null,
-        mintAddress: mockMintAddress,
+        mintAddress: mintAddress,
         creatorWallet: validated.creatorWallet,
         charityId: charity.id,
         initialBuyAmount: validated.initialBuyAmount,
         charityDonated: charityDonation,
         platformFeeCollected: platformFee,
         tradingVolume: validated.initialBuyAmount,
-        transactionSignature: mockTxSignature,
+        transactionSignature: transactionSignature || `tx${randomUUID().replace(/-/g, "")}`,
       });
 
       // Log the launch
@@ -114,7 +276,7 @@ export async function registerRoutes(
       // Record the donation if there was an initial buy and charity has a wallet
       if (initialBuy > 0 && charity.walletAddress) {
         await storage.createDonation({
-          tokenMint: mockMintAddress,
+          tokenMint: mintAddress,
           amount: charityDonation,
           charityWallet: charity.walletAddress,
           transactionSignature: `donation${randomUUID().replace(/-/g, "")}`,
