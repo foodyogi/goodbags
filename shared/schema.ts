@@ -158,6 +158,16 @@ export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export const CHARITY_FEE_PERCENTAGE = 1; // 1% royalty to charity
 export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee
 
+// Platform wallet for collecting platform fees (must be set in environment or use a default devnet address)
+// In production, set PLATFORM_WALLET_ADDRESS environment variable
+// For devnet/testing, using a valid test wallet address
+export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as const;
+
+// Convert percentage to basis points (1% = 100 bps, 0.25% = 25 bps)
+export const CHARITY_FEE_BPS = 100; // 1%
+export const PLATFORM_FEE_BPS = 25; // 0.25%
+export const CREATOR_FEE_BPS = 10000 - CHARITY_FEE_BPS - PLATFORM_FEE_BPS; // Remainder to creator
+
 // Vetted charities - personally managed
 export const VETTED_CHARITIES = [
   {

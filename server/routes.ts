@@ -133,12 +133,43 @@ export async function registerRoutes(
   // Step 2: Create fee share config and get transactions to sign
   app.post("/api/tokens/config", async (req, res) => {
     try {
-      const { tokenMint, creatorWallet } = req.body;
+      const { tokenMint, creatorWallet, charityId } = req.body;
       
-      if (!tokenMint || !creatorWallet) {
+      if (!tokenMint || !creatorWallet || !charityId) {
         return res.status(400).json({
           success: false,
-          error: "tokenMint and creatorWallet are required",
+          error: "tokenMint, creatorWallet, and charityId are required",
+        });
+      }
+
+      // Validate address formats (base58, 32-44 characters)
+      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+      if (!base58Regex.test(tokenMint)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid token mint address format",
+        });
+      }
+      if (!base58Regex.test(creatorWallet)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid creator wallet address format",
+        });
+      }
+
+      // Look up charity server-side to ensure wallet comes from vetted charities only
+      const charity = await storage.getCharityById(charityId);
+      if (!charity) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid charity ID - charity not found",
+        });
+      }
+      
+      if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
+        return res.status(400).json({
+          success: false,
+          error: "Selected charity does not have a valid wallet address configured",
         });
       }
 
@@ -152,7 +183,11 @@ export async function registerRoutes(
         });
       }
 
-      const config = await bagsSDK.createFeeShareConfig(tokenMint, creatorWallet);
+      const config = await bagsSDK.createFeeShareConfig({
+        tokenMint,
+        creatorWallet,
+        charityWallet: charity.walletAddress,
+      });
 
       res.json({
         success: true,

@@ -115,10 +115,12 @@ export function TokenLaunchForm() {
         }
 
         // Step 2: Create and sign fee share config transactions
+        // Send charityId for server-side validation (security: server looks up charity wallet)
         setLaunchStep("signing-config");
         const configResponse = await apiRequest("POST", "/api/tokens/config", {
           tokenMint,
           creatorWallet,
+          charityId: data.charityId,
         });
         const configResult = await configResponse.json();
         
