@@ -71,7 +71,23 @@ Preferred communication style: Simple, everyday language.
 
 ### Environment Variables Required
 - `DATABASE_URL`: PostgreSQL connection string
-- `VITE_SOLANA_RPC_URL` (optional): Custom Solana RPC endpoint
+- `BAGS_API_KEY`: Bags.fm SDK API key for token creation (required for real launches)
+- `SOLANA_RPC_URL`: Solana RPC endpoint URL
+- `SESSION_SECRET`: Session encryption secret
+- `PLATFORM_WALLET_ADDRESS` (optional): Platform wallet for fee collection (uses default if not set)
+
+### Token Launch Flow
+The token launch process uses a multi-step flow with wallet signing:
+1. **POST /api/tokens/prepare**: Creates token metadata via Bags SDK
+2. **POST /api/tokens/config**: Creates fee share config with splits (Creator 98.75%, Charity 1%, Platform 0.25%)
+3. **POST /api/tokens/launch-tx**: Creates unsigned launch transaction
+4. **Client signs and broadcasts**: User wallet signs and submits to Solana
+5. **POST /api/tokens/launch**: Records successful launch in database
+
+### Security
+- Charity wallets are looked up server-side from vetted charity database (prevents fee diversion)
+- All wallet addresses validated before on-chain operations
+- Platform wallet validated at startup; fails in production if invalid
 
 ### Third-Party UI Libraries
 - **Radix UI**: Accessible component primitives (dialogs, dropdowns, tooltips, etc.)
