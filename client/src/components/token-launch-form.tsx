@@ -4,6 +4,18 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(base64, "base64"));
+  }
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,7 +89,6 @@ export function TokenLaunchForm() {
   const launchMutation = useMutation({
     mutationFn: async (data: TokenLaunchForm) => {
       if (!publicKey) throw new Error("Wallet not connected");
-      if (!signTransaction) throw new Error("Wallet does not support signing");
       
       const creatorWallet = publicKey.toBase58();
       
@@ -98,6 +109,11 @@ export function TokenLaunchForm() {
 
       // If SDK is configured (not mock mode), handle signing
       if (!mock) {
+        // Wallet must support signing for real transactions
+        if (!signTransaction) {
+          throw new Error("Wallet does not support signing. Please use a compatible wallet.");
+        }
+
         // Step 2: Create and sign fee share config transactions
         setLaunchStep("signing-config");
         const configResponse = await apiRequest("POST", "/api/tokens/config", {
@@ -113,11 +129,14 @@ export function TokenLaunchForm() {
         // Sign and send config transactions if any
         if (configResult.transactions && configResult.transactions.length > 0) {
           for (const txBase64 of configResult.transactions) {
-            const txBuffer = Buffer.from(txBase64, "base64");
-            const tx = VersionedTransaction.deserialize(txBuffer);
+            const txBytes = base64ToUint8Array(txBase64);
+            const tx = VersionedTransaction.deserialize(txBytes);
             const signedTx = await signTransaction(tx);
             const sig = await connection.sendRawTransaction(signedTx.serialize());
-            await connection.confirmTransaction(sig, "confirmed");
+            const confirmation = await connection.confirmTransaction(sig, "confirmed");
+            if (confirmation.value.err) {
+              throw new Error(`Config transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+            }
           }
         }
 
@@ -137,11 +156,14 @@ export function TokenLaunchForm() {
         }
 
         if (launchTxResult.transaction) {
-          const txBuffer = Buffer.from(launchTxResult.transaction, "base64");
-          const tx = VersionedTransaction.deserialize(txBuffer);
+          const txBytes = base64ToUint8Array(launchTxResult.transaction);
+          const tx = VersionedTransaction.deserialize(txBytes);
           const signedTx = await signTransaction(tx);
           transactionSignature = await connection.sendRawTransaction(signedTx.serialize());
-          await connection.confirmTransaction(transactionSignature, "confirmed");
+          const confirmation = await connection.confirmTransaction(transactionSignature, "confirmed");
+          if (confirmation.value.err) {
+            throw new Error(`Launch transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
         }
       }
 
