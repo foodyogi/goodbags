@@ -4,7 +4,8 @@ import {
   PLATFORM_WALLET, 
   CHARITY_FEE_BPS, 
   PLATFORM_FEE_BPS, 
-  CREATOR_FEE_BPS 
+  CREATOR_FEE_BPS,
+  PARTNER_WALLET
 } from "@shared/schema";
 
 const BAGS_API_KEY = process.env.BAGS_API_KEY;
@@ -121,10 +122,14 @@ export async function createFeeShareConfig(
     { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
   ];
   
+  // Include partner wallet to earn Bags.fm referral credits
+  const partnerPubkey = validatePublicKey(PARTNER_WALLET, "partner wallet");
+  
   const configResult = await sdk.config.createBagsFeeShareConfig({
     payer: creatorPubkey,
     baseMint: tokenMintPubkey,
     feeClaimers,
+    partner: partnerPubkey,
   });
 
   const serializedTxs = configResult.transactions?.map(tx => 

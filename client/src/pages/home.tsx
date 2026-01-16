@@ -1,10 +1,14 @@
 import { HeroSection } from "@/components/hero-section";
 import { TokenLaunchForm } from "@/components/token-launch-form";
+import { FeaturedProject } from "@/components/featured-project";
 
 export default function Home() {
   return (
     <div className="min-h-screen">
       <HeroSection />
+      
+      <FeaturedProject />
+      
       <section className="py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="text-center mb-8">

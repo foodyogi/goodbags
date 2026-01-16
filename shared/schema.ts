@@ -168,15 +168,30 @@ export const CHARITY_FEE_BPS = 100; // 1%
 export const PLATFORM_FEE_BPS = 25; // 0.25%
 export const CREATOR_FEE_BPS = 10000 - CHARITY_FEE_BPS - PLATFORM_FEE_BPS; // Remainder to creator
 
-// Vetted charities - personally managed
+// Partner referral wallet for earning Bags.fm credits
+// PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey
+// PARTNER_REF is the Bags.fm username (for URL references: bags.fm/?ref=paulrodturner)
+export const PARTNER_WALLET = "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP" as const;
+export const PARTNER_REF = "paulrodturner" as const;
+
+// Featured impact project - existing FYI token on Bags.fm
+export const FEATURED_IMPACT_PROJECT = {
+  name: "Food Yoga International",
+  tokenMint: "N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS",
+  bagsUrl: "https://bags.fm/N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS",
+  description: "Supporting plant-based meals for the hungry worldwide",
+  category: "hunger",
+} as const;
+
+// Vetted charities - personally managed (excluding FYI since it has its own token)
 export const VETTED_CHARITIES = [
   {
-    id: "food-yoga-international",
-    name: "Food Yoga International",
-    wallet: "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP",
-    category: "hunger",
-    description: "Providing plant-based meals to the hungry worldwide",
-    website: "https://ffl.org",
+    id: "the-water-project",
+    name: "The Water Project",
+    wallet: "WATERpVLQx4fGjFqJmqSqU1Jc7gU7eSdF8xvRtNsK9zP",
+    category: "community",
+    description: "Bringing clean, safe water to communities in sub-Saharan Africa",
+    website: "https://thewaterproject.org",
   },
   {
     id: "julianas-animal-sanctuary",
