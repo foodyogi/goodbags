@@ -1,11 +1,14 @@
 import { HeroSection } from "@/components/hero-section";
 import { TokenLaunchForm } from "@/components/token-launch-form";
 import { FeaturedProject } from "@/components/featured-project";
+import { FeeTransparency } from "@/components/fee-transparency";
 
 export default function Home() {
   return (
     <div className="min-h-screen">
       <HeroSection />
+      
+      <FeeTransparency />
       
       <FeaturedProject />
       
