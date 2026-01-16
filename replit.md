@@ -11,6 +11,14 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 - **Impact Dashboard**: Track donations with blockchain-verified transparency
 - **Security**: Only verified charities can receive donations (enforced server-side)
 - **Audit logging**: All charity submissions and token launches tracked for compliance
+- **Maximum Transparency**: Public pages for verified charities, buyback activity, and how the platform works
+
+### Public Transparency Pages
+- `/` - Homepage with live impact stats (auto-refreshing every 30s) and fee breakdown
+- `/charities` - Public list of all verified charities with Solscan verification links
+- `/buyback` - FYI Token Buyback Dashboard showing all buyback transactions
+- `/how-it-works` - Complete explanation of the platform, fee distribution, and security features
+- `/dashboard` - All launched tokens with trading volume and donation stats
 
 ### Charity Verification Workflow
 1. **Submit Application** (`/charities/apply`): Charity provides name, email, wallet, website
