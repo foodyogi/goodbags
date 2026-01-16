@@ -5,11 +5,40 @@ import {
   CHARITY_FEE_PERCENTAGE, 
   PLATFORM_FEE_PERCENTAGE,
   tokenLaunchFormSchema,
+  charityApplicationSchema,
+  CHARITY_STATUS,
   type Charity,
 } from "@shared/schema";
 import { z } from "zod";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import * as bagsSDK from "./bags-sdk";
+import bs58 from "bs58";
+import nacl from "tweetnacl";
+
+// Admin secret for approving charities - MUST be set in production
+// In production, ADMIN_SECRET is required and must match the provided secret
+// In development, we allow access if not set for easier testing
+function isAdminAuthorized(secret: string | undefined): boolean {
+  const adminSecret = process.env.ADMIN_SECRET;
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  if (isProduction && !adminSecret) {
+    console.error("CRITICAL: ADMIN_SECRET not set in production - admin endpoints are disabled");
+    return false;
+  }
+  
+  if (!adminSecret) {
+    console.warn("ADMIN_SECRET not set - admin endpoints accessible in development mode only");
+    return !isProduction;
+  }
+  
+  return secret === adminSecret;
+}
+
+// Generate a secure random token
+function generateToken(): string {
+  return randomBytes(32).toString("hex");
+}
 
 // Extend the shared schema with creatorWallet for server-side validation
 const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
@@ -51,6 +80,322 @@ export async function registerRoutes(
     }
   });
 
+  // === CHARITY VERIFICATION ENDPOINTS ===
+
+  // Submit a charity application
+  app.post("/api/charities/apply", async (req, res) => {
+    try {
+      const validated = charityApplicationSchema.parse(req.body);
+      const { submitterWallet } = req.body;
+      
+      // Check if charity with this email already exists
+      const existingByEmail = await storage.getCharityByEmail(validated.email);
+      if (existingByEmail) {
+        return res.status(400).json({
+          success: false,
+          error: "A charity with this email has already been submitted",
+        });
+      }
+
+      // Create the charity with pending status
+      const charity = await storage.createCharity({
+        name: validated.name,
+        description: validated.description,
+        category: validated.category,
+        website: validated.website,
+        email: validated.email,
+        walletAddress: validated.walletAddress,
+        registrationNumber: validated.registrationNumber,
+        submitterWallet: submitterWallet || null,
+        status: CHARITY_STATUS.PENDING,
+      });
+
+      // Generate verification tokens
+      const emailToken = generateToken();
+      const walletNonce = generateToken().slice(0, 32); // Shorter nonce for wallet signing
+      await storage.setCharityVerificationTokens(charity.id, emailToken, walletNonce);
+
+      // Log the submission
+      await storage.createAuditLog({
+        action: "CHARITY_SUBMITTED",
+        entityType: "charity",
+        entityId: charity.id,
+        actorWallet: submitterWallet || null,
+        details: JSON.stringify({
+          name: validated.name,
+          email: validated.email,
+          website: validated.website,
+        }),
+      });
+
+      res.json({
+        success: true,
+        charityId: charity.id,
+        message: "Application submitted successfully. Please verify your email and wallet.",
+        verificationUrl: `/verify/email/${emailToken}`,
+        walletNonce: walletNonce,
+      });
+    } catch (error) {
+      console.error("Charity application error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: error.errors.map(e => e.message).join(", "),
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to submit application",
+        });
+      }
+    }
+  });
+
+  // Verify charity email
+  app.get("/api/charities/verify/email/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const charity = await storage.getCharityByEmailToken(token);
+      
+      if (!charity) {
+        return res.status(404).json({
+          success: false,
+          error: "Invalid or expired verification token",
+        });
+      }
+
+      if (charity.emailVerifiedAt) {
+        return res.json({
+          success: true,
+          message: "Email already verified",
+          charityId: charity.id,
+        });
+      }
+
+      await storage.updateCharityEmailVerification(charity.id, new Date());
+
+      await storage.createAuditLog({
+        action: "CHARITY_EMAIL_VERIFIED",
+        entityType: "charity",
+        entityId: charity.id,
+        details: JSON.stringify({ email: charity.email }),
+      });
+
+      res.json({
+        success: true,
+        message: "Email verified successfully",
+        charityId: charity.id,
+        walletNonce: charity.walletVerificationNonce,
+      });
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to verify email",
+      });
+    }
+  });
+
+  // Verify wallet ownership via signature
+  app.post("/api/charities/verify/wallet", async (req, res) => {
+    try {
+      const { charityId, signature, publicKey } = req.body;
+      
+      if (!charityId || !signature || !publicKey) {
+        return res.status(400).json({
+          success: false,
+          error: "charityId, signature, and publicKey are required",
+        });
+      }
+
+      const charity = await storage.getCharityById(charityId);
+      if (!charity) {
+        return res.status(404).json({
+          success: false,
+          error: "Charity not found",
+        });
+      }
+
+      // Check that the wallet matches the registered wallet
+      if (charity.walletAddress !== publicKey) {
+        return res.status(400).json({
+          success: false,
+          error: "Wallet address does not match the registered charity wallet",
+        });
+      }
+
+      if (!charity.walletVerificationNonce) {
+        return res.status(400).json({
+          success: false,
+          error: "No verification nonce found. Please restart the application process.",
+        });
+      }
+
+      // Verify the signature
+      const message = new TextEncoder().encode(
+        `GoodBags Charity Verification: ${charity.walletVerificationNonce}`
+      );
+      const signatureBytes = bs58.decode(signature);
+      const publicKeyBytes = bs58.decode(publicKey);
+
+      const isValid = nacl.sign.detached.verify(message, signatureBytes, publicKeyBytes);
+
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid signature. Please sign the message with the correct wallet.",
+        });
+      }
+
+      await storage.updateCharityWalletVerification(charity.id, new Date());
+
+      await storage.createAuditLog({
+        action: "CHARITY_WALLET_VERIFIED",
+        entityType: "charity",
+        entityId: charity.id,
+        actorWallet: publicKey,
+        details: JSON.stringify({ walletAddress: publicKey }),
+      });
+
+      res.json({
+        success: true,
+        message: "Wallet verified successfully. Your application is now pending admin approval.",
+        charityId: charity.id,
+      });
+    } catch (error) {
+      console.error("Wallet verification error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to verify wallet",
+      });
+    }
+  });
+
+  // Get charity verification status
+  app.get("/api/charities/:id/status", async (req, res) => {
+    try {
+      const charity = await storage.getCharityById(req.params.id);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      
+      res.json({
+        id: charity.id,
+        name: charity.name,
+        status: charity.status,
+        emailVerified: !!charity.emailVerifiedAt,
+        walletVerified: !!charity.walletVerifiedAt,
+        approved: charity.status === CHARITY_STATUS.APPROVED,
+      });
+    } catch (error) {
+      console.error("Get charity status error:", error);
+      res.status(500).json({ error: "Failed to fetch charity status" });
+    }
+  });
+
+  // === ADMIN ENDPOINTS ===
+
+  // Get all pending charity applications (admin only)
+  app.get("/api/admin/charities/pending", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const pending = await storage.getPendingCharities();
+      // Also get wallet-verified charities awaiting approval
+      const charities = await storage.getCharities();
+      const awaitingApproval = charities.filter(
+        c => c.status === CHARITY_STATUS.WALLET_VERIFIED
+      );
+      
+      res.json({
+        pending,
+        awaitingApproval,
+      });
+    } catch (error) {
+      console.error("Get pending charities error:", error);
+      res.status(500).json({ error: "Failed to fetch pending charities" });
+    }
+  });
+
+  // Approve a charity (admin only)
+  app.post("/api/admin/charities/:id/approve", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const charity = await storage.getCharityById(req.params.id);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+
+      // Ensure both verifications are complete
+      if (!charity.emailVerifiedAt || !charity.walletVerifiedAt) {
+        return res.status(400).json({
+          error: "Charity must complete email and wallet verification before approval",
+          emailVerified: !!charity.emailVerifiedAt,
+          walletVerified: !!charity.walletVerifiedAt,
+        });
+      }
+
+      await storage.updateCharityStatus(charity.id, CHARITY_STATUS.APPROVED, new Date());
+
+      await storage.createAuditLog({
+        action: "CHARITY_APPROVED",
+        entityType: "charity",
+        entityId: charity.id,
+        details: JSON.stringify({ name: charity.name, walletAddress: charity.walletAddress }),
+      });
+
+      res.json({
+        success: true,
+        message: "Charity approved successfully",
+        charityId: charity.id,
+      });
+    } catch (error) {
+      console.error("Charity approval error:", error);
+      res.status(500).json({ error: "Failed to approve charity" });
+    }
+  });
+
+  // Deny a charity (admin only)
+  app.post("/api/admin/charities/:id/deny", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { reason } = req.body;
+      const charity = await storage.getCharityById(req.params.id);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+
+      await storage.updateCharityStatus(charity.id, CHARITY_STATUS.DENIED);
+
+      await storage.createAuditLog({
+        action: "CHARITY_DENIED",
+        entityType: "charity",
+        entityId: charity.id,
+        details: JSON.stringify({ name: charity.name, reason: reason || "Not specified" }),
+      });
+
+      res.json({
+        success: true,
+        message: "Charity application denied",
+        charityId: charity.id,
+      });
+    } catch (error) {
+      console.error("Charity denial error:", error);
+      res.status(500).json({ error: "Failed to deny charity" });
+    }
+  });
+
   // === TOKEN ENDPOINTS ===
 
   // Check if Bags SDK is configured
@@ -74,6 +419,14 @@ export async function registerRoutes(
         return res.status(400).json({
           success: false,
           error: "No charity selected and no default available",
+        });
+      }
+
+      // SECURITY: Enforce only approved/verified charities can be used for launches
+      if (charity.status !== CHARITY_STATUS.APPROVED) {
+        return res.status(400).json({
+          success: false,
+          error: "Selected charity has not been verified. Please choose an approved charity.",
         });
       }
 
@@ -163,6 +516,14 @@ export async function registerRoutes(
         return res.status(400).json({
           success: false,
           error: "Invalid charity ID - charity not found",
+        });
+      }
+
+      // SECURITY: Enforce only approved/verified charities can be used
+      if (charity.status !== CHARITY_STATUS.APPROVED) {
+        return res.status(400).json({
+          success: false,
+          error: "Selected charity has not been verified. Please choose an approved charity.",
         });
       }
       

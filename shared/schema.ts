@@ -6,10 +6,11 @@ import { relations } from "drizzle-orm";
 
 // Charity verification status enum values
 export const CHARITY_STATUS = {
-  PENDING: "pending",
-  CONTACTED: "contacted", 
-  VERIFIED: "verified",
-  DENIED: "denied",
+  PENDING: "pending",           // Initial submission
+  EMAIL_VERIFIED: "email_verified",  // Email ownership confirmed
+  WALLET_VERIFIED: "wallet_verified", // Wallet ownership confirmed (both email + wallet done)
+  APPROVED: "verified",         // Admin approved, ready to use
+  DENIED: "denied",             // Rejected
 } as const;
 
 // Impact categories for charity selection
@@ -38,8 +39,16 @@ export const charities = pgTable("charities", {
   isFeatured: boolean("is_featured").default(false),
   logoUrl: text("logo_url"),
   createdBy: text("created_by"),
+  // Verification fields
+  emailVerificationToken: text("email_verification_token"),
+  emailVerifiedAt: timestamp("email_verified_at"),
+  walletVerificationNonce: text("wallet_verification_nonce"),
+  walletVerifiedAt: timestamp("wallet_verified_at"),
   verifiedAt: timestamp("verified_at"),
   lastContactedAt: timestamp("last_contacted_at"),
+  // EIN/registration number for US 501(c)(3) or equivalent
+  registrationNumber: text("registration_number"),
+  submitterWallet: text("submitter_wallet"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -153,6 +162,7 @@ export type Donation = typeof donations.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
+export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
 // Fee constants
 export const CHARITY_FEE_PERCENTAGE = 1; // 1% royalty to charity
@@ -183,16 +193,10 @@ export const FEATURED_IMPACT_PROJECT = {
   category: "hunger",
 } as const;
 
-// Vetted charities - personally managed (excluding FYI since it has its own token)
+// Vetted charities - personally managed by admin
+// NOTE: Only add charities here after proper verification (email + wallet + admin approval)
+// The Water Project was removed as it was not properly vetted
 export const VETTED_CHARITIES = [
-  {
-    id: "the-water-project",
-    name: "The Water Project",
-    wallet: "WATERpVLQx4fGjFqJmqSqU1Jc7gU7eSdF8xvRtNsK9zP",
-    category: "community",
-    description: "Bringing clean, safe water to communities in sub-Saharan Africa",
-    website: "https://thewaterproject.org",
-  },
   {
     id: "julianas-animal-sanctuary",
     name: "Juliana's Animal Sanctuary",
@@ -205,3 +209,14 @@ export const VETTED_CHARITIES = [
 
 // Default charity (first in the list)
 export const DEFAULT_CHARITY = VETTED_CHARITIES[0];
+
+// Charity application validation schema
+export const charityApplicationSchema = z.object({
+  name: z.string().min(2, "Charity name must be at least 2 characters").max(100),
+  description: z.string().min(10, "Please provide a brief description").max(500),
+  category: z.string().min(1, "Please select a category"),
+  website: z.string().url("Please provide a valid website URL"),
+  email: z.string().email("Please provide a valid official email address"),
+  walletAddress: z.string().min(32, "Please provide a valid Solana wallet address").max(44),
+  registrationNumber: z.string().optional(),
+});

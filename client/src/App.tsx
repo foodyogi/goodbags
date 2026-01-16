@@ -9,6 +9,8 @@ import { Footer } from "@/components/footer";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import ImpactPage from "@/pages/impact";
+import CharityApply from "@/pages/charity-apply";
+import AdminCharities from "@/pages/admin-charities";
 import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
 import NotFound from "@/pages/not-found";
@@ -20,6 +22,8 @@ function MainRouter() {
       <Route path="/launch" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/impact" component={ImpactPage} />
+      <Route path="/charities/apply" component={CharityApply} />
+      <Route path="/admin/charities" component={AdminCharities} />
       <Route component={NotFound} />
     </Switch>
   );

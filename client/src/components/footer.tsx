@@ -1,4 +1,5 @@
-import { Heart, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
+import { Heart, ExternalLink, Building2 } from "lucide-react";
 import { SiSolana } from "react-icons/si";
 
 export function Footer() {
@@ -14,6 +15,14 @@ export function Footer() {
           </div>
 
           <div className="flex items-center gap-6">
+            <Link
+              href="/charities/apply"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="link-footer-register-charity"
+            >
+              <Building2 className="h-4 w-4" />
+              Register Charity
+            </Link>
             <a
               href="https://bags.fm"
               target="_blank"

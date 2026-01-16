@@ -22,9 +22,15 @@ export interface IStorage {
   createCharity(charity: InsertCharity): Promise<Charity>;
   getCharities(): Promise<Charity[]>;
   getVerifiedCharities(): Promise<Charity[]>;
+  getPendingCharities(): Promise<Charity[]>;
   getCharitiesByCategory(category: string): Promise<Charity[]>;
   getCharityById(id: string): Promise<Charity | undefined>;
+  getCharityByEmail(email: string): Promise<Charity | undefined>;
+  getCharityByEmailToken(token: string): Promise<Charity | undefined>;
   updateCharityStatus(id: string, status: string, verifiedAt?: Date): Promise<Charity | undefined>;
+  updateCharityEmailVerification(id: string, emailVerifiedAt: Date): Promise<Charity | undefined>;
+  updateCharityWalletVerification(id: string, walletVerifiedAt: Date): Promise<Charity | undefined>;
+  setCharityVerificationTokens(id: string, emailToken: string, walletNonce: string): Promise<Charity | undefined>;
   getDefaultCharity(): Promise<Charity | undefined>;
   seedDefaultCharities(): Promise<void>;
   
@@ -77,7 +83,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(charities)
-      .where(eq(charities.status, CHARITY_STATUS.VERIFIED))
+      .where(eq(charities.status, CHARITY_STATUS.APPROVED))
       .orderBy(desc(charities.isFeatured), charities.name);
   }
 
@@ -87,7 +93,7 @@ export class DatabaseStorage implements IStorage {
       .from(charities)
       .where(and(
         eq(charities.category, category),
-        eq(charities.status, CHARITY_STATUS.VERIFIED)
+        eq(charities.status, CHARITY_STATUS.APPROVED)
       ))
       .orderBy(desc(charities.isFeatured), charities.name);
   }
@@ -116,6 +122,69 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
+  async getPendingCharities(): Promise<Charity[]> {
+    return db
+      .select()
+      .from(charities)
+      .where(eq(charities.status, CHARITY_STATUS.PENDING))
+      .orderBy(desc(charities.createdAt));
+  }
+
+  async getCharityByEmail(email: string): Promise<Charity | undefined> {
+    const [charity] = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.email, email));
+    return charity || undefined;
+  }
+
+  async getCharityByEmailToken(token: string): Promise<Charity | undefined> {
+    const [charity] = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.emailVerificationToken, token));
+    return charity || undefined;
+  }
+
+  async setCharityVerificationTokens(id: string, emailToken: string, walletNonce: string): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({
+        emailVerificationToken: emailToken,
+        walletVerificationNonce: walletNonce,
+        updatedAt: new Date(),
+      })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCharityEmailVerification(id: string, emailVerifiedAt: Date): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({
+        emailVerifiedAt,
+        status: CHARITY_STATUS.EMAIL_VERIFIED,
+        updatedAt: new Date(),
+      })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCharityWalletVerification(id: string, walletVerifiedAt: Date): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({
+        walletVerifiedAt,
+        status: CHARITY_STATUS.WALLET_VERIFIED,
+        updatedAt: new Date(),
+      })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
   async getDefaultCharity(): Promise<Charity | undefined> {
     const [charity] = await db
       .select()
@@ -137,7 +206,7 @@ export class DatabaseStorage implements IStorage {
           category: charity.category,
           website: charity.website,
           walletAddress: charity.wallet,
-          status: CHARITY_STATUS.VERIFIED,
+          status: CHARITY_STATUS.APPROVED,
           isDefault: i === 0, // First one is default
           isFeatured: true,
         });

@@ -6,11 +6,24 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 
 ### Key Features
 - **Multi-charity system**: Creators choose their cause from verified charities by category
-- **Custom charity submission**: Submit new charities with verification workflow
+- **Automated charity verification**: 3-step verification process (email + wallet signature + admin approval)
 - **Fee structure**: 0.25% platform fee + 1% charity donation from trading fees
 - **Impact Dashboard**: Track donations with blockchain-verified transparency
-- **Charity verification**: Pending → Contacted → Verified → Active workflow
+- **Security**: Only verified charities can receive donations (enforced server-side)
 - **Audit logging**: All charity submissions and token launches tracked for compliance
+
+### Charity Verification Workflow
+1. **Submit Application** (`/charities/apply`): Charity provides name, email, wallet, website
+2. **Email Verification**: Verify ownership of charity email domain
+3. **Wallet Verification**: Sign a message with the charity wallet to prove ownership
+4. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
+5. **Active**: Charity appears in token launch dropdown
+
+### Security Model
+- Charity wallets are looked up server-side from vetted database (prevents fee diversion)
+- Only `APPROVED` status charities can be used for token launches
+- All wallet addresses validated before on-chain operations
+- Admin endpoints protected by ADMIN_SECRET environment variable
 
 ## User Preferences
 
