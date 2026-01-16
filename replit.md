@@ -60,6 +60,7 @@ Preferred communication style: Simple, everyday language.
   - `donations`: Tracks blockchain-verified charity donations with transaction signatures
   - `charities`: Registry of charities with verification status, wallet addresses, and categories
   - `audit_logs`: Security and compliance tracking for charity submissions and token launches
+  - `buybacks`: Tracks automated FYI token buyback transactions
 - **Schema Location**: `shared/schema.ts` contains all table definitions and Zod schemas
 
 ### Key Design Patterns
@@ -87,7 +88,9 @@ Preferred communication style: Simple, everyday language.
 - `BAGS_API_KEY`: Bags.fm SDK API key for token creation (required for real launches)
 - `SOLANA_RPC_URL`: Solana RPC endpoint URL
 - `SESSION_SECRET`: Session encryption secret
-- `PLATFORM_WALLET_ADDRESS` (optional): Platform wallet for fee collection (uses default if not set)
+- `PLATFORM_WALLET_ADDRESS`: Platform wallet for fee collection (set to buyback wallet)
+- `BUYBACK_WALLET_PRIVATE_KEY`: Private key for automated FYI buyback swaps
+- `ADMIN_SECRET`: Required in production for admin endpoints
 
 ### Token Launch Flow
 The token launch process uses a multi-step flow with wallet signing:
@@ -103,8 +106,19 @@ The token launch process uses a multi-step flow with wallet signing:
 - Platform wallet validated at startup; fails in production if invalid
 
 ### Partner Referral
-- Partner wallet (paulrodturner) integrated via Bags SDK's `partner` parameter
-- All token launches earn Bags.fm referral credits for the partner wallet
+- Partner wallet (FFLglobal: `3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr`) integrated via Bags SDK's `partner` parameter
+- All token launches earn Bags.fm referral credits for FFLglobal charity
+
+### Automated FYI Buyback System
+- **Purpose**: Platform fees automatically buy FYI tokens, creating buy pressure
+- **Buyback Wallet**: `8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8`
+- **Flow**: Platform fees (0.25%) → Buyback wallet → Auto-swap to FYI via Jupiter
+- **Frequency**: Checks every 60 minutes, swaps when balance ≥ 0.015 SOL
+- **Tracking**: All buybacks recorded in `buybacks` table with transaction signatures
+- **API Endpoints**:
+  - `GET /api/buyback/stats` - View buyback statistics
+  - `GET /api/buyback/history` - View buyback transaction history
+  - `POST /api/admin/buyback/execute` - Manually trigger buyback (admin only)
 
 ### Third-Party UI Libraries
 - **Radix UI**: Accessible component primitives (dialogs, dropdowns, tooltips, etc.)
