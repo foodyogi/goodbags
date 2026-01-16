@@ -89,6 +89,10 @@ The token launch process uses a multi-step flow with wallet signing:
 - All wallet addresses validated before on-chain operations
 - Platform wallet validated at startup; fails in production if invalid
 
+### Partner Referral
+- Partner wallet (paulrodturner) integrated via Bags SDK's `partner` parameter
+- All token launches earn Bags.fm referral credits for the partner wallet
+
 ### Third-Party UI Libraries
 - **Radix UI**: Accessible component primitives (dialogs, dropdowns, tooltips, etc.)
 - **Lucide React**: Icon library
