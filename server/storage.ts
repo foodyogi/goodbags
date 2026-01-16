@@ -3,6 +3,7 @@ import {
   donations,
   charities,
   auditLogs,
+  buybacks,
   type LaunchedToken, 
   type InsertLaunchedToken,
   type Donation,
@@ -11,6 +12,8 @@ import {
   type InsertCharity,
   type AuditLog,
   type InsertAuditLog,
+  type Buyback,
+  type InsertBuyback,
   CHARITY_STATUS,
   VETTED_CHARITIES,
 } from "@shared/schema";
@@ -60,6 +63,10 @@ export interface IStorage {
   // Audit methods
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(limit?: number): Promise<AuditLog[]>;
+  
+  // Buyback methods
+  createBuyback(buyback: InsertBuyback): Promise<Buyback>;
+  getAllBuybacks(): Promise<Buyback[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -368,6 +375,22 @@ export class DatabaseStorage implements IStorage {
       donationCount: tokenDonations.length,
       recentDonations: tokenDonations.slice(0, 10),
     };
+  }
+
+  // Buyback methods
+  async createBuyback(buyback: InsertBuyback): Promise<Buyback> {
+    const [newBuyback] = await db
+      .insert(buybacks)
+      .values(buyback)
+      .returning();
+    return newBuyback;
+  }
+
+  async getAllBuybacks(): Promise<Buyback[]> {
+    return db
+      .select()
+      .from(buybacks)
+      .orderBy(desc(buybacks.executedAt));
   }
 }
 

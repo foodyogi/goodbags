@@ -95,6 +95,17 @@ export const donations = pgTable("donations", {
   donatedAt: timestamp("donated_at").defaultNow().notNull(),
 });
 
+// FYI token buyback tracking
+export const buybacks = pgTable("buybacks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  solAmount: decimal("sol_amount", { precision: 18, scale: 9 }).notNull(),
+  fyiAmount: decimal("fyi_amount", { precision: 18, scale: 9 }).notNull(),
+  transactionSignature: text("transaction_signature").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  errorMessage: text("error_message"),
+  executedAt: timestamp("executed_at").defaultNow().notNull(),
+});
+
 // Relations
 export const charitiesRelations = relations(charities, ({ many }) => ({
   tokens: many(launchedTokens),
@@ -139,6 +150,11 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   createdAt: true,
 });
 
+export const insertBuybackSchema = createInsertSchema(buybacks).omit({
+  id: true,
+  executedAt: true,
+});
+
 // Validation schema for token launch form
 export const tokenLaunchFormSchema = z.object({
   name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
@@ -161,6 +177,8 @@ export type InsertDonation = z.infer<typeof insertDonationSchema>;
 export type Donation = typeof donations.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertBuyback = z.infer<typeof insertBuybackSchema>;
+export type Buyback = typeof buybacks.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 

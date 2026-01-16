@@ -14,6 +14,7 @@ import { randomUUID, randomBytes } from "crypto";
 import * as bagsSDK from "./bags-sdk";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
+import * as buybackService from "./buyback-service";
 
 // Admin secret for approving charities - MUST be set in production
 // In production, ADMIN_SECRET is required and must match the provided secret
@@ -52,6 +53,9 @@ export async function registerRoutes(
   
   // Seed default charities on startup
   await storage.seedDefaultCharities();
+  
+  // Initialize buyback service (auto-buys FYI with platform fees)
+  buybackService.initBuybackService();
 
   // === CHARITY ENDPOINTS ===
   
@@ -882,6 +886,61 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get creator impact error:", error);
       res.status(500).json({ error: "Failed to fetch creator impact" });
+    }
+  });
+
+  // === BUYBACK ENDPOINTS ===
+
+  // Get buyback stats (public)
+  app.get("/api/buyback/stats", async (req, res) => {
+    try {
+      const stats = await buybackService.getBuybackStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get buyback stats error:", error);
+      res.status(500).json({ error: "Failed to fetch buyback stats" });
+    }
+  });
+
+  // Get buyback history (public)
+  app.get("/api/buyback/history", async (req, res) => {
+    try {
+      const buybacks = await storage.getAllBuybacks();
+      res.json(buybacks);
+    } catch (error) {
+      console.error("Get buyback history error:", error);
+      res.status(500).json({ error: "Failed to fetch buyback history" });
+    }
+  });
+
+  // Trigger manual buyback (admin only)
+  app.post("/api/admin/buyback/execute", async (req, res) => {
+    const adminSecret = req.headers["x-admin-secret"] as string;
+    if (!isAdminAuthorized(adminSecret)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { amount } = req.body;
+      const result = await buybackService.executeBuyback(amount);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: `Buyback completed: ${result.solSpent?.toFixed(4)} SOL -> ${result.fyiReceived?.toFixed(2)} FYI`,
+          txSignature: result.txSignature,
+          solSpent: result.solSpent,
+          fyiReceived: result.fyiReceived,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error("Execute buyback error:", error);
+      res.status(500).json({ error: "Failed to execute buyback" });
     }
   });
 
