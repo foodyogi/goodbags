@@ -180,9 +180,9 @@ export const CREATOR_FEE_BPS = 10000 - CHARITY_FEE_BPS - PLATFORM_FEE_BPS; // Re
 
 // Partner referral wallet for earning Bags.fm credits
 // PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey
-// PARTNER_REF is the Bags.fm username (for URL references: bags.fm/?ref=paulrodturner)
-export const PARTNER_WALLET = "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP" as const;
-export const PARTNER_REF = "paulrodturner" as const;
+// All Bags.fm referral credits go to FFLglobal charity
+export const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr" as const;
+export const PARTNER_REF = "fflglobal" as const;
 
 // Featured impact project - existing FYI token on Bags.fm
 export const FEATURED_IMPACT_PROJECT = {
