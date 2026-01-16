@@ -42,7 +42,7 @@ export function HeroSection() {
             
             <p className="text-lg text-muted-foreground max-w-lg">
               Create and launch your own Solana memecoins with built-in charity donations. 
-              Support Food Yoga International or Juliana&apos;s Animal Sanctuary with every trade.
+              Support The Water Project or Juliana&apos;s Animal Sanctuary with every trade.
             </p>
             
             <div className="flex flex-wrap gap-4">

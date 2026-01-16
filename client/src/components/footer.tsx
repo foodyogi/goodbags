@@ -10,7 +10,7 @@ export function Footer() {
             <span>Built with</span>
             <Heart className="h-4 w-4 text-pink-500" />
             <span>by</span>
-            <span className="font-medium text-foreground">Solimpact</span>
+            <span className="font-medium text-foreground">GoodBags</span>
           </div>
 
           <div className="flex items-center gap-6">

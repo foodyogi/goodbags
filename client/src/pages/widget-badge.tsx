@@ -46,7 +46,7 @@ export default function WidgetBadge() {
           </div>
           <div>
             <h3 className="font-semibold text-white text-sm leading-tight">
-              {truncateAddress(wallet || "")} is a Solimpact {impactData?.certified ? 'certified creator' : 'supporter'}.
+              {truncateAddress(wallet || "")} is a GoodBags {impactData?.certified ? 'certified creator' : 'supporter'}.
             </h3>
             <p className="text-xs text-gray-400 mt-1">
               {impactData?.certified 
@@ -60,7 +60,7 @@ export default function WidgetBadge() {
             <Heart className="h-3 w-3" />
             <span>Verified Impact</span>
           </div>
-          <span className="text-gray-500">Solimpact</span>
+          <span className="text-gray-500">GoodBags</span>
         </div>
       </div>
     </div>

@@ -200,7 +200,7 @@ export default function ImpactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">
-                    {truncateAddress(publicKey?.toBase58() || "")} is {impactData?.certified ? '' : 'not yet '}Solimpact certified.
+                    {truncateAddress(publicKey?.toBase58() || "")} is {impactData?.certified ? '' : 'not yet '}GoodBags certified.
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {impactData?.certified 

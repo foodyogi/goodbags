@@ -1,8 +1,8 @@
-# Solimpact - Solana Memecoin Launcher for Social Impact
+# GoodBags - Solana Memecoin Launcher for Social Impact
 
 ## Overview
 
-Solimpact is a Solana-based memecoin launcher platform that enables users to create and launch their own memecoins with built-in charity donations. Token creators choose their own impact cause during launch, selecting from verified charities across categories like hunger, environment, education, health, animals, disaster relief, and community.
+GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by Bags.fm that enables users to create and launch their own memecoins with built-in charity donations. Token creators choose their own impact cause during launch, selecting from verified charities across categories like hunger, environment, education, health, animals, disaster relief, and community.
 
 ### Key Features
 - **Multi-charity system**: Creators choose their cause from verified charities by category
