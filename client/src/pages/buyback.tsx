@@ -13,7 +13,7 @@ import {
   Wallet
 } from "lucide-react";
 import { format } from "date-fns";
-import fyiIconUrl from "@assets/FYC_icon_1768678217640.png";
+import { FyiCoin } from "@/components/fyi-coin";
 
 interface BuybackStats {
   totalSolSpent: string;
@@ -39,18 +39,18 @@ function truncateSignature(sig: string): string {
   return `${sig.slice(0, 8)}...${sig.slice(-8)}`;
 }
 
-function StatCard({ icon: Icon, label, value, color, useImage }: { icon?: React.ElementType; label: string; value: string; color: string; useImage?: boolean }) {
+function StatCard({ icon: Icon, label, value, color, useFyiCoin }: { icon?: React.ElementType; label: string; value: string; color: string; useFyiCoin?: boolean }) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center gap-4">
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${useImage ? '' : color}`}>
-            {useImage ? (
-              <img src={fyiIconUrl} alt="FYI" className="h-12 w-12" />
-            ) : Icon ? (
-              <Icon className="h-6 w-6 text-white" />
-            ) : null}
-          </div>
+          {useFyiCoin ? (
+            <FyiCoin size="md" />
+          ) : (
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${color}`}>
+              {Icon && <Icon className="h-6 w-6 text-white" />}
+            </div>
+          )}
           <div>
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="text-2xl font-bold">{value}</p>
@@ -112,7 +112,7 @@ export default function BuybackPage() {
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
-              <img src={fyiIconUrl} alt="FYI" className="h-5 w-5" />
+              <FyiCoin size="sm" />
               <span className="text-sm font-medium">FYI Buy Pressure</span>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function BuybackPage() {
                 label="Total FYI Bought"
                 value={`${parseFloat(stats?.totalFyiBought ?? "0").toFixed(2)} FYI`}
                 color=""
-                useImage={true}
+                useFyiCoin={true}
               />
               <StatCard
                 icon={RefreshCw}
