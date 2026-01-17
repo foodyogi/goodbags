@@ -182,12 +182,12 @@ export type Buyback = typeof buybacks.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
-// Fee constants - 100% charity model
-// The full 1% trading royalty goes to charity, PLUS an additional 0.25% platform fee
-// Total fee: 1.25% (1% charity + 0.25% platform)
-export const CHARITY_FEE_PERCENTAGE = 1; // Full 1% trading royalty to charity
-export const PLATFORM_FEE_PERCENTAGE = 0.25; // Additional 0.25% platform fee for FYI buyback
-export const TOTAL_FEE_PERCENTAGE = 1.25; // Total: 1% + 0.25% = 1.25%
+// Fee constants - Bot-friendly 1% total fee
+// Split: 0.75% to charity + 0.25% platform fee for FYI buyback = 1% total
+// This keeps total tax at 1% so trading bots can participate
+export const CHARITY_FEE_PERCENTAGE = 0.75; // 0.75% to charity
+export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee for FYI buyback
+export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1% (bot-friendly)
 export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 
 // Platform wallet for collecting platform fees (must be set in environment or use a default devnet address)
@@ -196,10 +196,10 @@ export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as const;
 
 // Convert percentage to basis points (1% = 100 bps, 0.25% = 25 bps)
-// Charity: 1% = 100 bps, Platform: 0.25% = 25 bps, Total: 125 bps
-export const CHARITY_FEE_BPS = 100; // 1%
+// Charity: 0.75% = 75 bps, Platform: 0.25% = 25 bps, Total: 100 bps (1%)
+export const CHARITY_FEE_BPS = 75; // 0.75%
 export const PLATFORM_FEE_BPS = 25; // 0.25%
-export const TOTAL_FEE_BPS = 125; // 1.25% total
+export const TOTAL_FEE_BPS = 100; // 1% total
 export const CREATOR_FEE_BPS = 0; // Creator receives nothing
 
 // Partner referral wallet for earning Bags.fm credits

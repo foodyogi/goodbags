@@ -27,7 +27,7 @@ export function HeroSection() {
             <div className="inline-flex items-center gap-2 w-fit rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
               <Heart className="h-4 w-4 text-pink-500" />
               <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
-                100% of trading royalties go to charity
+                0.75% of every trade goes to charity
               </span>
             </div>
             
@@ -89,8 +89,8 @@ export function HeroSection() {
               />
               <FeatureCard
                 icon={Heart}
-                title="100% For Charity"
-                description="All trading royalties go directly to your chosen cause"
+                title="0.75% For Charity"
+                description="Most of the trading royalty goes to your chosen cause"
                 gradient="from-pink-500/20 to-pink-500/5"
               />
               <FeatureCard

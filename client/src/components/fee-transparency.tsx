@@ -38,14 +38,14 @@ export function FeeTransparency() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5 mb-4" data-testid="badge-transparency">
             <Heart className="h-4 w-4 text-pink-500" />
-            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">100% For Charity</span>
+            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">Bot-Friendly 1% Fee</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold mb-3" data-testid="heading-fee-breakdown">
             Every Trade Supports Your Cause
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Unlike other platforms where creators keep trading fees, GoodBags sends 
-            the entire royalty to your chosen charity. Real impact, every trade.
+            most of the royalty to your chosen charity. 1% total keeps bots trading.
           </p>
         </div>
 
