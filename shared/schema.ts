@@ -7,6 +7,7 @@ import { relations } from "drizzle-orm";
 // Charity verification status enum values
 export const CHARITY_STATUS = {
   PENDING: "pending",           // Initial submission
+  EIN_VERIFIED: "ein_verified", // EIN verified against Every.org
   EMAIL_VERIFIED: "email_verified",  // Email ownership confirmed
   WALLET_VERIFIED: "wallet_verified", // Wallet ownership confirmed (both email + wallet done)
   APPROVED: "verified",         // Admin approved, ready to use
@@ -49,6 +50,16 @@ export const charities = pgTable("charities", {
   // EIN/registration number for US 501(c)(3) or equivalent
   registrationNumber: text("registration_number"),
   submitterWallet: text("submitter_wallet"),
+  // Every.org verification fields
+  everyOrgId: text("every_org_id"),
+  everyOrgSlug: text("every_org_slug"),
+  everyOrgVerified: boolean("every_org_verified").default(false),
+  everyOrgVerifiedAt: timestamp("every_org_verified_at"),
+  everyOrgName: text("every_org_name"),
+  everyOrgDescription: text("every_org_description"),
+  everyOrgWebsite: text("every_org_website"),
+  everyOrgLogoUrl: text("every_org_logo_url"),
+  everyOrgIsDisbursable: boolean("every_org_is_disbursable").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
