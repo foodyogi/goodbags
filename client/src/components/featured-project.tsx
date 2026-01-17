@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Heart, Utensils } from "lucide-react";
+import { ExternalLink, Heart } from "lucide-react";
 import { FEATURED_IMPACT_PROJECT } from "@shared/schema";
+import fyiIconUrl from "@assets/FYC_icon_1768678217640.png";
 
 export function FeaturedProject() {
   return (
@@ -19,8 +20,8 @@ export function FeaturedProject() {
         <Card className="max-w-2xl mx-auto" data-testid="card-featured-project">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row flex-wrap items-center gap-6">
-              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-muted dark:bg-muted flex items-center justify-center">
-                <Utensils className="w-8 h-8 text-foreground" />
+              <div className="flex-shrink-0">
+                <img src={fyiIconUrl} alt="FYI Token" className="w-16 h-16" />
               </div>
               
               <div className="flex-1 text-center sm:text-left">

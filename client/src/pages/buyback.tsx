@@ -13,6 +13,7 @@ import {
   Wallet
 } from "lucide-react";
 import { format } from "date-fns";
+import fyiIconUrl from "@assets/FYC_icon_1768678217640.png";
 
 interface BuybackStats {
   totalSolSpent: string;
@@ -38,13 +39,17 @@ function truncateSignature(sig: string): string {
   return `${sig.slice(0, 8)}...${sig.slice(-8)}`;
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string; color: string }) {
+function StatCard({ icon: Icon, label, value, color, useImage }: { icon?: React.ElementType; label: string; value: string; color: string; useImage?: boolean }) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center gap-4">
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${color}`}>
-            <Icon className="h-6 w-6 text-white" />
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${useImage ? '' : color}`}>
+            {useImage ? (
+              <img src={fyiIconUrl} alt="FYI" className="h-12 w-12" />
+            ) : Icon ? (
+              <Icon className="h-6 w-6 text-white" />
+            ) : null}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{label}</p>
@@ -107,7 +112,7 @@ export default function BuybackPage() {
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
-              <TrendingUp className="h-5 w-5 text-green-500" />
+              <img src={fyiIconUrl} alt="FYI" className="h-5 w-5" />
               <span className="text-sm font-medium">FYI Buy Pressure</span>
             </div>
           </div>
@@ -139,10 +144,10 @@ export default function BuybackPage() {
                 color="bg-primary"
               />
               <StatCard
-                icon={TrendingUp}
                 label="Total FYI Bought"
                 value={`${parseFloat(stats?.totalFyiBought ?? "0").toFixed(2)} FYI`}
-                color="bg-green-500 dark:bg-green-600"
+                color=""
+                useImage={true}
               />
               <StatCard
                 icon={RefreshCw}
