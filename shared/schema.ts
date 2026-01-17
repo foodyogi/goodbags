@@ -182,9 +182,11 @@ export type Buyback = typeof buybacks.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
-// Fee constants
-export const CHARITY_FEE_PERCENTAGE = 1; // 1% royalty to charity
-export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee
+// Fee constants - 100% charity model
+// The entire 1% trading royalty goes to charity (minus small platform fee)
+export const CHARITY_FEE_PERCENTAGE = 99.75; // 99.75% of the 1% royalty goes to charity
+export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% of the 1% royalty for platform/buyback
+export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 
 // Platform wallet for collecting platform fees (must be set in environment or use a default devnet address)
 // In production, set PLATFORM_WALLET_ADDRESS environment variable
@@ -192,9 +194,10 @@ export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee
 export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as const;
 
 // Convert percentage to basis points (1% = 100 bps, 0.25% = 25 bps)
-export const CHARITY_FEE_BPS = 100; // 1%
+// 99.75% to charity = 9975 bps, 0.25% to platform = 25 bps
+export const CHARITY_FEE_BPS = 9975; // 99.75%
 export const PLATFORM_FEE_BPS = 25; // 0.25%
-export const CREATOR_FEE_BPS = 10000 - CHARITY_FEE_BPS - PLATFORM_FEE_BPS; // Remainder to creator
+export const CREATOR_FEE_BPS = 0; // Creator receives nothing
 
 // Partner referral wallet for earning Bags.fm credits
 // PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey

@@ -9,8 +9,6 @@ import {
   TrendingUp, 
   CheckCircle,
   Rocket,
-  ExternalLink,
-  Users,
   Lock,
   Eye,
   FileCheck,
@@ -35,7 +33,7 @@ const steps = [
   {
     step: 3,
     title: "Launch on Solana",
-    description: "Your token goes live with built-in trading fees that automatically split to you, charity, and the FYI buyback.",
+    description: "Your token goes live with built-in trading fees that automatically go to your chosen charity.",
     icon: TrendingUp,
     color: "bg-secondary",
   },
@@ -111,40 +109,31 @@ export default function HowItWorksPage() {
 
         <section className="mb-16">
           <div className="text-center mb-8">
+            <Badge className="mb-4 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">
+              <Heart className="h-3 w-3 mr-1" />
+              100% For Charity
+            </Badge>
             <h2 className="text-2xl font-bold mb-3">Trading Fee Distribution</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Every trade on a GoodBags token splits fees transparently. 
-              This is enforced on-chain - no one can change these percentages.
+              Unlike other platforms where creators keep trading fees, GoodBags sends 
+              the entire 1% royalty to your chosen charity. This is enforced on-chain.
             </p>
           </div>
           
           <Card className="max-w-3xl mx-auto" data-testid="section-fee-split">
             <CardContent className="p-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Token Creator</p>
-                      <p className="text-sm text-muted-foreground">Your earnings from trades</p>
-                    </div>
-                  </div>
-                  <Badge className="text-lg px-4 py-1">98.75%</Badge>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-pink-500/5 border border-pink-500/20">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-500 dark:bg-pink-600">
                       <Heart className="h-5 w-5 text-white" />
                     </div>
                     <div>
                       <p className="font-medium">Your Chosen Charity</p>
-                      <p className="text-sm text-muted-foreground">Automatic donation on every trade</p>
+                      <p className="text-sm text-muted-foreground">The full trading royalty goes to verified charities</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">1%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">99.75%</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -154,7 +143,7 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">FYI Token Buyback</p>
-                      <p className="text-sm text-muted-foreground">Auto-buys FYI every hour</p>
+                      <p className="text-sm text-muted-foreground">Small platform fee auto-buys FYI every hour</p>
                     </div>
                   </div>
                   <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.25%</Badge>
@@ -167,8 +156,8 @@ export default function HowItWorksPage() {
                   <div>
                     <p className="text-sm font-medium">Plus: Bags.fm Referral Credits</p>
                     <p className="text-sm text-muted-foreground">
-                      All token launches earn Bags.fm referral credits for FFLglobal charity, 
-                      providing additional support beyond trading fees.
+                      All token launches also earn Bags.fm referral credits for Food Yoga International, 
+                      providing even more support beyond trading fees.
                     </p>
                   </div>
                 </div>
