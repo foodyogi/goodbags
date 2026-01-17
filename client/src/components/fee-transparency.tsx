@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { Heart, Coins, TrendingUp, Shield, ArrowRight } from "lucide-react";
+import { Heart, Coins, TrendingUp, ArrowRight, Plus } from "lucide-react";
 import { 
   CHARITY_FEE_PERCENTAGE, 
-  PLATFORM_FEE_PERCENTAGE 
+  PLATFORM_FEE_PERCENTAGE,
+  TOTAL_FEE_PERCENTAGE
 } from "@shared/schema";
 
 interface FeeRowProps {
@@ -51,11 +52,11 @@ export function FeeTransparency() {
         <Card className="max-w-2xl mx-auto p-6">
           <div className="mb-6 p-4 rounded-lg bg-pink-500/5 border border-pink-500/20">
             <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
-              <span className="text-muted-foreground">Every trade</span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">1% royalty</span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold text-pink-600 dark:text-pink-400">Goes to charity</span>
+              <span className="font-semibold text-pink-600 dark:text-pink-400">{CHARITY_FEE_PERCENTAGE}% to charity</span>
+              <Plus className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold">{PLATFORM_FEE_PERCENTAGE}% platform</span>
+              <span className="text-muted-foreground">=</span>
+              <span className="font-bold">{TOTAL_FEE_PERCENTAGE}% total per trade</span>
             </div>
           </div>
           
@@ -69,9 +70,9 @@ export function FeeTransparency() {
               testId="fee-row-charity"
             />
             <FeeRow
-              percentage={`${PLATFORM_FEE_PERCENTAGE}%`}
+              percentage={`+${PLATFORM_FEE_PERCENTAGE}%`}
               recipient="to FYI Buyback"
-              description="Small platform fee used to buy FYI tokens, supporting the ecosystem"
+              description="Additional platform fee auto-buys FYI tokens, supporting the ecosystem"
               icon={TrendingUp}
               color="bg-secondary"
               testId="fee-row-platform"

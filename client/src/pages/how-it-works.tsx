@@ -116,7 +116,7 @@ export default function HowItWorksPage() {
             <h2 className="text-2xl font-bold mb-3">Trading Fee Distribution</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Unlike other platforms where creators keep trading fees, GoodBags sends 
-              the entire 1% royalty to your chosen charity. This is enforced on-chain.
+              the full 1% royalty to your chosen charity, plus a small platform fee. Total: 1.25% per trade.
             </p>
           </div>
           
@@ -133,7 +133,7 @@ export default function HowItWorksPage() {
                       <p className="text-sm text-muted-foreground">The full trading royalty goes to verified charities</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">99.75%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">1%</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -143,10 +143,14 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">FYI Token Buyback</p>
-                      <p className="text-sm text-muted-foreground">Small platform fee auto-buys FYI every hour</p>
+                      <p className="text-sm text-muted-foreground">Additional platform fee auto-buys FYI every hour</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.25%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">+0.25%</Badge>
+                </div>
+
+                <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
+                  <p className="text-sm font-medium">Total per trade: <span className="text-primary">1.25%</span></p>
                 </div>
               </div>
 
