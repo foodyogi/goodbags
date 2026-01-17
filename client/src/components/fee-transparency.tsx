@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Heart, Coins, TrendingUp, Users, Shield } from "lucide-react";
+import { Heart, Coins, TrendingUp, Users, Shield, ArrowRight } from "lucide-react";
 import { 
   CHARITY_FEE_PERCENTAGE, 
   PLATFORM_FEE_PERCENTAGE 
@@ -42,36 +42,46 @@ export function FeeTransparency() {
             <span className="text-sm font-medium text-primary">Full Transparency</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold mb-3" data-testid="heading-fee-breakdown">
-            Where Your Trading Fees Go
+            How Trading Royalties Work
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Every trade on GoodBags tokens splits fees transparently on-chain. 
-            No hidden costs, no surprises. Here's exactly how it works:
+            Like all Bags.fm tokens, creators earn 1% royalty on every trade. 
+            On GoodBags, that royalty is split to include charity donations:
           </p>
         </div>
 
         <Card className="max-w-2xl mx-auto p-6">
+          <div className="mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Every trade</span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold">1% royalty</span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Split as follows:</span>
+            </div>
+          </div>
+          
           <div className="space-y-3">
             <FeeRow
               percentage={`${CREATOR_FEE_PERCENTAGE}%`}
-              recipient="Token Creator"
-              description="You keep the vast majority of all trading fees"
+              recipient="to Creator"
+              description="You receive the majority of all trading royalties"
               icon={Users}
               color="bg-primary"
               testId="fee-row-creator"
             />
             <FeeRow
               percentage={`${CHARITY_FEE_PERCENTAGE}%`}
-              recipient="Your Chosen Charity"
-              description="Automatically donated to verified charities on every trade"
+              recipient="to Charity"
+              description="Automatically donated to your chosen verified charity"
               icon={Heart}
               color="bg-pink-500 dark:bg-pink-600"
               testId="fee-row-charity"
             />
             <FeeRow
               percentage={`${PLATFORM_FEE_PERCENTAGE}%`}
-              recipient="FYI Token Buyback"
-              description="Platform fees automatically buy FYI tokens, supporting the ecosystem"
+              recipient="to FYI Buyback"
+              description="Platform fee used to buy FYI tokens, supporting the ecosystem"
               icon={TrendingUp}
               color="bg-secondary"
               testId="fee-row-platform"
@@ -84,8 +94,8 @@ export function FeeTransparency() {
               <div>
                 <p className="text-sm font-medium">Bags.fm Referral Credits</p>
                 <p className="text-sm text-muted-foreground">
-                  All token launches earn Bags.fm referral credits for FFLglobal charity, 
-                  providing additional support beyond trading fees.
+                  All token launches earn Bags.fm referral credits for Food Yoga International, 
+                  providing additional support beyond trading royalties.
                 </p>
               </div>
             </div>
