@@ -160,8 +160,8 @@ export default function HowItWorksPage() {
                   <div>
                     <p className="text-sm font-medium">Plus: Bags.fm Referral Credits</p>
                     <p className="text-sm text-muted-foreground">
-                      All token launches also earn Bags.fm referral credits for Food Yoga International, 
-                      providing even more support beyond trading fees.
+                      All token launches also earn Bags.fm referral credits, which automatically 
+                      buy FYI tokens to support platform growth and sustainability.
                     </p>
                   </div>
                 </div>

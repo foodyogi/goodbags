@@ -115,8 +115,8 @@ The token launch process uses a multi-step flow with wallet signing:
 - Platform wallet validated at startup; fails in production if invalid
 
 ### Partner Referral
-- Partner wallet (FFLglobal: `3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr`) integrated via Bags SDK's `partner` parameter
-- All token launches earn Bags.fm referral credits for FFLglobal charity
+- Partner wallet set to buyback wallet (`8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8`) via Bags SDK's `partner` parameter
+- All Bags.fm referral credits go to buyback wallet for automatic FYI token purchases
 
 ### Automated FYI Buyback System
 - **Purpose**: Platform fees automatically buy FYI tokens, creating buy pressure

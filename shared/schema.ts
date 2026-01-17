@@ -204,9 +204,9 @@ export const CREATOR_FEE_BPS = 0; // Creator receives nothing
 
 // Partner referral wallet for earning Bags.fm credits
 // PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey
-// All Bags.fm referral credits go to FFLglobal charity
-export const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr" as const;
-export const PARTNER_REF = "fflglobal" as const;
+// Referral credits go to buyback wallet for automatic FYI token purchases
+export const PARTNER_WALLET = "8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8" as const;
+export const PARTNER_REF = "goodbags" as const;
 
 // Featured impact project - existing FYI token on Bags.fm
 export const FEATURED_IMPACT_PROJECT = {
