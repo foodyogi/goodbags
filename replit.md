@@ -21,12 +21,20 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 - `/how-it-works` - Complete explanation of the platform, fee distribution, and security features
 - `/dashboard` - All launched tokens with trading volume and donation stats
 
-### Charity Verification Workflow
-1. **Submit Application** (`/charities/apply`): Charity provides name, email, wallet, website
-2. **Email Verification**: Verify ownership of charity email domain
-3. **Wallet Verification**: Sign a message with the charity wallet to prove ownership
-4. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
-5. **Active**: Charity appears in token launch dropdown
+### Charity Verification Workflow (5-Step Wizard)
+1. **EIN Verification** (`/charities/apply`): Charity enters EIN (Tax ID), verified against Every.org API
+2. **Organization Info**: Pre-filled form with Every.org data, user adds category and email
+3. **Email Verification**: Verify ownership of charity email domain
+4. **Wallet Setup & Verification**: Connect Solana wallet (with Phantom/Solflare guidance) and sign message to prove ownership
+5. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
+6. **Active**: Charity appears in token launch dropdown
+
+### Every.org Integration
+- **Purpose**: Verify US 501(c)(3) nonprofits by their EIN before registration
+- **API Endpoint**: `POST /api/charities/verify-ein` validates EIN against Every.org database
+- **Data Retrieved**: Organization name, description, website, logo, disbursable status
+- **Security**: Server-side re-verification in `/api/charities/apply` prevents client bypassing
+- **Status Flow**: EIN_VERIFIED → EMAIL_VERIFIED → WALLET_VERIFIED → PENDING → APPROVED
 
 ### Security Model
 - Charity wallets are looked up server-side from vetted database (prevents fee diversion)
@@ -100,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 - `PLATFORM_WALLET_ADDRESS`: Platform wallet for fee collection (set to buyback wallet)
 - `BUYBACK_WALLET_PRIVATE_KEY`: Private key for automated FYI buyback swaps
 - `ADMIN_SECRET`: Required in production for admin endpoints
+- `EVERY_ORG_API_KEY`: Every.org API key for nonprofit EIN verification (get from https://www.every.org/developer)
 
 ### Token Launch Flow
 The token launch process uses a multi-step flow with wallet signing:
