@@ -16,7 +16,7 @@ const exampleCoins = [
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden py-8 md:py-24">
+    <section className="relative overflow-hidden py-8 md:py-16">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
       <div className="absolute top-20 left-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-10 right-10 h-96 w-96 rounded-full bg-secondary/10 blur-3xl" />
