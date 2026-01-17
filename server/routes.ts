@@ -795,11 +795,13 @@ export async function registerRoutes(
           id: token.id,
           name: token.name,
           symbol: token.symbol,
+          description: token.description,
           mintAddress: token.mintAddress,
           imageUrl: token.imageUrl,
           creatorWallet: token.creatorWallet,
           launchedAt: token.launchedAt,
           charityId: token.charityId,
+          tradingVolume: token.tradingVolume,
         },
         impact: impact || {
           totalDonated: "0",

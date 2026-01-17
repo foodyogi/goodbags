@@ -2,8 +2,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, Heart, TrendingUp, Clock, Coins } from "lucide-react";
+import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { Link } from "wouter";
 import type { LaunchedToken } from "@shared/schema";
 
 interface TokenCardProps {
@@ -79,20 +80,28 @@ export function TokenCard({ token }: TokenCardProps) {
         </div>
       </CardContent>
       
-      <CardFooter className="pt-0">
+      <CardFooter className="pt-0 flex gap-2">
+        <Link href={`/token/${token.mintAddress}`} className="flex-1">
+          <Button 
+            variant="default" 
+            className="w-full gap-2" 
+            data-testid={`button-view-details-${token.id}`}
+          >
+            View Details
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
         <a
           href={`https://solscan.io/token/${token.mintAddress}?cluster=devnet`}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full"
         >
           <Button 
             variant="outline" 
-            className="w-full gap-2" 
-            data-testid={`button-view-token-${token.id}`}
+            size="icon"
+            data-testid={`button-view-solscan-${token.id}`}
           >
             <ExternalLink className="h-4 w-4" />
-            View on Solscan
           </Button>
         </a>
       </CardFooter>

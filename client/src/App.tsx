@@ -17,6 +17,7 @@ import HowItWorksPage from "@/pages/how-it-works";
 import FoodYogaInternational from "@/pages/food-yoga-international";
 import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
+import TokenDetailPage from "@/pages/token-detail";
 import NotFound from "@/pages/not-found";
 
 function MainRouter() {
@@ -33,6 +34,7 @@ function MainRouter() {
       <Route path="/ffl" component={FoodYogaInternational} />
       <Route path="/food-yoga-international" component={FoodYogaInternational} />
       <Route path="/admin/charities" component={AdminCharities} />
+      <Route path="/token/:mint" component={TokenDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );
