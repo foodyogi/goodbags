@@ -277,13 +277,13 @@ export default function FoodYogaInternational() {
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-xl font-bold mb-2">GoodBags Partnership</h3>
                 <p className="text-muted-foreground mb-4">
-                  Food Yoga International is a founding partner of GoodBags. All token launches on GoodBags 
-                  earn referral credits that support FYI's global mission to feed the hungry.
+                  Food Yoga International is a founding partner and verified charity on GoodBags. 
+                  Token creators can select FYI to receive 0.75% of all trading royalties from their tokens.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                   <Badge variant="outline" className="bg-background">
                     <Target className="h-3 w-3 mr-1" />
-                    Referral Partner
+                    Founding Partner
                   </Badge>
                   <Badge variant="outline" className="bg-background">
                     <Shield className="h-3 w-3 mr-1" />
