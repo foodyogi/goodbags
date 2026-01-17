@@ -191,7 +191,7 @@ export async function registerRoutes(
   app.post("/api/charities/apply", async (req, res) => {
     try {
       const validated = charityApplicationSchema.parse(req.body);
-      const { submitterWallet } = req.body;
+      const { submitterWallet, everyOrgData } = req.body;
       
       // Check if charity with this email already exists
       const existingByEmail = await storage.getCharityByEmail(validated.email);
@@ -201,8 +201,54 @@ export async function registerRoutes(
           error: "A charity with this email has already been submitted",
         });
       }
+      
+      // Check if charity with this EIN already exists
+      if (validated.registrationNumber) {
+        const existingByEin = await storage.getCharityByEin(validated.registrationNumber);
+        if (existingByEin) {
+          return res.status(400).json({
+            success: false,
+            error: "A charity with this EIN has already been submitted",
+          });
+        }
+      }
 
-      // Create the charity with pending status
+      // SERVER-SIDE VERIFICATION: If everyOrgData is provided, verify the EIN against Every.org again
+      // This prevents clients from bypassing verification by submitting fake everyOrgData
+      let verifiedEveryOrgData = null;
+      if (everyOrgData && validated.registrationNumber) {
+        const everyOrgApiKey = process.env.EVERY_ORG_API_KEY;
+        if (everyOrgApiKey) {
+          const cleanEin = validated.registrationNumber.replace(/[-\s]/g, "");
+          const everyOrgUrl = `https://partners.every.org/v0.2/nonprofit/${cleanEin}?apiKey=${everyOrgApiKey}`;
+          
+          try {
+            const everyOrgResponse = await fetch(everyOrgUrl);
+            if (everyOrgResponse.ok) {
+              const everyOrgResult = await everyOrgResponse.json();
+              const nonprofit = everyOrgResult.data?.nonprofit;
+              
+              if (nonprofit && nonprofit.ein === cleanEin) {
+                // Server-verified: use server-fetched data, not client data
+                verifiedEveryOrgData = {
+                  everyOrgId: nonprofit.id,
+                  everyOrgSlug: nonprofit.primarySlug,
+                  everyOrgName: nonprofit.name,
+                  everyOrgDescription: nonprofit.description || nonprofit.descriptionLong || "",
+                  everyOrgWebsite: nonprofit.websiteUrl || "",
+                  everyOrgLogoUrl: nonprofit.logoUrl || "",
+                  everyOrgIsDisbursable: nonprofit.isDisbursable || false,
+                };
+              }
+            }
+          } catch (verifyError) {
+            console.error("Failed to verify EIN with Every.org during apply:", verifyError);
+            // Continue without EIN_VERIFIED status
+          }
+        }
+      }
+
+      // Create the charity - only set EIN_VERIFIED if server verified the data
       const charity = await storage.createCharity({
         name: validated.name,
         description: validated.description,
@@ -212,7 +258,16 @@ export async function registerRoutes(
         walletAddress: validated.walletAddress,
         registrationNumber: validated.registrationNumber,
         submitterWallet: submitterWallet || null,
-        status: CHARITY_STATUS.PENDING,
+        status: verifiedEveryOrgData ? CHARITY_STATUS.EIN_VERIFIED : CHARITY_STATUS.PENDING,
+        everyOrgId: verifiedEveryOrgData?.everyOrgId || null,
+        everyOrgSlug: verifiedEveryOrgData?.everyOrgSlug || null,
+        everyOrgName: verifiedEveryOrgData?.everyOrgName || null,
+        everyOrgDescription: verifiedEveryOrgData?.everyOrgDescription || null,
+        everyOrgWebsite: verifiedEveryOrgData?.everyOrgWebsite || null,
+        everyOrgLogoUrl: verifiedEveryOrgData?.everyOrgLogoUrl || null,
+        everyOrgIsDisbursable: verifiedEveryOrgData?.everyOrgIsDisbursable || null,
+        everyOrgVerified: verifiedEveryOrgData ? true : false,
+        everyOrgVerifiedAt: verifiedEveryOrgData ? new Date() : null,
       });
 
       // Generate verification tokens
