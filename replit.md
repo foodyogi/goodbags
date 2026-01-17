@@ -15,6 +15,7 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 
 ### Public Transparency Pages
 - `/` - Homepage with live impact stats (auto-refreshing every 30s) and fee breakdown
+- `/ffl` - Dedicated page for Food Yoga International (founding partner charity)
 - `/charities` - Public list of all verified charities with Solscan verification links
 - `/buyback` - FYI Token Buyback Dashboard showing all buyback transactions
 - `/how-it-works` - Complete explanation of the platform, fee distribution, and security features

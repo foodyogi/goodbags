@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info } from "lucide-react";
+import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils } from "lucide-react";
 import { SiSolana } from "react-icons/si";
 
 export function Footer() {
@@ -19,6 +19,14 @@ export function Footer() {
           <div>
             <p className="text-sm font-semibold mb-3">Transparency</p>
             <div className="flex flex-col gap-2">
+              <Link
+                href="/ffl"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-ffl"
+              >
+                <Utensils className="h-3 w-3" />
+                Food Yoga International
+              </Link>
               <Link
                 href="/charities"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
