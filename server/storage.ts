@@ -29,11 +29,22 @@ export interface IStorage {
   getCharitiesByCategory(category: string): Promise<Charity[]>;
   getCharityById(id: string): Promise<Charity | undefined>;
   getCharityByEmail(email: string): Promise<Charity | undefined>;
+  getCharityByEin(ein: string): Promise<Charity | undefined>;
   getCharityByEmailToken(token: string): Promise<Charity | undefined>;
   updateCharityStatus(id: string, status: string, verifiedAt?: Date): Promise<Charity | undefined>;
   updateCharityEmailVerification(id: string, emailVerifiedAt: Date): Promise<Charity | undefined>;
   updateCharityWalletVerification(id: string, walletVerifiedAt: Date): Promise<Charity | undefined>;
   setCharityVerificationTokens(id: string, emailToken: string, walletNonce: string): Promise<Charity | undefined>;
+  updateCharityWithEveryOrgData(id: string, data: {
+    everyOrgId: string;
+    everyOrgSlug: string;
+    everyOrgName: string;
+    everyOrgDescription: string;
+    everyOrgWebsite: string;
+    everyOrgLogoUrl: string;
+    everyOrgIsDisbursable: boolean;
+    registrationNumber: string;
+  }): Promise<Charity | undefined>;
   getDefaultCharity(): Promise<Charity | undefined>;
   seedDefaultCharities(): Promise<void>;
   
@@ -145,6 +156,14 @@ export class DatabaseStorage implements IStorage {
     return charity || undefined;
   }
 
+  async getCharityByEin(ein: string): Promise<Charity | undefined> {
+    const [charity] = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.registrationNumber, ein));
+    return charity || undefined;
+  }
+
   async getCharityByEmailToken(token: string): Promise<Charity | undefined> {
     const [charity] = await db
       .select()
@@ -159,6 +178,37 @@ export class DatabaseStorage implements IStorage {
       .set({
         emailVerificationToken: emailToken,
         walletVerificationNonce: walletNonce,
+        updatedAt: new Date(),
+      })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCharityWithEveryOrgData(id: string, data: {
+    everyOrgId: string;
+    everyOrgSlug: string;
+    everyOrgName: string;
+    everyOrgDescription: string;
+    everyOrgWebsite: string;
+    everyOrgLogoUrl: string;
+    everyOrgIsDisbursable: boolean;
+    registrationNumber: string;
+  }): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({
+        everyOrgId: data.everyOrgId,
+        everyOrgSlug: data.everyOrgSlug,
+        everyOrgName: data.everyOrgName,
+        everyOrgDescription: data.everyOrgDescription,
+        everyOrgWebsite: data.everyOrgWebsite,
+        everyOrgLogoUrl: data.everyOrgLogoUrl,
+        everyOrgIsDisbursable: data.everyOrgIsDisbursable,
+        everyOrgVerified: true,
+        everyOrgVerifiedAt: new Date(),
+        registrationNumber: data.registrationNumber,
+        status: CHARITY_STATUS.EIN_VERIFIED,
         updatedAt: new Date(),
       })
       .where(eq(charities.id, id))

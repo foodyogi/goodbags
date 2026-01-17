@@ -86,6 +86,107 @@ export async function registerRoutes(
 
   // === CHARITY VERIFICATION ENDPOINTS ===
 
+  // Verify EIN against Every.org API
+  app.post("/api/charities/verify-ein", async (req, res) => {
+    try {
+      const { ein } = req.body;
+      
+      if (!ein) {
+        return res.status(400).json({
+          success: false,
+          error: "EIN (Tax ID) is required",
+        });
+      }
+
+      // Clean EIN - remove dashes and spaces
+      const cleanEin = ein.replace(/[-\s]/g, "");
+      
+      // Validate EIN format (9 digits for US nonprofits)
+      if (!/^\d{9}$/.test(cleanEin)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid EIN format. Please enter a 9-digit Tax ID (e.g., 12-3456789)",
+        });
+      }
+
+      // Check if a charity with this EIN already exists
+      const existingByEin = await storage.getCharityByEin(cleanEin);
+      if (existingByEin) {
+        return res.status(400).json({
+          success: false,
+          error: "A charity with this EIN has already been registered",
+          existingCharity: {
+            id: existingByEin.id,
+            name: existingByEin.name,
+            status: existingByEin.status,
+          },
+        });
+      }
+
+      // Get Every.org API key
+      const everyOrgApiKey = process.env.EVERY_ORG_API_KEY;
+      if (!everyOrgApiKey) {
+        console.error("EVERY_ORG_API_KEY not configured");
+        return res.status(503).json({
+          success: false,
+          error: "Charity verification service is temporarily unavailable",
+        });
+      }
+
+      // Query Every.org API
+      const everyOrgUrl = `https://partners.every.org/v0.2/nonprofit/${cleanEin}?apiKey=${everyOrgApiKey}`;
+      const everyOrgResponse = await fetch(everyOrgUrl);
+      
+      if (!everyOrgResponse.ok) {
+        if (everyOrgResponse.status === 404) {
+          return res.status(404).json({
+            success: false,
+            error: "No nonprofit found with this EIN. Please verify your Tax ID is correct.",
+          });
+        }
+        console.error("Every.org API error:", everyOrgResponse.status, await everyOrgResponse.text());
+        return res.status(502).json({
+          success: false,
+          error: "Unable to verify charity at this time. Please try again later.",
+        });
+      }
+
+      const everyOrgData = await everyOrgResponse.json();
+      const nonprofit = everyOrgData?.data?.nonprofit;
+      
+      if (!nonprofit) {
+        return res.status(404).json({
+          success: false,
+          error: "No nonprofit found with this EIN",
+        });
+      }
+
+      // Return verified nonprofit data
+      res.json({
+        success: true,
+        nonprofit: {
+          ein: nonprofit.ein,
+          name: nonprofit.name,
+          description: nonprofit.description || nonprofit.descriptionLong || "",
+          website: nonprofit.websiteUrl || "",
+          logoUrl: nonprofit.logoUrl || "",
+          profileUrl: nonprofit.profileUrl || "",
+          location: nonprofit.locationAddress || "",
+          isDisbursable: nonprofit.isDisbursable || false,
+          everyOrgId: nonprofit.id,
+          everyOrgSlug: nonprofit.primarySlug,
+          category: nonprofit.nteeCodeMeaning?.majorMeaning || "Other",
+        },
+      });
+    } catch (error) {
+      console.error("EIN verification error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to verify charity",
+      });
+    }
+  });
+
   // Submit a charity application
   app.post("/api/charities/apply", async (req, res) => {
     try {
