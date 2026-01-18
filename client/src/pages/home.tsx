@@ -15,7 +15,7 @@ export default function Home() {
       
       <FeaturedProject />
       
-      <section className="py-12 md:py-16">
+      <section id="launch-form" className="py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">Create Your Token</h2>

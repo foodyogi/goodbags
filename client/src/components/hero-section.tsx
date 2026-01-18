@@ -45,12 +45,20 @@ export function HeroSection() {
             </p>
             
             <div className="flex flex-wrap gap-4">
-              <Link href="/launch">
-                <Button size="lg" className="gap-2 text-base" data-testid="button-hero-launch">
-                  <Rocket className="h-5 w-5" />
-                  Launch Your Token
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="gap-2 text-base" 
+                data-testid="button-hero-launch"
+                onClick={() => {
+                  const formSection = document.getElementById('launch-form');
+                  if (formSection) {
+                    formSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
+                <Rocket className="h-5 w-5" />
+                Launch Your Token
+              </Button>
               <Link href="/dashboard">
                 <Button size="lg" variant="outline" className="gap-2 text-base" data-testid="button-hero-dashboard">
                   View Dashboard
