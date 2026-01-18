@@ -21,6 +21,16 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 - `/buyback` - FYI Token Buyback Dashboard showing all buyback transactions
 - `/how-it-works` - Complete explanation of the platform, fee distribution, and security features
 - `/dashboard` - All launched tokens with trading volume and donation stats
+- `/charity/tokens` - Charity Token Approval Portal where charities review tokens created in their name
+
+### Token Approval System (Anti-Rug Pull)
+- **Purpose**: Prevents creators from exploiting charity names for rug pulls by giving charities control over endorsement
+- **Status Flow**: PENDING → APPROVED (Official) or DENIED (Not Endorsed)
+- **Charity Portal** (`/charity/tokens`): Charities verify via email and can approve/deny tokens
+- **Creator Accountability**: Token launch form shows disclosure about charity notification, approval process, wallet tracking, and reputation risks
+- **Badge Display**: Tokens show "Official" (green), "Not Endorsed" (red), or "Pending" (yellow) badges throughout the app
+- **Audit Trail**: All approval/denial actions logged with charity email, token name, and optional note
+- **Security**: Backend enforces that only charities with verified email can approve/deny tokens; wallet addresses permanently tracked on-chain
 
 ### Charity Verification Workflow (5-Step Wizard)
 1. **EIN Verification** (`/charities/apply`): Charity enters EIN (Tax ID), verified against Every.org API
