@@ -2,10 +2,10 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight } from "lucide-react";
+import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight, BadgeCheck, AlertCircle, Clock3 } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
-import type { LaunchedToken } from "@shared/schema";
+import { type LaunchedToken, TOKEN_APPROVAL_STATUS } from "@shared/schema";
 
 interface TokenCardProps {
   token: LaunchedToken;
@@ -20,6 +20,34 @@ export function TokenCard({ token }: TokenCardProps) {
     if (!value) return "0";
     const num = parseFloat(value);
     return num < 0.001 ? "< 0.001" : num.toFixed(3);
+  };
+
+  const getApprovalBadge = () => {
+    switch (token.charityApprovalStatus) {
+      case TOKEN_APPROVAL_STATUS.APPROVED:
+        return (
+          <Badge variant="default" className="bg-green-600 text-xs shrink-0" data-testid={`badge-official-${token.id}`}>
+            <BadgeCheck className="h-3 w-3 mr-1" />
+            Official
+          </Badge>
+        );
+      case TOKEN_APPROVAL_STATUS.DENIED:
+        return (
+          <Badge variant="destructive" className="text-xs shrink-0" data-testid={`badge-denied-${token.id}`}>
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Not Endorsed
+          </Badge>
+        );
+      case TOKEN_APPROVAL_STATUS.PENDING:
+        return (
+          <Badge variant="secondary" className="text-xs shrink-0" data-testid={`badge-pending-${token.id}`}>
+            <Clock3 className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -38,6 +66,7 @@ export function TokenCard({ token }: TokenCardProps) {
               <Badge variant="secondary" className="font-mono text-xs shrink-0">
                 {token.symbol}
               </Badge>
+              {getApprovalBadge()}
             </div>
             <p className="text-xs text-muted-foreground font-mono mt-1">
               {truncateAddress(token.mintAddress)}

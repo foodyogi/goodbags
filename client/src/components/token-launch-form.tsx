@@ -31,7 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield } from "lucide-react";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -496,6 +496,38 @@ export function TokenLaunchForm() {
               <div className="flex items-center justify-between text-sm mt-2">
                 <span className="text-muted-foreground">Platform Fee</span>
                 <span className="font-medium">{PLATFORM_FEE_PERCENTAGE}% of trades</span>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4 space-y-3" data-testid="disclosure-accountability">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-yellow-700 dark:text-yellow-500">Creator Accountability</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    By launching this token, you understand:
+                  </p>
+                </div>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-2 pl-6 list-disc">
+                <li>
+                  <strong>Charity Notification:</strong> The selected charity will be notified about your token and can review it.
+                </li>
+                <li>
+                  <strong>Approval Required:</strong> Charities can approve or deny tokens. Approved tokens are labeled &quot;Official&quot; while denied tokens show &quot;Not Endorsed&quot;.
+                </li>
+                <li>
+                  <strong>Wallet Tracking:</strong> Your creator wallet address is permanently recorded on-chain and linked to this token.
+                </li>
+                <li>
+                  <strong>Reputation:</strong> Creating tokens without charity approval may damage your reputation and future tokens.
+                </li>
+              </ul>
+              <div className="flex items-center gap-2 pt-2 border-t border-yellow-500/20">
+                <Shield className="h-3.5 w-3.5 text-green-600" />
+                <p className="text-xs text-green-600 dark:text-green-500">
+                  GoodBags protects charities from misrepresentation
+                </p>
               </div>
             </div>
 

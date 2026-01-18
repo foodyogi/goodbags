@@ -1591,6 +1591,9 @@ export async function registerRoutes(
           launchedAt: token.launchedAt,
           charityId: token.charityId,
           tradingVolume: token.tradingVolume,
+          charityApprovalStatus: token.charityApprovalStatus,
+          charityName: token.charityName,
+          charityApprovalNote: token.charityApprovalNote,
         },
         impact: impact || {
           totalDonated: "0",

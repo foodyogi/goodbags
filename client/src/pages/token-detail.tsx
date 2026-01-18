@@ -15,11 +15,14 @@ import {
   ArrowLeft,
   Shield,
   Coins,
-  Wallet
+  Wallet,
+  BadgeCheck,
+  AlertCircle,
+  Clock3
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
-import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
+import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, TOKEN_APPROVAL_STATUS } from "@shared/schema";
 
 interface TokenImpactData {
   token: {
@@ -33,6 +36,9 @@ interface TokenImpactData {
     charityId: string | null;
     description?: string;
     tradingVolume?: string;
+    charityApprovalStatus?: string;
+    charityName?: string;
+    charityApprovalNote?: string;
   };
   impact: {
     totalDonated: string;
@@ -106,6 +112,34 @@ function getStatusDisplay(status: string): { label: string; color: string } {
       return { label: "Wallet Verified", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" };
     default:
       return { label: status, color: "bg-muted text-muted-foreground" };
+  }
+}
+
+function ApprovalBadge({ status, tokenId }: { status?: string; tokenId: string }) {
+  switch (status) {
+    case TOKEN_APPROVAL_STATUS.APPROVED:
+      return (
+        <Badge variant="default" className="bg-green-600" data-testid={`badge-official-${tokenId}`}>
+          <BadgeCheck className="h-3 w-3 mr-1" />
+          Official
+        </Badge>
+      );
+    case TOKEN_APPROVAL_STATUS.DENIED:
+      return (
+        <Badge variant="destructive" data-testid={`badge-denied-${tokenId}`}>
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Not Endorsed
+        </Badge>
+      );
+    case TOKEN_APPROVAL_STATUS.PENDING:
+      return (
+        <Badge variant="secondary" data-testid={`badge-pending-${tokenId}`}>
+          <Clock3 className="h-3 w-3 mr-1" />
+          Pending Review
+        </Badge>
+      );
+    default:
+      return null;
   }
 }
 
@@ -200,6 +234,7 @@ export default function TokenDetailPage() {
                   <Badge variant="secondary" className="font-mono text-sm">
                     ${token.symbol}
                   </Badge>
+                  <ApprovalBadge status={token.charityApprovalStatus} tokenId={token.id} />
                 </div>
                 
                 <div className="flex items-center gap-2 mb-3">

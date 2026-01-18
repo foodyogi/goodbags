@@ -11,6 +11,7 @@ import Dashboard from "@/pages/dashboard";
 import ImpactPage from "@/pages/impact";
 import CharityApply from "@/pages/charity-apply";
 import AdminCharities from "@/pages/admin-charities";
+import CharityTokenApproval from "@/pages/charity-token-approval";
 import CharitiesPage from "@/pages/charities";
 import BuybackPage from "@/pages/buyback";
 import HowItWorksPage from "@/pages/how-it-works";
@@ -34,6 +35,7 @@ function MainRouter() {
       <Route path="/ffl" component={FoodYogaInternational} />
       <Route path="/food-yoga-international" component={FoodYogaInternational} />
       <Route path="/admin/charities" component={AdminCharities} />
+      <Route path="/charity/tokens" component={CharityTokenApproval} />
       <Route path="/token/:mint" component={TokenDetailPage} />
       <Route component={NotFound} />
     </Switch>
