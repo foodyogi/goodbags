@@ -26,6 +26,13 @@ export const IMPACT_CATEGORIES = [
   { id: "other", name: "Other Causes", icon: "hand-heart" },
 ] as const;
 
+// Charity source - where the charity data comes from
+export const CHARITY_SOURCE = {
+  CHANGE: "change",       // From Change API (1.3M+ nonprofits with Solana wallets)
+  EVERYORG: "everyorg",   // From Every.org API (EIN verification)
+  MANUAL: "manual",       // Manually added/seeded charities
+} as const;
+
 // Charities registry table
 export const charities = pgTable("charities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -36,6 +43,7 @@ export const charities = pgTable("charities", {
   email: text("email"),
   walletAddress: text("wallet_address"),
   status: text("status").notNull().default("pending"),
+  source: text("source").notNull().default("manual"), // change, everyorg, or manual
   isDefault: boolean("is_default").default(false),
   isFeatured: boolean("is_featured").default(false),
   logoUrl: text("logo_url"),
@@ -60,6 +68,8 @@ export const charities = pgTable("charities", {
   everyOrgWebsite: text("every_org_website"),
   everyOrgLogoUrl: text("every_org_logo_url"),
   everyOrgIsDisbursable: boolean("every_org_is_disbursable").default(false),
+  // Change API fields
+  changeId: text("change_id"),  // Change API nonprofit ID
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

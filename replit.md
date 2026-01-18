@@ -29,12 +29,24 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 5. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
 6. **Active**: Charity appears in token launch dropdown
 
-### Every.org Integration
-- **Purpose**: Verify US 501(c)(3) nonprofits by their EIN before registration
+### Change API Integration (Primary)
+- **Purpose**: Access 1.3M+ verified nonprofits with pre-existing Solana wallets
+- **API Endpoints**:
+  - `GET /api/charities/change/search?q={query}` - Search nonprofits
+  - `GET /api/charities/change/:id` - Get nonprofit details with Solana address
+- **Data Retrieved**: Organization name, mission, category, logo, Solana wallet address
+- **Security**: Server-side verification against Change API prevents wallet spoofing
+- **UI**: Token launch form includes searchable dropdown showing all nonprofits with "Crypto Ready" or "No Wallet" badges
+- **Environment Variables**: `CHANGE_API_PUBLIC_KEY`, `CHANGE_API_SECRET_KEY`
+- **Note**: Most nonprofits don't have Solana wallets yet - only those with wallets can be selected for token launches
+
+### Every.org Integration (Backup/Custom Charities)
+- **Purpose**: Verify US 501(c)(3) nonprofits by their EIN for custom charity registration
 - **API Endpoint**: `POST /api/charities/verify-ein` validates EIN against Every.org database
 - **Data Retrieved**: Organization name, description, website, logo, disbursable status
 - **Security**: Server-side re-verification in `/api/charities/apply` prevents client bypassing
 - **Status Flow**: EIN_VERIFIED → EMAIL_VERIFIED → WALLET_VERIFIED → PENDING → APPROVED
+- **Use Case**: For charities not on Change API or without Solana wallets who want to join the platform
 
 ### Security Model
 - Charity wallets are looked up server-side from vetted database (prevents fee diversion)

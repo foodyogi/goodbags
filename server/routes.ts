@@ -41,10 +41,77 @@ function generateToken(): string {
   return randomBytes(32).toString("hex");
 }
 
-// Extend the shared schema with creatorWallet for server-side validation
+// Extend the shared schema with creatorWallet and charity source info
+// Uses same validation rules as tokenLaunchFormSchema for consistency
 const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
   creatorWallet: z.string().min(32, "Invalid wallet address"),
+  charitySource: z.enum(["change", "local"]).default("change"),
+  charitySolanaAddress: z.string().optional(), // For Change API charities
 });
+
+// Import Change API for server-side verification
+import * as changeApi from "./change-api";
+
+// Helper function to verify Change API charity and get wallet address
+// This centralizes wallet verification to prevent spoofing across all token endpoints
+async function verifyChangeCharityWallet(
+  charityId: string, 
+  charitySource: string, 
+  providedAddress?: string
+): Promise<{ valid: boolean; walletAddress?: string; error?: string }> {
+  if (charitySource !== "change") {
+    return { valid: true }; // Local charities verified separately
+  }
+  
+  try {
+    const nonprofit = await changeApi.getNonprofitById(charityId);
+    if (!nonprofit) {
+      return { valid: false, error: "Charity not found in Change API" };
+    }
+    
+    if (!changeApi.hasValidSolanaWallet(nonprofit)) {
+      return { valid: false, error: "This charity doesn't have a Solana wallet yet" };
+    }
+    
+    const verifiedAddress = nonprofit.crypto?.solana_address;
+    
+    // Verify the client-provided address matches (if provided)
+    if (providedAddress && providedAddress !== verifiedAddress) {
+      console.warn(`Wallet address mismatch for ${charityId}: provided=${providedAddress}, verified=${verifiedAddress}`);
+      return { valid: false, error: "Wallet address verification failed" };
+    }
+    
+    return { valid: true, walletAddress: verifiedAddress };
+  } catch (error) {
+    console.error("Change API verification error:", error);
+    return { valid: false, error: "Failed to verify charity wallet" };
+  }
+}
+
+// Simple in-memory cache for Change API search results
+const searchCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 100;
+
+function getCachedSearch(cacheKey: string): any | null {
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  if (cached) {
+    searchCache.delete(cacheKey);
+  }
+  return null;
+}
+
+function setCachedSearch(cacheKey: string, data: any): void {
+  // Clear old entries if cache is too large
+  if (searchCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = searchCache.keys().next().value;
+    if (firstKey) searchCache.delete(firstKey);
+  }
+  searchCache.set(cacheKey, { data, timestamp: Date.now() });
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -556,6 +623,109 @@ export async function registerRoutes(
     }
   });
 
+  // === CHANGE API ENDPOINTS ===
+  // Search nonprofits via Change API (1.3M+ verified with Solana wallets)
+
+  app.get("/api/charities/change/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      const page = parseInt(req.query.page as string) || 1;
+      const category = req.query.category as string | undefined;
+      
+      if (!query || query.length < 2) {
+        return res.status(400).json({ 
+          error: "Search query must be at least 2 characters" 
+        });
+      }
+
+      // Check cache first to reduce API calls
+      const cacheKey = `${query.toLowerCase()}_${page}_${category || "all"}`;
+      const cached = getCachedSearch(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const results = await changeApi.searchNonprofits(query, {
+        page,
+        categories: category ? [category] : undefined,
+      });
+
+      console.log(`Change API search for "${query}": ${results.nonprofits.length} total results`);
+      
+      // Return all nonprofits with info about which have Solana addresses
+      // Users can see all matches but can only select those with wallets
+      const nonprofitsWithSolanaInfo = results.nonprofits.map(np => ({
+        id: np.id,
+        name: np.name,
+        ein: np.ein,
+        mission: np.mission,
+        category: changeApi.mapChangeCategory(np.category),
+        website: np.website,
+        logoUrl: np.icon_url,
+        solanaAddress: np.crypto?.solana_address || null,
+        hasSolanaWallet: changeApi.hasValidSolanaWallet(np),
+        location: np.city && np.state ? `${np.city}, ${np.state}` : null,
+      }));
+      
+      const countWithSolana = nonprofitsWithSolanaInfo.filter(np => np.hasSolanaWallet).length;
+      console.log(`After Solana check: ${countWithSolana} with wallets out of ${results.nonprofits.length}`);
+
+      const response = {
+        nonprofits: nonprofitsWithSolanaInfo,
+        page: results.page || page,
+        totalResults: results.nonprofits.length,
+        totalWithSolana: countWithSolana,
+        source: "change",
+      };
+      
+      // Cache the response
+      setCachedSearch(cacheKey, response);
+
+      res.json(response);
+    } catch (error) {
+      console.error("Change API search error:", error);
+      res.status(500).json({ error: "Failed to search nonprofits" });
+    }
+  });
+
+  // Get single nonprofit by Change ID
+  app.get("/api/charities/change/:id", async (req, res) => {
+    try {
+      const nonprofit = await changeApi.getNonprofitById(req.params.id);
+
+      if (!nonprofit) {
+        return res.status(404).json({ error: "Nonprofit not found" });
+      }
+
+      if (!changeApi.hasValidSolanaWallet(nonprofit)) {
+        return res.status(400).json({ 
+          error: "This nonprofit does not have a Solana wallet configured" 
+        });
+      }
+
+      res.json({
+        id: nonprofit.id,
+        name: nonprofit.name,
+        ein: nonprofit.ein,
+        mission: nonprofit.mission,
+        category: changeApi.mapChangeCategory(nonprofit.category),
+        website: nonprofit.website,
+        email: nonprofit.email,
+        logoUrl: nonprofit.icon_url,
+        solanaAddress: nonprofit.crypto?.solana_address,
+        location: nonprofit.city && nonprofit.state 
+          ? `${nonprofit.city}, ${nonprofit.state}` 
+          : null,
+        socials: nonprofit.socials,
+        displayImpact: nonprofit.display_impact,
+        source: "change",
+      });
+    } catch (error) {
+      console.error("Change API get error:", error);
+      res.status(500).json({ error: "Failed to fetch nonprofit" });
+    }
+  });
+
   // === TOKEN ENDPOINTS ===
 
   // Check if Bags SDK is configured
@@ -570,24 +740,71 @@ export async function registerRoutes(
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       
-      // Get the selected charity
-      let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
-      if (!charity) {
-        charity = await storage.getDefaultCharity();
-      }
-      if (!charity) {
-        return res.status(400).json({
-          success: false,
-          error: "No charity selected and no default available",
-        });
-      }
+      let charityInfo: { id: string; name: string; walletAddress: string; source: string };
+      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+      
+      if (validated.charitySource === "change") {
+        // Change API charity - verify the Solana address is provided and valid
+        if (!validated.charitySolanaAddress || !base58Regex.test(validated.charitySolanaAddress)) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid Solana wallet address for selected charity",
+          });
+        }
+        
+        // SECURITY: Always verify with Change API - prevents wallet spoofing
+        const verification = await verifyChangeCharityWallet(
+          validated.charityId, 
+          validated.charitySource, 
+          validated.charitySolanaAddress
+        );
+        if (!verification.valid) {
+          return res.status(400).json({
+            success: false,
+            error: verification.error || "Charity verification failed",
+          });
+        }
+        const nonprofit = await changeApi.getNonprofitById(validated.charityId);
+        charityInfo = {
+          id: validated.charityId,
+          name: nonprofit?.name || "Unknown Charity",
+          walletAddress: verification.walletAddress!,
+          source: "change",
+        };
+      } else {
+        // Local charity - look up from database
+        let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
+        if (!charity) {
+          charity = await storage.getDefaultCharity();
+        }
+        if (!charity) {
+          return res.status(400).json({
+            success: false,
+            error: "No charity selected and no default available",
+          });
+        }
 
-      // SECURITY: Enforce only approved/verified charities can be used for launches
-      if (charity.status !== CHARITY_STATUS.APPROVED) {
-        return res.status(400).json({
-          success: false,
-          error: "Selected charity has not been verified. Please choose an approved charity.",
-        });
+        // SECURITY: Enforce only approved/verified charities can be used for launches
+        if (charity.status !== CHARITY_STATUS.APPROVED) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+        
+        if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity does not have a valid wallet address",
+          });
+        }
+        
+        charityInfo = {
+          id: charity.id,
+          name: charity.name,
+          walletAddress: charity.walletAddress,
+          source: "local",
+        };
       }
 
       // Check if Bags SDK is configured
@@ -599,11 +816,7 @@ export async function registerRoutes(
           mock: true,
           tokenMint: mockMintAddress,
           metadataUrl: `https://example.com/metadata/${mockMintAddress}`,
-          charity: {
-            id: charity.id,
-            name: charity.name,
-            walletAddress: charity.walletAddress,
-          },
+          charity: charityInfo,
         });
       }
 
@@ -621,11 +834,7 @@ export async function registerRoutes(
         mock: false,
         tokenMint: tokenInfo.tokenMint,
         metadataUrl: tokenInfo.metadataUrl,
-        charity: {
-          id: charity.id,
-          name: charity.name,
-          walletAddress: charity.walletAddress,
-        },
+        charity: charityInfo,
       });
     } catch (error) {
       console.error("Token prepare error:", error);
@@ -646,7 +855,7 @@ export async function registerRoutes(
   // Step 2: Create fee share config and get transactions to sign
   app.post("/api/tokens/config", async (req, res) => {
     try {
-      const { tokenMint, creatorWallet, charityId } = req.body;
+      const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress } = req.body;
       
       if (!tokenMint || !creatorWallet || !charityId) {
         return res.status(400).json({
@@ -670,28 +879,57 @@ export async function registerRoutes(
         });
       }
 
-      // Look up charity server-side to ensure wallet comes from vetted charities only
-      const charity = await storage.getCharityById(charityId);
-      if (!charity) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid charity ID - charity not found",
-        });
-      }
-
-      // SECURITY: Enforce only approved/verified charities can be used
-      if (charity.status !== CHARITY_STATUS.APPROVED) {
-        return res.status(400).json({
-          success: false,
-          error: "Selected charity has not been verified. Please choose an approved charity.",
-        });
-      }
+      let charityWallet: string;
       
-      if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
-        return res.status(400).json({
-          success: false,
-          error: "Selected charity does not have a valid wallet address configured",
-        });
+      if (charitySource === "change") {
+        // Change API charity - validate the provided Solana address
+        if (!charitySolanaAddress || !base58Regex.test(charitySolanaAddress)) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid Solana wallet address for Change charity",
+          });
+        }
+        
+        // SECURITY: Verify with Change API - do NOT skip verification
+        const verification = await verifyChangeCharityWallet(
+          charityId, 
+          charitySource, 
+          charitySolanaAddress
+        );
+        if (!verification.valid) {
+          return res.status(400).json({
+            success: false,
+            error: verification.error || "Charity wallet verification failed",
+          });
+        }
+        
+        charityWallet = verification.walletAddress!;
+      } else {
+        // Local charity - look up from database
+        const charity = await storage.getCharityById(charityId);
+        if (!charity) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid charity ID - charity not found",
+          });
+        }
+
+        // SECURITY: Enforce only approved/verified charities can be used
+        if (charity.status !== CHARITY_STATUS.APPROVED) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+        
+        if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity does not have a valid wallet address configured",
+          });
+        }
+        
+        charityWallet = charity.walletAddress;
       }
 
       if (!bagsSDK.isConfigured()) {
@@ -707,7 +945,7 @@ export async function registerRoutes(
       const config = await bagsSDK.createFeeShareConfig({
         tokenMint,
         creatorWallet,
-        charityWallet: charity.walletAddress,
+        charityWallet,
       });
 
       res.json({
@@ -782,16 +1020,48 @@ export async function registerRoutes(
         });
       }
       
-      // Get the selected charity
-      let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
-      if (!charity) {
-        charity = await storage.getDefaultCharity();
-      }
-      if (!charity) {
-        return res.status(400).json({
-          success: false,
-          error: "No charity selected and no default available",
-        });
+      // Get the selected charity - handle both Change API and local charities
+      let charityInfo: { id: string; name: string; walletAddress: string | null; source: string };
+      
+      if (validated.charitySource === "change") {
+        // SECURITY: Verify Change API charity wallet address
+        const verification = await verifyChangeCharityWallet(
+          validated.charityId, 
+          validated.charitySource, 
+          validated.charitySolanaAddress
+        );
+        if (!verification.valid) {
+          return res.status(400).json({
+            success: false,
+            error: verification.error || "Charity verification failed",
+          });
+        }
+        
+        const nonprofit = await changeApi.getNonprofitById(validated.charityId);
+        charityInfo = {
+          id: validated.charityId,
+          name: nonprofit?.name || "Unknown Charity",
+          walletAddress: verification.walletAddress || null,
+          source: "change",
+        };
+      } else {
+        // Local charity - look up from database
+        let charity: Charity | undefined = await storage.getCharityById(validated.charityId);
+        if (!charity) {
+          charity = await storage.getDefaultCharity();
+        }
+        if (!charity) {
+          return res.status(400).json({
+            success: false,
+            error: "No charity selected and no default available",
+          });
+        }
+        charityInfo = {
+          id: charity.id,
+          name: charity.name,
+          walletAddress: charity.walletAddress,
+          source: "local",
+        };
       }
       
       // Calculate fees
@@ -807,7 +1077,7 @@ export async function registerRoutes(
         imageUrl: validated.imageUrl || null,
         mintAddress: mintAddress,
         creatorWallet: validated.creatorWallet,
-        charityId: charity.id,
+        charityId: charityInfo.id,
         initialBuyAmount: validated.initialBuyAmount,
         charityDonated: charityDonation,
         platformFeeCollected: platformFee,
@@ -823,18 +1093,19 @@ export async function registerRoutes(
         actorWallet: validated.creatorWallet,
         details: JSON.stringify({ 
           name: validated.name, 
-          charityId: charity.id, 
-          charityName: charity.name,
+          charityId: charityInfo.id, 
+          charityName: charityInfo.name,
+          charitySource: charityInfo.source,
           initialBuy,
         }),
       });
       
       // Record the donation if there was an initial buy and charity has a wallet
-      if (initialBuy > 0 && charity.walletAddress) {
+      if (initialBuy > 0 && charityInfo.walletAddress) {
         await storage.createDonation({
           tokenMint: mintAddress,
           amount: charityDonation,
-          charityWallet: charity.walletAddress,
+          charityWallet: charityInfo.walletAddress,
           transactionSignature: `donation${randomUUID().replace(/-/g, "")}`,
         });
       }
@@ -849,10 +1120,10 @@ export async function registerRoutes(
           transactionSignature: token.transactionSignature,
         },
         charity: {
-          id: charity.id,
-          name: charity.name,
-          status: charity.status,
-          hasWallet: !!charity.walletAddress,
+          id: charityInfo.id,
+          name: charityInfo.name,
+          source: charityInfo.source,
+          hasWallet: !!charityInfo.walletAddress,
         },
       });
     } catch (error) {

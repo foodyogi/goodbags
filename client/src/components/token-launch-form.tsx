@@ -4,6 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
+import { z } from "zod";
 
 function base64ToUint8Array(base64: string): Uint8Array {
   if (typeof Buffer !== "undefined") {
@@ -29,19 +30,37 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart } from "lucide-react";
-import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, VETTED_CHARITIES, tokenLaunchFormSchema, type TokenLaunchForm } from "@shared/schema";
+import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
+
+interface SelectedCharity {
+  id: string;
+  name: string;
+  mission?: string | null;
+  category: string;
+  website?: string | null;
+  logoUrl?: string | null;
+  solanaAddress?: string | null;
+  source: "change" | "local";
+}
+
+const tokenLaunchFormSchemaWithCharity = z.object({
+  name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
+  symbol: z.string().min(1, "Symbol is required").max(10, "Symbol must be 10 characters or less").toUpperCase(),
+  description: z.string().max(500, "Description must be 500 characters or less").optional(),
+  imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  initialBuyAmount: z.string().refine((val) => {
+    const num = parseFloat(val);
+    return !isNaN(num) && num >= 0;
+  }, "Initial buy amount must be a valid number"),
+});
+
+type TokenLaunchFormData = z.infer<typeof tokenLaunchFormSchemaWithCharity>;
 
 interface LaunchResult {
   success: boolean;
@@ -69,26 +88,27 @@ export function TokenLaunchForm() {
   const { toast } = useToast();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
+  const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
 
   const { data: bagsStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/bags/status"],
   });
 
-  const form = useForm<TokenLaunchForm>({
-    resolver: zodResolver(tokenLaunchFormSchema),
+  const form = useForm<TokenLaunchFormData>({
+    resolver: zodResolver(tokenLaunchFormSchemaWithCharity),
     defaultValues: {
       name: "",
       symbol: "",
       description: "",
       imageUrl: "",
       initialBuyAmount: "0",
-      charityId: VETTED_CHARITIES[0].id,
     },
   });
 
   const launchMutation = useMutation({
-    mutationFn: async (data: TokenLaunchForm) => {
+    mutationFn: async (data: TokenLaunchFormData) => {
       if (!publicKey) throw new Error("Wallet not connected");
+      if (!selectedCharity) throw new Error("Please select a charity");
       
       const creatorWallet = publicKey.toBase58();
       
@@ -96,6 +116,9 @@ export function TokenLaunchForm() {
       setLaunchStep("preparing");
       const prepareResponse = await apiRequest("POST", "/api/tokens/prepare", {
         ...data,
+        charityId: selectedCharity.id,
+        charitySource: selectedCharity.source,
+        charitySolanaAddress: selectedCharity.solanaAddress,
         creatorWallet,
       });
       const prepareResult = await prepareResponse.json();
@@ -120,7 +143,9 @@ export function TokenLaunchForm() {
         const configResponse = await apiRequest("POST", "/api/tokens/config", {
           tokenMint,
           creatorWallet,
-          charityId: data.charityId,
+          charityId: selectedCharity.id,
+          charitySource: selectedCharity.source,
+          charitySolanaAddress: selectedCharity.solanaAddress,
         });
         const configResult = await configResponse.json();
         
@@ -222,8 +247,20 @@ export function TokenLaunchForm() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const selectedCharityId = form.watch("charityId");
-  const selectedCharity = VETTED_CHARITIES.find(c => c.id === selectedCharityId);
+  const handleCharitySelect = (charity: { 
+    id: string; 
+    name: string; 
+    mission?: string | null; 
+    category: string; 
+    website?: string | null; 
+    logoUrl?: string | null; 
+    solanaAddress?: string | null;
+  }) => {
+    setSelectedCharity({
+      ...charity,
+      source: "change",
+    });
+  };
 
   if (launchResult?.success && launchResult.token) {
     return (
@@ -430,62 +467,26 @@ export function TokenLaunchForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="charityId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-pink-500" />
-                    Choose Your Cause
-                  </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-charity">
-                        <SelectValue placeholder="Select a charity" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {VETTED_CHARITIES.map((charity) => (
-                        <SelectItem key={charity.id} value={charity.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{charity.category === "hunger" ? "🍲" : "🐾"}</span>
-                            <span>{charity.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+            <div className="space-y-2">
+              <FormLabel className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-pink-500" />
+                Choose Your Cause
+              </FormLabel>
+              {selectedCharity ? (
+                <SelectedCharityDisplay 
+                  charity={selectedCharity} 
+                  onClear={() => setSelectedCharity(null)} 
+                />
+              ) : (
+                <CharitySearch 
+                  onSelect={handleCharitySelect}
+                  selectedId={null}
+                />
               )}
-            />
-
-            {selectedCharity && (
-              <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{selectedCharity.category === "hunger" ? "🍲" : "🐾"}</span>
-                    <span className="font-medium">{selectedCharity.name}</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{selectedCharity.description}</p>
-                {selectedCharity.website && (
-                  <a 
-                    href={selectedCharity.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline mt-2 inline-block"
-                  >
-                    {selectedCharity.website}
-                  </a>
-                )}
-              </div>
-            )}
+              {!selectedCharity && (
+                <p className="text-xs text-destructive">Please select a charity to continue</p>
+              )}
+            </div>
 
             <div className="rounded-lg border border-muted bg-muted/30 p-4">
               <div className="flex items-center justify-between text-sm">
@@ -509,7 +510,7 @@ export function TokenLaunchForm() {
               <Button 
                 type="submit" 
                 className="w-full gap-2"
-                disabled={launchMutation.isPending}
+                disabled={launchMutation.isPending || !selectedCharity}
                 data-testid="button-submit-launch"
               >
                 {launchMutation.isPending ? (
