@@ -32,10 +32,10 @@ export function HeroSection() {
             </div>
             
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-              Launch Memecoins.
+              Launch your Coin
               <br />
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Make a Difference.
+                Make a Social Impact
               </span>
             </h1>
             

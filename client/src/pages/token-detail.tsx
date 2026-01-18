@@ -302,7 +302,7 @@ export default function TokenDetailPage() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Bot-friendly 1% total tax keeps trading volume high
+                    Low 1% total fee keeps trading volume high
                   </p>
                 </div>
               </div>

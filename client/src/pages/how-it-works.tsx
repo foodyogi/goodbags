@@ -111,12 +111,12 @@ export default function HowItWorksPage() {
           <div className="text-center mb-8">
             <Badge className="mb-4 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">
               <Heart className="h-3 w-3 mr-1" />
-              Bot-Friendly 1% Fee
+              Low 1% Fee
             </Badge>
             <h2 className="text-2xl font-bold mb-3">Trading Fee Distribution</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Unlike other platforms where creators keep trading fees, GoodBags sends 
-              most of the 1% royalty to your chosen charity. Total stays at 1% so bots can trade.
+              most of the 1% royalty to your chosen charity.
             </p>
           </div>
           
@@ -150,7 +150,7 @@ export default function HowItWorksPage() {
                 </div>
 
                 <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
-                  <p className="text-sm font-medium">Total per trade: <span className="text-primary">1%</span> (bot-friendly)</p>
+                  <p className="text-sm font-medium">Total per trade: <span className="text-primary">1%</span></p>
                 </div>
               </div>
 

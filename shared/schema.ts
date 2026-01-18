@@ -203,12 +203,11 @@ export type Buyback = typeof buybacks.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
-// Fee constants - Bot-friendly 1% total fee
+// Fee constants - 1% total fee
 // Split: 0.75% to charity + 0.25% platform fee for FYI buyback = 1% total
-// This keeps total tax at 1% so trading bots can participate
 export const CHARITY_FEE_PERCENTAGE = 0.75; // 0.75% to charity
 export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee for FYI buyback
-export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1% (bot-friendly)
+export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1%
 export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 
 // Platform wallet for collecting platform fees (must be set in environment or use a default devnet address)
