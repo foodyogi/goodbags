@@ -120,6 +120,9 @@ export const launchedTokens = pgTable("launched_tokens", {
   // Charity info snapshot (in case charity record changes)
   charityName: text("charity_name"),
   charityEmail: text("charity_email"),
+  charityWebsite: text("charity_website"),
+  charityTwitter: text("charity_twitter"),
+  charityFacebook: text("charity_facebook"),
   // Financial tracking
   initialBuyAmount: decimal("initial_buy_amount", { precision: 18, scale: 9 }).default("0"),
   charityDonated: decimal("charity_donated", { precision: 18, scale: 9 }).default("0"),

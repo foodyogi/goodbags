@@ -1358,7 +1358,16 @@ export async function registerRoutes(
       }
       
       // Get the selected charity - handle both Change API and local charities
-      let charityInfo: { id: string; name: string; walletAddress: string | null; email: string | null; source: string };
+      let charityInfo: { 
+        id: string; 
+        name: string; 
+        walletAddress: string | null; 
+        email: string | null; 
+        website: string | null;
+        twitter: string | null;
+        facebook: string | null;
+        source: string 
+      };
       
       if (validated.charitySource === "change") {
         // SECURITY: Verify Change API charity wallet address
@@ -1375,11 +1384,16 @@ export async function registerRoutes(
         }
         
         const nonprofit = await changeApi.getNonprofitById(validated.charityId);
+        // Extract social links from Change API response
+        const socials = nonprofit?.socials as { twitter?: string; facebook?: string } | undefined;
         charityInfo = {
           id: validated.charityId,
           name: nonprofit?.name || "Unknown Charity",
           walletAddress: verification.walletAddress || null,
           email: null, // Change API doesn't provide email
+          website: nonprofit?.website || null,
+          twitter: socials?.twitter || null,
+          facebook: socials?.facebook || null,
           source: "change",
         };
       } else {
@@ -1416,6 +1430,9 @@ export async function registerRoutes(
           name: charity.name,
           walletAddress: charity.walletAddress,
           email: charity.email || null,
+          website: charity.website || null,
+          twitter: charity.twitterHandle || null,
+          facebook: null, // Local charities don't store facebook
           source: "local",
         };
       }
@@ -1438,6 +1455,9 @@ export async function registerRoutes(
         charityApprovalStatus: "pending", // All new tokens start pending approval
         charityName: charityInfo.name,
         charityEmail: charityInfo.email,
+        charityWebsite: charityInfo.website,
+        charityTwitter: charityInfo.twitter,
+        charityFacebook: charityInfo.facebook,
         charityNotifiedAt: charityInfo.email ? new Date() : null, // Mark as notified if we have email
         // Financial tracking
         initialBuyAmount: validated.initialBuyAmount,
@@ -1594,6 +1614,10 @@ export async function registerRoutes(
           charityApprovalStatus: token.charityApprovalStatus,
           charityName: token.charityName,
           charityApprovalNote: token.charityApprovalNote,
+          // Charity contact info for creator outreach
+          charityWebsite: token.charityWebsite,
+          charityTwitter: token.charityTwitter,
+          charityFacebook: token.charityFacebook,
         },
         impact: impact || {
           totalDonated: "0",

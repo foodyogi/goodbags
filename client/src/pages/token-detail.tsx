@@ -18,8 +18,11 @@ import {
   Wallet,
   BadgeCheck,
   AlertCircle,
-  Clock3
+  Clock3,
+  Globe,
+  MessageCircle
 } from "lucide-react";
+import { SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { useState } from "react";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, TOKEN_APPROVAL_STATUS } from "@shared/schema";
@@ -39,6 +42,9 @@ interface TokenImpactData {
     charityApprovalStatus?: string;
     charityName?: string;
     charityApprovalNote?: string;
+    charityWebsite?: string | null;
+    charityTwitter?: string | null;
+    charityFacebook?: string | null;
   };
   impact: {
     totalDonated: string;
@@ -380,6 +386,69 @@ export default function TokenDetailPage() {
                   </Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(token.charityWebsite || token.charityTwitter || token.charityFacebook) && (
+          <Card className="mb-6" data-testid="card-charity-contact">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                Contact Charity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Want to collaborate with this charity? Reach out to them directly:
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {token.charityWebsite && (
+                  <a
+                    href={token.charityWebsite.startsWith("http") ? token.charityWebsite : `https://${token.charityWebsite}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-charity-website"
+                  >
+                    <Button variant="outline" className="gap-2">
+                      <Globe className="h-4 w-4" />
+                      Website
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
+                )}
+                {token.charityTwitter && (
+                  <a
+                    href={token.charityTwitter.startsWith("http") ? token.charityTwitter : `https://x.com/${token.charityTwitter.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-charity-twitter"
+                  >
+                    <Button variant="outline" className="gap-2">
+                      <SiX className="h-4 w-4" />
+                      X / Twitter
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
+                )}
+                {token.charityFacebook && (
+                  <a
+                    href={token.charityFacebook.startsWith("http") ? token.charityFacebook : `https://facebook.com/${token.charityFacebook}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-charity-facebook"
+                  >
+                    <Button variant="outline" className="gap-2">
+                      <SiFacebook className="h-4 w-4" />
+                      Facebook
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Tip: Introduce yourself, explain your token's mission, and ask if they'd like to officially endorse it.
+              </p>
             </CardContent>
           </Card>
         )}
