@@ -119,15 +119,15 @@ export async function createFeeShareConfig(
   let feeClaimers: any[];
   
   if (params.payoutMethod === "twitter" && params.charityTwitterHandle) {
-    // Sanitize twitter handle: remove @, trim whitespace, enforce valid characters
+    // Sanitize twitter handle: remove @ prefix and trim whitespace
+    // Allow any valid X handle format - admin will verify legitimacy manually
     const rawHandle = params.charityTwitterHandle;
     const sanitizedHandle = rawHandle
       .replace(/^@/, "") // Remove leading @
-      .trim()
-      .replace(/[^a-zA-Z0-9_]/g, ""); // Only allow alphanumeric and underscore
+      .trim();
     
-    if (!sanitizedHandle || sanitizedHandle.length === 0 || sanitizedHandle.length > 15) {
-      throw new Error("Invalid Twitter handle: must be 1-15 alphanumeric characters or underscores");
+    if (!sanitizedHandle || sanitizedHandle.length === 0) {
+      throw new Error("X handle cannot be empty");
     }
     
     // Use Bags.fm X account claim system

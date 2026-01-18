@@ -584,7 +584,7 @@ export default function CharityApply() {
                       </div>
                     </FormControl>
                     <FormDescription>
-                      Your organization's X account. You'll claim donations by logging into the Bags.fm app with this account.
+                      Your organization's official X account. We'll verify it's legitimate (verified badge or established account with history). You'll claim donations by logging into the Bags.fm app with this account.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -17,7 +17,8 @@ import {
   Wallet, 
   ExternalLink,
   AlertCircle,
-  Globe
+  Globe,
+  Twitter
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -206,7 +207,7 @@ export default function AdminCharities() {
                 Ready for Approval
               </CardTitle>
               <CardDescription>
-                These charities have completed email and wallet verification
+                Review each charity carefully. For X account payouts, click the X profile link to verify the account is legitimate (verified badge or established history).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -323,21 +324,44 @@ function CharityCard({ charity, onApprove, onDeny, isApproving, isDenying, getSt
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
             <span className="flex items-center gap-1">
               <Mail className={`h-3 w-3 ${charity.emailVerifiedAt ? 'text-green-500' : 'text-muted-foreground'}`} />
               Email: {charity.emailVerifiedAt ? 'Verified' : 'Pending'}
             </span>
-            <span className="flex items-center gap-1">
-              <Wallet className={`h-3 w-3 ${charity.walletVerifiedAt ? 'text-green-500' : 'text-muted-foreground'}`} />
-              Wallet: {charity.walletVerifiedAt ? 'Verified' : 'Pending'}
-            </span>
+            {(charity.payoutMethod === "wallet" || !charity.payoutMethod) && (
+              <span className="flex items-center gap-1">
+                <Wallet className={`h-3 w-3 ${charity.walletVerifiedAt ? 'text-green-500' : 'text-muted-foreground'}`} />
+                Wallet: {charity.walletVerifiedAt ? 'Verified' : 'Pending'}
+              </span>
+            )}
+            {charity.payoutMethod === "twitter" && (
+              <Badge variant="outline" className="border-blue-500/50 text-blue-500 text-xs">
+                <Twitter className="h-3 w-3 mr-1" />
+                X Account Payout
+              </Badge>
+            )}
           </div>
 
-          {charity.walletAddress && (
+          {charity.walletAddress && charity.payoutMethod !== "twitter" && (
             <code className="text-xs bg-muted px-2 py-1 rounded block w-fit">
               {charity.walletAddress}
             </code>
+          )}
+          
+          {charity.twitterHandle && (
+            <a 
+              href={`https://x.com/${charity.twitterHandle.replace(/^@/, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-500 hover:underline w-fit"
+              data-testid={`link-twitter-${charity.id}`}
+            >
+              <Twitter className="h-4 w-4" />
+              @{charity.twitterHandle.replace(/^@/, '')}
+              <ExternalLink className="h-3 w-3" />
+              <span className="text-xs text-muted-foreground">(verify this account is legitimate)</span>
+            </a>
           )}
         </div>
 
