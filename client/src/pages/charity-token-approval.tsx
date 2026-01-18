@@ -67,6 +67,10 @@ export default function CharityTokenApproval() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ charityEmail, note }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(errorData.error || "Failed to approve token");
+      }
       return res.json();
     },
     onSuccess: (data: { success?: boolean; error?: string }) => {
@@ -86,6 +90,13 @@ export default function CharityTokenApproval() {
         });
       }
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const denyMutation = useMutation({
@@ -95,6 +106,10 @@ export default function CharityTokenApproval() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ charityEmail, note }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(errorData.error || "Failed to deny token");
+      }
       return res.json();
     },
     onSuccess: (data: { success?: boolean; error?: string }) => {
@@ -113,6 +128,13 @@ export default function CharityTokenApproval() {
           variant: "destructive",
         });
       }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Denial Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
