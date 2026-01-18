@@ -33,6 +33,12 @@ export const CHARITY_SOURCE = {
   MANUAL: "manual",       // Manually added/seeded charities
 } as const;
 
+// Payout method - how the charity receives donations
+export const PAYOUT_METHOD = {
+  WALLET: "wallet",       // Direct Solana wallet transfer (instant)
+  TWITTER: "twitter",     // Via Bags.fm X account claim system (charity claims later)
+} as const;
+
 // Charities registry table
 export const charities = pgTable("charities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -42,6 +48,8 @@ export const charities = pgTable("charities", {
   website: text("website"),
   email: text("email"),
   walletAddress: text("wallet_address"),
+  twitterHandle: text("twitter_handle"), // X account handle for Bags.fm claim system
+  payoutMethod: text("payout_method").notNull().default("wallet"), // wallet or twitter
   status: text("status").notNull().default("pending"),
   source: text("source").notNull().default("manual"), // change, everyorg, or manual
   isDefault: boolean("is_default").default(false),
@@ -240,11 +248,14 @@ export const FEATURED_IMPACT_PROJECT = {
 // Vetted charities - personally managed by admin
 // NOTE: Only add charities here after proper verification (email + wallet + admin approval)
 // The Water Project was removed as it was not properly vetted
+// Charities can use either wallet (direct payout) or twitterHandle (Bags.fm claim system)
 export const VETTED_CHARITIES = [
   {
     id: "julianas-animal-sanctuary",
     name: "Juliana's Animal Sanctuary",
     wallet: "JULSxvKLfEDpMqR7ePNvXxGGcNAPtYvWqmCjXhKBVPZ",
+    twitterHandle: "JulianasAnimalS", // X account for Bags.fm claim (optional alternative)
+    payoutMethod: "wallet" as const, // Using wallet for now, can switch to "twitter"
     category: "animals",
     description: "Rescuing and caring for farm animals in Colombia",
     website: "https://julianasanimalsanctuary.org",
@@ -261,6 +272,21 @@ export const charityApplicationSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   website: z.string().url("Please provide a valid website URL"),
   email: z.string().email("Please provide a valid official email address"),
-  walletAddress: z.string().min(32, "Please provide a valid Solana wallet address").max(44),
+  walletAddress: z.string().min(32, "Please provide a valid Solana wallet address").max(44).optional(),
+  twitterHandle: z.string().min(1, "Please provide your X account handle").max(50).optional(),
+  payoutMethod: z.enum(["wallet", "twitter"]).default("wallet"),
   registrationNumber: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // Must have either wallet address or twitter handle based on payout method
+    if (data.payoutMethod === "wallet") {
+      return data.walletAddress && data.walletAddress.length >= 32;
+    } else if (data.payoutMethod === "twitter") {
+      return data.twitterHandle && data.twitterHandle.length >= 1;
+    }
+    return false;
+  },
+  {
+    message: "Please provide a valid Solana wallet address or X account handle based on your payout method",
+  }
+);

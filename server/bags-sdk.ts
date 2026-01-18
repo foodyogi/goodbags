@@ -98,7 +98,9 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
 export interface FeeShareConfigParams {
   tokenMint: string;
   creatorWallet: string;
-  charityWallet: string;
+  charityWallet?: string;        // Direct wallet payout (optional)
+  charityTwitterHandle?: string; // X account for Bags.fm claim system (optional)
+  payoutMethod: "wallet" | "twitter";
 }
 
 export async function createFeeShareConfig(
@@ -106,24 +108,50 @@ export async function createFeeShareConfig(
 ): Promise<{ configKey: string; transactions: string[] }> {
   const sdk = getBagsSDK();
   
-  // Validate all public keys before creating config
+  // Validate required public keys
   const tokenMintPubkey = validatePublicKey(params.tokenMint, "token mint");
   const creatorPubkey = validatePublicKey(params.creatorWallet, "creator wallet");
-  const charityPubkey = validatePublicKey(params.charityWallet, "charity wallet");
   const platformPubkey = validatePublicKey(EFFECTIVE_PLATFORM_WALLET, "platform wallet");
-  
-  // Set up fee claimers with proper splits:
-  // - Creator gets remainder (98.75%)
-  // - Charity gets 1%
-  // - Platform gets 0.25%
-  const feeClaimers = [
-    { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
-    { user: charityPubkey, userBps: CHARITY_FEE_BPS },
-    { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
-  ];
   
   // Include partner wallet to earn Bags.fm referral credits
   const partnerPubkey = validatePublicKey(PARTNER_WALLET, "partner wallet");
+  
+  let feeClaimers: any[];
+  
+  if (params.payoutMethod === "twitter" && params.charityTwitterHandle) {
+    // Sanitize twitter handle: remove @, trim whitespace, enforce valid characters
+    const rawHandle = params.charityTwitterHandle;
+    const sanitizedHandle = rawHandle
+      .replace(/^@/, "") // Remove leading @
+      .trim()
+      .replace(/[^a-zA-Z0-9_]/g, ""); // Only allow alphanumeric and underscore
+    
+    if (!sanitizedHandle || sanitizedHandle.length === 0 || sanitizedHandle.length > 15) {
+      throw new Error("Invalid Twitter handle: must be 1-15 alphanumeric characters or underscores");
+    }
+    
+    // Use Bags.fm X account claim system
+    // Charity will claim via Bags app by connecting their wallet
+    feeClaimers = [
+      { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
+      { 
+        platform: "twitter", 
+        handle: sanitizedHandle,
+        percentage: CHARITY_FEE_BPS / 100 // Convert bps to percentage (75 bps = 0.75%)
+      },
+      { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
+    ];
+  } else if (params.charityWallet) {
+    // Direct wallet payout
+    const charityPubkey = validatePublicKey(params.charityWallet, "charity wallet");
+    feeClaimers = [
+      { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
+      { user: charityPubkey, userBps: CHARITY_FEE_BPS },
+      { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
+    ];
+  } else {
+    throw new Error("Either charityWallet or charityTwitterHandle is required");
+  }
   
   const configResult = await sdk.config.createBagsFeeShareConfig({
     payer: creatorPubkey,

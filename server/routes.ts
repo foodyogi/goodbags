@@ -417,7 +417,9 @@ export async function registerRoutes(
         category: validated.category,
         website: validated.website,
         email: validated.email,
-        walletAddress: validated.walletAddress,
+        walletAddress: validated.walletAddress || null,
+        twitterHandle: validated.twitterHandle || null,
+        payoutMethod: validated.payoutMethod || "wallet",
         registrationNumber: validated.registrationNumber,
         submitterWallet: submitterWallet || null,
         status: verifiedEveryOrgData ? CHARITY_STATUS.EIN_VERIFIED : CHARITY_STATUS.PENDING,
@@ -626,11 +628,20 @@ export async function registerRoutes(
       }
 
       const pending = await storage.getPendingCharities();
-      // Also get wallet-verified charities awaiting approval
+      // Also get charities awaiting approval:
+      // - Wallet payout: need WALLET_VERIFIED status
+      // - X account payout: need EMAIL_VERIFIED status (no wallet verification required)
       const charities = await storage.getCharities();
-      const awaitingApproval = charities.filter(
-        c => c.status === CHARITY_STATUS.WALLET_VERIFIED
-      );
+      const awaitingApproval = charities.filter(c => {
+        const payoutMethod = (c.payoutMethod as "wallet" | "twitter") || "wallet";
+        if (payoutMethod === "twitter") {
+          // X account payout: only need email verification
+          return c.status === CHARITY_STATUS.EMAIL_VERIFIED && c.emailVerifiedAt;
+        } else {
+          // Wallet payout: need wallet verification
+          return c.status === CHARITY_STATUS.WALLET_VERIFIED;
+        }
+      });
       
       res.json({
         pending,
@@ -655,12 +666,29 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Charity not found" });
       }
 
-      // Ensure both verifications are complete
-      if (!charity.emailVerifiedAt || !charity.walletVerifiedAt) {
+      // Ensure email verification is complete
+      if (!charity.emailVerifiedAt) {
         return res.status(400).json({
-          error: "Charity must complete email and wallet verification before approval",
+          error: "Charity must complete email verification before approval",
+          emailVerified: !!charity.emailVerifiedAt,
+        });
+      }
+      
+      // For wallet payout method, also require wallet verification
+      // For X account payout method, wallet verification is not required
+      const payoutMethod = (charity.payoutMethod as "wallet" | "twitter") || "wallet";
+      if (payoutMethod === "wallet" && !charity.walletVerifiedAt) {
+        return res.status(400).json({
+          error: "Charity must complete wallet verification before approval",
           emailVerified: !!charity.emailVerifiedAt,
           walletVerified: !!charity.walletVerifiedAt,
+        });
+      }
+      
+      // For X account payout, verify they have a valid twitter handle
+      if (payoutMethod === "twitter" && !charity.twitterHandle) {
+        return res.status(400).json({
+          error: "Charity must have an X account handle configured for X payout method",
         });
       }
 
@@ -975,7 +1003,9 @@ export async function registerRoutes(
         });
       }
 
-      let charityWallet: string;
+      let charityWallet: string | undefined;
+      let charityTwitterHandle: string | undefined;
+      let payoutMethod: "wallet" | "twitter" = "wallet";
       
       if (charitySource === "change") {
         // Change API charity - validate the provided Solana address
@@ -1000,6 +1030,7 @@ export async function registerRoutes(
         }
         
         charityWallet = verification.walletAddress!;
+        payoutMethod = "wallet";
       } else {
         // Local charity - look up from database
         const charity = await storage.getCharityById(charityId);
@@ -1018,14 +1049,23 @@ export async function registerRoutes(
           });
         }
         
-        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
+        // Determine payout method based on charity configuration
+        const charityPayoutMethod = (charity.payoutMethod as "wallet" | "twitter") || "wallet";
+        
+        if (charityPayoutMethod === "twitter" && charity.twitterHandle) {
+          // Use Bags.fm X account claim system
+          charityTwitterHandle = charity.twitterHandle;
+          payoutMethod = "twitter";
+        } else if (charity.walletAddress && isValidSolanaAddress(charity.walletAddress)) {
+          // Direct wallet payout
+          charityWallet = charity.walletAddress;
+          payoutMethod = "wallet";
+        } else {
           return res.status(400).json({
             success: false,
-            error: "Selected charity does not have a valid wallet address configured",
+            error: "Selected charity does not have a valid payout method configured",
           });
         }
-        
-        charityWallet = charity.walletAddress;
       }
 
       if (!bagsSDK.isConfigured()) {
@@ -1042,6 +1082,8 @@ export async function registerRoutes(
         tokenMint,
         creatorWallet,
         charityWallet,
+        charityTwitterHandle,
+        payoutMethod,
       });
 
       res.json({

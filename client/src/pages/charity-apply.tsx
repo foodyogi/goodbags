@@ -14,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Badge } from "@/components/ui/badge";
 import { 
   Building2, Mail, Globe, Wallet, CheckCircle2, AlertCircle, Shield, 
-  Copy, Check, ArrowRight, ArrowLeft, ExternalLink, Search, Loader2
+  Copy, Check, ArrowRight, ArrowLeft, ExternalLink, Search, Loader2, Twitter
 } from "lucide-react";
 import { charityApplicationSchema, IMPACT_CATEGORIES, type CharityApplication } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -82,9 +82,14 @@ export default function CharityApply() {
       website: "",
       email: "",
       walletAddress: "",
+      twitterHandle: "",
+      payoutMethod: "wallet",
       registrationNumber: "",
     },
   });
+
+  // Watch payout method for conditional rendering
+  const payoutMethod = applicationForm.watch("payoutMethod");
 
   const verifyEinMutation = useMutation({
     mutationFn: async (data: EinFormData) => {
@@ -146,6 +151,10 @@ export default function CharityApply() {
           title: "Application Submitted",
           description: "Please verify your email address.",
         });
+        // If using X account payout, skip wallet verification
+        if (payoutMethod === "twitter") {
+          setWalletVerified(true); // No wallet verification needed
+        }
       } else {
         toast({
           title: "Application Failed",
@@ -239,7 +248,12 @@ export default function CharityApply() {
 
   const handleEmailVerified = () => {
     setEmailVerified(true);
-    setCurrentStep(4);
+    // Skip wallet verification step if using X account payout
+    if (payoutMethod === "twitter") {
+      setCurrentStep(5);
+    } else {
+      setCurrentStep(4);
+    }
   };
 
   const renderStepIndicator = () => (
@@ -479,40 +493,104 @@ export default function CharityApply() {
 
             <FormField
               control={applicationForm.control}
-              name="walletAddress"
+              name="payoutMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Solana Wallet Address</FormLabel>
-                  <FormControl>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          placeholder="Your charity's Solana wallet" 
-                          className="pl-10"
-                          {...field} 
-                          data-testid="input-charity-wallet"
-                        />
-                      </div>
-                      {connected && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleUseConnectedWallet}
-                          data-testid="button-use-connected-wallet"
-                        >
-                          Use Connected
-                        </Button>
-                      )}
-                    </div>
-                  </FormControl>
+                  <FormLabel>How would you like to receive donations?</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-payout-method">
+                        <SelectValue placeholder="Select payout method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="wallet">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="h-4 w-4" />
+                          <span>Direct to Solana Wallet (instant)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="twitter">
+                        <div className="flex items-center gap-2">
+                          <Twitter className="h-4 w-4" />
+                          <span>Via X Account (claim later)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
-                    This is where donations will be sent. You'll verify ownership in step 4.
+                    {field.value === "twitter" 
+                      ? "Donations accumulate and you claim them via the Bags.fm app when ready"
+                      : "Donations go directly to your Solana wallet"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {payoutMethod === "wallet" ? (
+              <FormField
+                control={applicationForm.control}
+                name="walletAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Solana Wallet Address</FormLabel>
+                    <FormControl>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Your charity's Solana wallet" 
+                            className="pl-10"
+                            {...field} 
+                            data-testid="input-charity-wallet"
+                          />
+                        </div>
+                        {connected && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleUseConnectedWallet}
+                            data-testid="button-use-connected-wallet"
+                          >
+                            Use Connected
+                          </Button>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      This is where donations will be sent. You'll verify ownership in step 4.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={applicationForm.control}
+                name="twitterHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>X (Twitter) Handle</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="YourCharityHandle (without @)" 
+                          className="pl-10"
+                          {...field} 
+                          data-testid="input-charity-twitter"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Your organization's X account. You'll claim donations by logging into the Bags.fm app with this account.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex gap-3">
               <Button 
@@ -593,7 +671,9 @@ export default function CharityApply() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            After clicking the verification link, return here and click "Continue" to set up your wallet.
+            {payoutMethod === "twitter" 
+              ? "After clicking the verification link, return here and click \"Continue\" to complete your application."
+              : "After clicking the verification link, return here and click \"Continue\" to set up your wallet."}
           </AlertDescription>
         </Alert>
 
@@ -779,13 +859,25 @@ export default function CharityApply() {
             </div>
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <span>Wallet ownership verified</span>
+              {payoutMethod === "twitter" ? (
+                <span>X account linked: @{applicationForm.getValues("twitterHandle")}</span>
+              ) : (
+                <span>Wallet ownership verified</span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Shield className="h-5 w-5 text-muted-foreground" />
               <span className="text-muted-foreground">Pending admin review (1-3 business days)</span>
             </div>
           </div>
+          {payoutMethod === "twitter" && (
+            <Alert className="mt-4 bg-blue-500/10 border-blue-500/20">
+              <Twitter className="h-4 w-4 text-blue-500" />
+              <AlertDescription className="text-blue-600">
+                Donations will accumulate and you can claim them anytime via the Bags.fm app by logging in with your X account.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <Alert>

@@ -7,6 +7,7 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 ### Key Features
 - **Multi-charity system**: Creators choose their cause from verified charities by category
 - **Automated charity verification**: 3-step verification process (email + wallet signature + admin approval)
+- **Dual payout methods**: Charities can receive donations via direct Solana wallet OR via Bags.fm X account claim system
 - **Fee structure**: 1% total fee split: 0.75% to charity + 0.25% platform fee for FYI buyback
 - **Impact Dashboard**: Track donations with blockchain-verified transparency
 - **Security**: Only verified charities can receive donations (enforced server-side)
@@ -23,11 +24,18 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 
 ### Charity Verification Workflow (5-Step Wizard)
 1. **EIN Verification** (`/charities/apply`): Charity enters EIN (Tax ID), verified against Every.org API
-2. **Organization Info**: Pre-filled form with Every.org data, user adds category and email
+2. **Organization Info**: Pre-filled form with Every.org data, user chooses payout method (wallet or X account)
 3. **Email Verification**: Verify ownership of charity email domain
-4. **Wallet Setup & Verification**: Connect Solana wallet (with Phantom/Solflare guidance) and sign message to prove ownership
+4. **Wallet Setup & Verification**: (Only for wallet payout) Connect Solana wallet and sign message to prove ownership
 5. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
 6. **Active**: Charity appears in token launch dropdown
+
+### Payout Methods
+- **Wallet (Direct)**: Donations sent directly to charity's Solana wallet address (instant)
+- **X Account (Claim Later)**: Uses Bags.fm's built-in claim system - donations accumulate and charity claims via Bags.fm app
+  - Charity registers with their X (Twitter) handle
+  - Trading fees assigned to that X handle via Bags SDK `feeClaimers` with `platform: "twitter"`
+  - Charity claims accumulated SOL by logging into Bags.fm app with their X account
 
 ### Change API Integration (Primary)
 - **Purpose**: Access 1.3M+ verified nonprofits with pre-existing Solana wallets
