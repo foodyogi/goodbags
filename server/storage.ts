@@ -78,6 +78,15 @@ export interface IStorage {
   // Buyback methods
   createBuyback(buyback: InsertBuyback): Promise<Buyback>;
   getAllBuybacks(): Promise<Buyback[]>;
+  
+  // Token approval methods
+  getTokensPendingApproval(): Promise<LaunchedToken[]>;
+  getTokensByCharityEmail(charityEmail: string): Promise<LaunchedToken[]>;
+  updateTokenApprovalStatus(
+    tokenId: string, 
+    status: string, 
+    note?: string
+  ): Promise<LaunchedToken | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -441,6 +450,40 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(buybacks)
       .orderBy(desc(buybacks.executedAt));
+  }
+
+  // Token approval methods
+  async getTokensPendingApproval(): Promise<LaunchedToken[]> {
+    return db
+      .select()
+      .from(launchedTokens)
+      .where(eq(launchedTokens.charityApprovalStatus, "pending"))
+      .orderBy(desc(launchedTokens.launchedAt));
+  }
+
+  async getTokensByCharityEmail(charityEmail: string): Promise<LaunchedToken[]> {
+    return db
+      .select()
+      .from(launchedTokens)
+      .where(eq(launchedTokens.charityEmail, charityEmail))
+      .orderBy(desc(launchedTokens.launchedAt));
+  }
+
+  async updateTokenApprovalStatus(
+    tokenId: string,
+    status: string,
+    note?: string
+  ): Promise<LaunchedToken | undefined> {
+    const [updated] = await db
+      .update(launchedTokens)
+      .set({
+        charityApprovalStatus: status,
+        charityApprovalNote: note || null,
+        charityRespondedAt: new Date(),
+      })
+      .where(eq(launchedTokens.id, tokenId))
+      .returning();
+    return updated;
   }
 }
 

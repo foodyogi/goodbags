@@ -7,6 +7,7 @@ import {
   tokenLaunchFormSchema,
   charityApplicationSchema,
   CHARITY_STATUS,
+  TOKEN_APPROVAL_STATUS,
   type Charity,
 } from "@shared/schema";
 import { z } from "zod";
@@ -746,6 +747,203 @@ export async function registerRoutes(
     }
   });
 
+  // === TOKEN APPROVAL ENDPOINTS ===
+  // Charities can approve/deny tokens created in their name
+  
+  // Get tokens pending approval for a charity (by email verification)
+  app.get("/api/charity/tokens/pending", async (req, res) => {
+    try {
+      const charityEmail = req.query.email as string;
+      const verificationToken = req.headers["x-charity-token"] as string;
+      
+      if (!charityEmail) {
+        return res.status(400).json({ error: "Charity email is required" });
+      }
+      
+      // Verify the charity exists and the token matches
+      const charity = await storage.getCharityByEmail(charityEmail);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      
+      // Simple verification: check if email is verified (charity has access)
+      if (!charity.emailVerifiedAt) {
+        return res.status(401).json({ error: "Charity email not verified" });
+      }
+      
+      // Get all tokens for this charity
+      const tokens = await storage.getTokensByCharityEmail(charityEmail);
+      const pendingTokens = tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING);
+      
+      res.json({
+        tokens: pendingTokens,
+        totalPending: pendingTokens.length,
+      });
+    } catch (error) {
+      console.error("Get pending tokens error:", error);
+      res.status(500).json({ error: "Failed to fetch pending tokens" });
+    }
+  });
+  
+  // Get all tokens for a charity (for their dashboard)
+  app.get("/api/charity/tokens", async (req, res) => {
+    try {
+      const charityEmail = req.query.email as string;
+      
+      if (!charityEmail) {
+        return res.status(400).json({ error: "Charity email is required" });
+      }
+      
+      const charity = await storage.getCharityByEmail(charityEmail);
+      if (!charity || !charity.emailVerifiedAt) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const tokens = await storage.getTokensByCharityEmail(charityEmail);
+      
+      res.json({
+        tokens,
+        stats: {
+          total: tokens.length,
+          pending: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING).length,
+          approved: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED).length,
+          denied: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.DENIED).length,
+        },
+      });
+    } catch (error) {
+      console.error("Get charity tokens error:", error);
+      res.status(500).json({ error: "Failed to fetch tokens" });
+    }
+  });
+  
+  // Approve a token (charity action)
+  app.post("/api/charity/tokens/:id/approve", async (req, res) => {
+    try {
+      const { charityEmail, note } = req.body;
+      const tokenId = req.params.id;
+      
+      if (!charityEmail) {
+        return res.status(400).json({ error: "Charity email is required" });
+      }
+      
+      // Verify charity owns this token
+      const charity = await storage.getCharityByEmail(charityEmail);
+      if (!charity || !charity.emailVerifiedAt) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      // Get the token and verify it belongs to this charity
+      const tokens = await storage.getTokensByCharityEmail(charityEmail);
+      const token = tokens.find(t => t.id === tokenId);
+      
+      if (!token) {
+        return res.status(404).json({ error: "Token not found or not associated with this charity" });
+      }
+      
+      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
+        return res.status(400).json({ error: "Token has already been reviewed" });
+      }
+      
+      // Approve the token
+      const updated = await storage.updateTokenApprovalStatus(tokenId, TOKEN_APPROVAL_STATUS.APPROVED, note);
+      
+      await storage.createAuditLog({
+        action: "TOKEN_APPROVED_BY_CHARITY",
+        entityType: "token",
+        entityId: tokenId,
+        details: JSON.stringify({ 
+          charityEmail,
+          charityName: charity.name,
+          tokenName: token.name,
+          note,
+        }),
+      });
+      
+      res.json({
+        success: true,
+        message: "Token officially endorsed by charity",
+        token: updated,
+      });
+    } catch (error) {
+      console.error("Token approval error:", error);
+      res.status(500).json({ error: "Failed to approve token" });
+    }
+  });
+  
+  // Deny a token (charity action)
+  app.post("/api/charity/tokens/:id/deny", async (req, res) => {
+    try {
+      const { charityEmail, note } = req.body;
+      const tokenId = req.params.id;
+      
+      if (!charityEmail) {
+        return res.status(400).json({ error: "Charity email is required" });
+      }
+      
+      // Verify charity owns this token
+      const charity = await storage.getCharityByEmail(charityEmail);
+      if (!charity || !charity.emailVerifiedAt) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      // Get the token and verify it belongs to this charity
+      const tokens = await storage.getTokensByCharityEmail(charityEmail);
+      const token = tokens.find(t => t.id === tokenId);
+      
+      if (!token) {
+        return res.status(404).json({ error: "Token not found or not associated with this charity" });
+      }
+      
+      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
+        return res.status(400).json({ error: "Token has already been reviewed" });
+      }
+      
+      // Deny the token
+      const updated = await storage.updateTokenApprovalStatus(tokenId, TOKEN_APPROVAL_STATUS.DENIED, note);
+      
+      await storage.createAuditLog({
+        action: "TOKEN_DENIED_BY_CHARITY",
+        entityType: "token",
+        entityId: tokenId,
+        details: JSON.stringify({ 
+          charityEmail,
+          charityName: charity.name,
+          tokenName: token.name,
+          note,
+        }),
+      });
+      
+      res.json({
+        success: true,
+        message: "Token denied by charity",
+        token: updated,
+      });
+    } catch (error) {
+      console.error("Token denial error:", error);
+      res.status(500).json({ error: "Failed to deny token" });
+    }
+  });
+  
+  // Admin: Get all tokens pending approval
+  app.get("/api/admin/tokens/pending", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const pendingTokens = await storage.getTokensPendingApproval();
+      
+      res.json({
+        tokens: pendingTokens,
+        total: pendingTokens.length,
+      });
+    } catch (error) {
+      console.error("Get pending tokens error:", error);
+      res.status(500).json({ error: "Failed to fetch pending tokens" });
+    }
+  });
+
   // === CHANGE API ENDPOINTS ===
   // Search nonprofits via Change API (1.3M+ verified with Solana wallets)
 
@@ -1160,7 +1358,7 @@ export async function registerRoutes(
       }
       
       // Get the selected charity - handle both Change API and local charities
-      let charityInfo: { id: string; name: string; walletAddress: string | null; source: string };
+      let charityInfo: { id: string; name: string; walletAddress: string | null; email: string | null; source: string };
       
       if (validated.charitySource === "change") {
         // SECURITY: Verify Change API charity wallet address
@@ -1181,6 +1379,7 @@ export async function registerRoutes(
           id: validated.charityId,
           name: nonprofit?.name || "Unknown Charity",
           walletAddress: verification.walletAddress || null,
+          email: null, // Change API doesn't provide email
           source: "change",
         };
       } else {
@@ -1216,6 +1415,7 @@ export async function registerRoutes(
           id: charity.id,
           name: charity.name,
           walletAddress: charity.walletAddress,
+          email: charity.email || null,
           source: "local",
         };
       }
@@ -1225,7 +1425,7 @@ export async function registerRoutes(
       const charityDonation = (initialBuy * CHARITY_FEE_PERCENTAGE / 100).toFixed(9);
       const platformFee = (initialBuy * PLATFORM_FEE_PERCENTAGE / 100).toFixed(9);
       
-      // Create the token record
+      // Create the token record with charity approval tracking
       const token = await storage.createLaunchedToken({
         name: validated.name,
         symbol: validated.symbol,
@@ -1234,6 +1434,12 @@ export async function registerRoutes(
         mintAddress: mintAddress,
         creatorWallet: validated.creatorWallet,
         charityId: charityInfo.id,
+        // Charity approval tracking
+        charityApprovalStatus: "pending", // All new tokens start pending approval
+        charityName: charityInfo.name,
+        charityEmail: charityInfo.email,
+        charityNotifiedAt: charityInfo.email ? new Date() : null, // Mark as notified if we have email
+        // Financial tracking
         initialBuyAmount: validated.initialBuyAmount,
         charityDonated: charityDonation,
         platformFeeCollected: platformFee,

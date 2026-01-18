@@ -39,6 +39,14 @@ export const PAYOUT_METHOD = {
   TWITTER: "twitter",     // Via Bags.fm X account claim system (charity claims later)
 } as const;
 
+// Token approval status - charity endorsement of tokens created in their name
+export const TOKEN_APPROVAL_STATUS = {
+  PENDING: "pending",           // Awaiting charity review
+  APPROVED: "approved",         // Charity has endorsed this token
+  DENIED: "denied",             // Charity has rejected this token
+  NOT_APPLICABLE: "not_applicable", // No charity selected (self-directed)
+} as const;
+
 // Charities registry table
 export const charities = pgTable("charities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -104,6 +112,15 @@ export const launchedTokens = pgTable("launched_tokens", {
   mintAddress: text("mint_address").notNull().unique(),
   creatorWallet: text("creator_wallet").notNull(),
   charityId: text("charity_id"),
+  // Charity approval status - tracks if the charity has endorsed this token
+  charityApprovalStatus: text("charity_approval_status").notNull().default("pending"),
+  charityApprovalNote: text("charity_approval_note"), // Optional note from charity
+  charityNotifiedAt: timestamp("charity_notified_at"), // When we emailed the charity
+  charityRespondedAt: timestamp("charity_responded_at"), // When charity approved/denied
+  // Charity info snapshot (in case charity record changes)
+  charityName: text("charity_name"),
+  charityEmail: text("charity_email"),
+  // Financial tracking
   initialBuyAmount: decimal("initial_buy_amount", { precision: 18, scale: 9 }).default("0"),
   charityDonated: decimal("charity_donated", { precision: 18, scale: 9 }).default("0"),
   platformFeeCollected: decimal("platform_fee_collected", { precision: 18, scale: 9 }).default("0"),
