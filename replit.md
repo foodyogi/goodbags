@@ -49,10 +49,16 @@ GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by B
 - **Use Case**: For charities not on Change API or without Solana wallets who want to join the platform
 
 ### Security Model
-- Charity wallets are looked up server-side from vetted database (prevents fee diversion)
-- Only `APPROVED` status charities can be used for token launches
-- All wallet addresses validated before on-chain operations
-- Admin endpoints protected by ADMIN_SECRET environment variable
+- **Wallet Validation**: All Solana addresses validated with bs58 decoding to verify 32-byte public keys
+- **Server-side Lookup**: Charity wallets looked up server-side from vetted sources (prevents fee diversion)
+- **Charity Enforcement**: Only `APPROVED` status charities can be used for token launches (enforced in all endpoints)
+- **Change API Verification**: Wallet addresses from Change API are re-validated before use
+- **Admin Protection**: ADMIN_SECRET required in ALL environments (no development bypass), uses crypto.timingSafeEqual for constant-time comparison
+- **Rate Limiting**: In-memory rate limiting on public endpoints:
+  - Search: 30 requests/minute
+  - Token operations: 10 requests/minute  
+  - Charity applications: 5 requests/minute
+- **Audit Logging**: All charity submissions and token launches tracked for compliance
 
 ## User Preferences
 
@@ -119,7 +125,7 @@ Preferred communication style: Simple, everyday language.
 - `SESSION_SECRET`: Session encryption secret
 - `PLATFORM_WALLET_ADDRESS`: Platform wallet for fee collection (set to buyback wallet)
 - `BUYBACK_WALLET_PRIVATE_KEY`: Private key for automated FYI buyback swaps
-- `ADMIN_SECRET`: Required in production for admin endpoints
+- `ADMIN_SECRET`: Required in ALL environments for admin endpoints (no development bypass)
 - `EVERY_ORG_API_KEY`: Every.org API key for nonprofit EIN verification (get from https://www.every.org/developer)
 
 ### Token Launch Flow

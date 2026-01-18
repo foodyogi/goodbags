@@ -10,35 +10,122 @@ import {
   type Charity,
 } from "@shared/schema";
 import { z } from "zod";
-import { randomUUID, randomBytes } from "crypto";
+import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
 
-// Admin secret for approving charities - MUST be set in production
-// In production, ADMIN_SECRET is required and must match the provided secret
-// In development, we allow access if not set for easier testing
+// Admin secret for approving charities - REQUIRED in all environments
+// SECURITY FIX: No bypass allowed - must always set ADMIN_SECRET
 function isAdminAuthorized(secret: string | undefined): boolean {
   const adminSecret = process.env.ADMIN_SECRET;
-  const isProduction = process.env.NODE_ENV === "production";
   
-  if (isProduction && !adminSecret) {
-    console.error("CRITICAL: ADMIN_SECRET not set in production - admin endpoints are disabled");
+  if (!adminSecret) {
+    console.error("SECURITY: ADMIN_SECRET not set - admin endpoints are disabled");
     return false;
   }
   
-  if (!adminSecret) {
-    console.warn("ADMIN_SECRET not set - admin endpoints accessible in development mode only");
-    return !isProduction;
+  if (!secret) {
+    return false;
   }
   
-  return secret === adminSecret;
+  // Use crypto.timingSafeEqual for constant-time comparison to prevent timing attacks
+  // Both buffers must be same length for timingSafeEqual
+  const secretBuffer = Buffer.from(secret);
+  const adminSecretBuffer = Buffer.from(adminSecret);
+  
+  if (secretBuffer.length !== adminSecretBuffer.length) {
+    return false;
+  }
+  
+  return timingSafeEqual(secretBuffer, adminSecretBuffer);
+}
+
+// Simple in-memory rate limiter
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30; // Max requests per window
+
+function getRateLimitKey(req: any): string {
+  // Use IP address as identifier
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || 
+             req.socket?.remoteAddress || 
+             'unknown';
+  return ip;
+}
+
+function checkRateLimit(key: string, maxRequests: number = RATE_LIMIT_MAX_REQUESTS): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(key);
+  
+  // Clean up expired entries periodically
+  if (rateLimitStore.size > 10000) {
+    const entries = Array.from(rateLimitStore.entries());
+    for (const [k, v] of entries) {
+      if (now > v.resetTime) rateLimitStore.delete(k);
+    }
+  }
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return { allowed: true, remaining: maxRequests - 1, resetIn: RATE_LIMIT_WINDOW };
+  }
+  
+  if (record.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetIn: record.resetTime - now };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetTime - now };
+}
+
+// Rate limiting middleware factory
+function rateLimitMiddleware(maxRequests: number = RATE_LIMIT_MAX_REQUESTS) {
+  return (req: any, res: any, next: any) => {
+    const key = getRateLimitKey(req);
+    const result = checkRateLimit(key, maxRequests);
+    
+    res.setHeader('X-RateLimit-Remaining', result.remaining);
+    res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetIn / 1000));
+    
+    if (!result.allowed) {
+      return res.status(429).json({ 
+        error: "Too many requests. Please try again later.",
+        retryAfter: Math.ceil(result.resetIn / 1000)
+      });
+    }
+    
+    next();
+  };
 }
 
 // Generate a secure random token
 function generateToken(): string {
   return randomBytes(32).toString("hex");
+}
+
+// SECURITY: Strict Solana public key validation
+// Validates base58 encoding AND correct length (32 bytes = 44 chars typically)
+function isValidSolanaAddress(address: string): boolean {
+  if (!address || typeof address !== 'string') {
+    return false;
+  }
+  
+  // Basic regex check for base58 characters (no 0, O, I, l)
+  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  if (!base58Regex.test(address)) {
+    return false;
+  }
+  
+  // Try to decode the base58 address to verify it's valid
+  try {
+    const decoded = bs58.decode(address);
+    // Solana public keys are exactly 32 bytes
+    return decoded.length === 32;
+  } catch {
+    return false;
+  }
 }
 
 // Extend the shared schema with creatorWallet and charity source info
@@ -73,7 +160,14 @@ async function verifyChangeCharityWallet(
       return { valid: false, error: "This charity doesn't have a Solana wallet yet" };
     }
     
-    const verifiedAddress = nonprofit.crypto?.solana_address;
+    const verifiedAddress = nonprofit.crypto?.solana_address || undefined;
+    
+    // SECURITY: Validate the address from Change API is a valid Solana address
+    // This protects against malformed upstream data
+    if (!verifiedAddress || !isValidSolanaAddress(verifiedAddress)) {
+      console.warn(`Invalid Solana address from Change API for ${charityId}: ${verifiedAddress}`);
+      return { valid: false, error: "Charity has an invalid Solana wallet address" };
+    }
     
     // Verify the client-provided address matches (if provided)
     if (providedAddress && providedAddress !== verifiedAddress) {
@@ -255,7 +349,8 @@ export async function registerRoutes(
   });
 
   // Submit a charity application
-  app.post("/api/charities/apply", async (req, res) => {
+  // Rate limited: 5 requests per minute (charity applications are rare)
+  app.post("/api/charities/apply", rateLimitMiddleware(5), async (req, res) => {
     try {
       const validated = charityApplicationSchema.parse(req.body);
       const { submitterWallet, everyOrgData } = req.body;
@@ -626,7 +721,8 @@ export async function registerRoutes(
   // === CHANGE API ENDPOINTS ===
   // Search nonprofits via Change API (1.3M+ verified with Solana wallets)
 
-  app.get("/api/charities/change/search", async (req, res) => {
+  // Rate limited: 30 requests per minute
+  app.get("/api/charities/change/search", rateLimitMiddleware(30), async (req, res) => {
     try {
       const query = req.query.q as string;
       const page = parseInt(req.query.page as string) || 1;
@@ -736,16 +832,16 @@ export async function registerRoutes(
   });
 
   // Step 1: Create token metadata on Bags.fm
-  app.post("/api/tokens/prepare", async (req, res) => {
+  // Rate limited: 10 requests per minute (token launches are expensive operations)
+  app.post("/api/tokens/prepare", rateLimitMiddleware(10), async (req, res) => {
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       
       let charityInfo: { id: string; name: string; walletAddress: string; source: string };
-      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
       
       if (validated.charitySource === "change") {
         // Change API charity - verify the Solana address is provided and valid
-        if (!validated.charitySolanaAddress || !base58Regex.test(validated.charitySolanaAddress)) {
+        if (!validated.charitySolanaAddress || !isValidSolanaAddress(validated.charitySolanaAddress)) {
           return res.status(400).json({
             success: false,
             error: "Invalid Solana wallet address for selected charity",
@@ -792,7 +888,7 @@ export async function registerRoutes(
           });
         }
         
-        if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
+        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
           return res.status(400).json({
             success: false,
             error: "Selected charity does not have a valid wallet address",
@@ -853,7 +949,8 @@ export async function registerRoutes(
   });
 
   // Step 2: Create fee share config and get transactions to sign
-  app.post("/api/tokens/config", async (req, res) => {
+  // Rate limited: 10 requests per minute
+  app.post("/api/tokens/config", rateLimitMiddleware(10), async (req, res) => {
     try {
       const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress } = req.body;
       
@@ -864,15 +961,14 @@ export async function registerRoutes(
         });
       }
 
-      // Validate address formats (base58, 32-44 characters)
-      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-      if (!base58Regex.test(tokenMint)) {
+      // Validate address formats using strict Solana validation
+      if (!isValidSolanaAddress(tokenMint)) {
         return res.status(400).json({
           success: false,
           error: "Invalid token mint address format",
         });
       }
-      if (!base58Regex.test(creatorWallet)) {
+      if (!isValidSolanaAddress(creatorWallet)) {
         return res.status(400).json({
           success: false,
           error: "Invalid creator wallet address format",
@@ -883,7 +979,7 @@ export async function registerRoutes(
       
       if (charitySource === "change") {
         // Change API charity - validate the provided Solana address
-        if (!charitySolanaAddress || !base58Regex.test(charitySolanaAddress)) {
+        if (!charitySolanaAddress || !isValidSolanaAddress(charitySolanaAddress)) {
           return res.status(400).json({
             success: false,
             error: "Invalid Solana wallet address for Change charity",
@@ -922,7 +1018,7 @@ export async function registerRoutes(
           });
         }
         
-        if (!charity.walletAddress || !base58Regex.test(charity.walletAddress)) {
+        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
           return res.status(400).json({
             success: false,
             error: "Selected charity does not have a valid wallet address configured",
@@ -1008,7 +1104,8 @@ export async function registerRoutes(
   });
   
   // Step 4: Record successful launch after client broadcasts transaction
-  app.post("/api/tokens/launch", async (req, res) => {
+  // Rate limited: 10 requests per minute
+  app.post("/api/tokens/launch", rateLimitMiddleware(10), async (req, res) => {
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       const { mintAddress, transactionSignature } = req.body;
@@ -1056,6 +1153,23 @@ export async function registerRoutes(
             error: "No charity selected and no default available",
           });
         }
+        
+        // SECURITY: Enforce only approved/verified charities can be used for launches
+        if (charity.status !== CHARITY_STATUS.APPROVED) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+        
+        // SECURITY: Validate wallet address format
+        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
+          return res.status(400).json({
+            success: false,
+            error: "Selected charity does not have a valid wallet address",
+          });
+        }
+        
         charityInfo = {
           id: charity.id,
           name: charity.name,
