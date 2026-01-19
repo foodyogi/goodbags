@@ -5,9 +5,11 @@
 GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by Bags.fm that enables users to create and launch their own memecoins with built-in charity donations. Token creators choose their own impact cause during launch, selecting from verified charities across categories like hunger, environment, education, health, animals, disaster relief, and community.
 
 ### Key Features
+- **75+ Verified Charities**: Pre-verified nonprofits from 9 countries (US, UK, India, Colombia, Canada, Australia, Switzerland, Italy, South Africa)
+- **X Account Payout System**: Charities claim donations via Bags.fm app using their verified X (Twitter) account
+- **Country Registration**: Each charity displays their country of registration for transparency
 - **Multi-charity system**: Creators choose their cause from verified charities by category
-- **Automated charity verification**: 3-step verification process (email + wallet signature + admin approval)
-- **Dual payout methods**: Charities can receive donations via direct Solana wallet OR via Bags.fm X account claim system
+- **Automated charity verification**: Verification via official X accounts and nonprofit registration records
 - **Fee structure**: 1% total fee split: 0.75% to charity + 0.25% platform fee for FYI buyback
 - **Impact Dashboard**: Track donations with blockchain-verified transparency
 - **Security**: Only verified charities can receive donations (enforced server-side)
