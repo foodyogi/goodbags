@@ -66,7 +66,7 @@ type ImageSourceType = "url" | "upload" | "generate";
 
 const tokenLaunchFormSchemaWithCharity = z.object({
   name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
-  symbol: z.string().min(1, "Symbol is required").max(10, "Symbol must be 10 characters or less").toUpperCase(),
+  symbol: z.string().min(1, "Ticker is required").max(10, "Ticker must be 10 characters or less").toUpperCase(),
   description: z.string().max(500, "Description must be 500 characters or less").optional(),
   imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   initialBuyAmount: z.string().refine((val) => {
@@ -439,7 +439,7 @@ export function TokenLaunchForm() {
               <span className="font-medium">{launchResult.token.name}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Symbol</span>
+              <span className="text-sm text-muted-foreground">Ticker</span>
               <span className="font-mono font-medium">{launchResult.token.symbol}</span>
             </div>
             <div className="flex justify-between items-center">
@@ -580,7 +580,7 @@ export function TokenLaunchForm() {
               name="symbol"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Symbol</FormLabel>
+                  <FormLabel>Ticker</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="e.g. DMOON" 

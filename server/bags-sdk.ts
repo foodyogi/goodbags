@@ -89,8 +89,29 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     website: params.websiteUrl || "",
   });
 
+  // Normalize tokenMint to base58 string - SDK may return PublicKey object, buffer, or string
+  let tokenMintString: string;
+  const rawMint = result.tokenMint as any; // SDK typing may not match runtime type
+  
+  if (typeof rawMint === 'string') {
+    tokenMintString = rawMint;
+  } else if (rawMint && typeof rawMint.toBase58 === 'function') {
+    // PublicKey-like object
+    tokenMintString = rawMint.toBase58();
+  } else {
+    // Try to convert via PublicKey constructor (handles buffer/array/Uint8Array)
+    try {
+      tokenMintString = new PublicKey(rawMint).toBase58();
+    } catch (e) {
+      console.error("Failed to normalize tokenMint:", rawMint, e);
+      throw new Error("Invalid token mint returned from Bags SDK");
+    }
+  }
+
+  console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}, originalType=${typeof rawMint}`);
+
   return {
-    tokenMint: result.tokenMint,
+    tokenMint: tokenMintString,
     metadataUrl: result.tokenMetadata,
   };
 }
