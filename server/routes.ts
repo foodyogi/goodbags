@@ -16,6 +16,7 @@ import * as bagsSDK from "./bags-sdk";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 // Admin secret for approving charities - REQUIRED in all environments
 // SECURITY FIX: No bypass allowed - must always set ADMIN_SECRET
@@ -218,6 +219,9 @@ export async function registerRoutes(
   
   // Initialize buyback service (auto-buys FYI with platform fees)
   buybackService.initBuybackService();
+  
+  // Register object storage routes for image uploads
+  registerObjectStorageRoutes(app);
 
   // === CHARITY ENDPOINTS ===
   

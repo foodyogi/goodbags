@@ -40,6 +40,13 @@ When users type a token name, a background search checks for existing tokens wit
 ### Token Approval System
 This system prevents "rug pulls" by requiring charities to approve (or deny) tokens launched in their name. Charities verify their identity via email and manage token endorsements through a dedicated portal, with an audit trail for all actions.
 
+### Token Image Upload
+The token launch form supports image uploads via Replit Object Storage:
+- Users can upload PNG, JPG, GIF, or WebP images up to 2MB
+- Files are uploaded via presigned URLs to Google Cloud Storage
+- Uploaded images are served from `/objects/uploads/...` paths
+- AI image generation option is planned for future release
+
 ### Automated FYI Buyback System
 A core feature where 0.25% of platform fees are automatically used to buy FYI tokens via Jupiter, creating continuous buy pressure. The buybacks are tracked and occur approximately every 60 minutes when a minimum SOL balance is met.
 

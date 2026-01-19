@@ -39,6 +39,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
+import { useUpload } from "@/hooks/use-upload";
 
 interface TokenNameSearchResult {
   local: { name: string; symbol: string; mintAddress: string }[];
@@ -107,6 +108,27 @@ export function TokenLaunchForm() {
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Image upload
+  const { uploadFile, isUploading: isUploadingImage, progress: uploadProgress } = useUpload({
+    onSuccess: (response) => {
+      // Set the object path as the image URL - server will serve it
+      const imageUrl = window.location.origin + response.objectPath;
+      form.setValue("imageUrl", imageUrl);
+      setImageSource("url");
+      toast({
+        title: "Image Uploaded",
+        description: "Your token image has been uploaded successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data: bagsStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/bags/status"],
@@ -585,32 +607,44 @@ export function TokenLaunchForm() {
               
               {imageSource === "upload" && (
                 <div className="rounded-lg border-2 border-dashed border-muted p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Drag and drop an image, or click to browse
-                  </p>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    className="max-w-[200px] mx-auto"
-                    data-testid="input-image-upload"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        toast({
-                          title: "Image Selected",
-                          description: "For now, please use a URL. Upload support coming soon!",
-                        });
-                        setImageSource("url");
-                      }
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    PNG, JPG, or GIF up to 2MB
-                  </p>
-                  <Badge variant="secondary" className="mt-2">
-                    Coming Soon
-                  </Badge>
+                  {isUploadingImage ? (
+                    <div className="space-y-3">
+                      <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">
+                        Uploading... {uploadProgress}%
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Click to select an image file
+                      </p>
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        className="max-w-[200px] mx-auto"
+                        data-testid="input-image-upload"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              toast({
+                                title: "File Too Large",
+                                description: "Please select an image under 2MB.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            await uploadFile(file);
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        PNG, JPG, GIF, or WebP up to 2MB
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
               
