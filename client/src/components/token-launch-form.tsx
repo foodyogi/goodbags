@@ -685,10 +685,10 @@ export function TokenLaunchForm() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            if (file.size > 2 * 1024 * 1024) {
+                            if (file.size > 10 * 1024 * 1024) {
                               toast({
                                 title: "File Too Large",
-                                description: "Please select an image under 2MB.",
+                                description: "Please select an image under 10MB.",
                                 variant: "destructive",
                               });
                               return;
@@ -698,7 +698,7 @@ export function TokenLaunchForm() {
                         }}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
-                        PNG, JPG, GIF, or WebP up to 2MB
+                        PNG, JPG, GIF, or WebP up to 10MB
                       </p>
                     </>
                   )}

@@ -42,7 +42,7 @@ This system prevents "rug pulls" by requiring charities to approve (or deny) tok
 
 ### Token Image Upload
 The token launch form supports image uploads via Replit Object Storage:
-- Users can upload PNG, JPG, GIF, or WebP images up to 2MB
+- Users can upload PNG, JPG, GIF, or WebP images up to 10MB
 - Files are uploaded via presigned URLs to Google Cloud Storage
 - Uploaded images are served from `/objects/uploads/...` paths
 - AI image generation option is planned for future release
