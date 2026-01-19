@@ -1,223 +1,67 @@
 # GoodBags - Solana Memecoin Launcher for Social Impact
 
 ## Overview
-
-GoodBags (goodbags.io) is a Solana-based memecoin launcher platform powered by Bags.fm that enables users to create and launch their own memecoins with built-in charity donations. Token creators choose their own impact cause during launch, selecting from verified charities across categories like hunger, environment, education, health, animals, disaster relief, and community.
-
-### Key Features
-- **75+ Verified Charities**: Pre-verified nonprofits from 9 countries (US, UK, India, Colombia, Canada, Australia, Switzerland, Italy, South Africa)
-- **X Account Payout System**: Charities claim donations via Bags.fm app using their verified X (Twitter) account
-- **Country Registration**: Each charity displays their country of registration for transparency
-- **Multi-charity system**: Creators choose their cause from verified charities by category
-- **Automated charity verification**: Verification via official X accounts and nonprofit registration records
-- **Fee structure**: 1% total fee split: 0.75% to charity + 0.25% platform fee for FYI buyback
-- **Impact Dashboard**: Track donations with blockchain-verified transparency
-- **Security**: Only verified charities can receive donations (enforced server-side)
-- **Audit logging**: All charity submissions and token launches tracked for compliance
-- **Maximum Transparency**: Public pages for verified charities, buyback activity, and how the platform works
-
-### Public Transparency Pages
-- `/` - Homepage with live impact stats (auto-refreshing every 30s) and fee breakdown
-- `/ffl` - Dedicated page for Food Yoga International (founding partner charity)
-- `/charities` - Public list of all verified charities with Solscan verification links
-- `/buyback` - FYI Token Buyback Dashboard showing all buyback transactions
-- `/how-it-works` - Complete explanation of the platform, fee distribution, and security features
-- `/dashboard` - All launched tokens with trading volume and donation stats
-- `/charity/tokens` - Charity Token Approval Portal where charities review tokens created in their name
-
-### Token Approval System (Anti-Rug Pull)
-- **Purpose**: Prevents creators from exploiting charity names for rug pulls by giving charities control over endorsement
-- **Status Flow**: PENDING → APPROVED (Official) or DENIED (Not Endorsed)
-- **Charity Portal** (`/charity/tokens`): Charities verify via email and can approve/deny tokens
-- **Creator Accountability**: Token launch form shows disclosure about charity notification, approval process, wallet tracking, and reputation risks
-- **Badge Display**: Tokens show "Official" (green), "Not Endorsed" (red), or "Pending" (yellow) badges throughout the app
-- **Audit Trail**: All approval/denial actions logged with charity email, token name, and optional note
-- **Security**: Backend enforces that only charities with verified email can approve/deny tokens; wallet addresses permanently tracked on-chain
-
-### Charity Verification Workflow (5-Step Wizard)
-1. **EIN Verification** (`/charities/apply`): Charity enters EIN (Tax ID), verified against Every.org API
-2. **Organization Info**: Pre-filled form with Every.org data, user chooses payout method (wallet or X account)
-3. **Email Verification**: Verify ownership of charity email domain
-4. **Wallet Setup & Verification**: (Only for wallet payout) Connect Solana wallet and sign message to prove ownership
-5. **Admin Approval**: GoodBags admin reviews and approves (`/admin/charities`)
-6. **Active**: Charity appears in token launch dropdown
-
-### Payout Methods
-- **Wallet (Direct)**: Donations sent directly to charity's Solana wallet address (instant)
-- **X Account (Claim Later)**: Uses Bags.fm's built-in claim system - donations accumulate and charity claims via Bags.fm app
-  - Charity registers with their X (Twitter) handle
-  - Trading fees assigned to that X handle via Bags SDK `feeClaimers` with `platform: "twitter"`
-  - Charity claims accumulated SOL by logging into Bags.fm app with their X account
-
-### Change API Integration (Primary)
-- **Purpose**: Access 1.3M+ verified nonprofits with pre-existing Solana wallets
-- **API Endpoints**:
-  - `GET /api/charities/change/search?q={query}` - Search nonprofits
-  - `GET /api/charities/change/:id` - Get nonprofit details with Solana address
-- **Data Retrieved**: Organization name, mission, category, logo, Solana wallet address
-- **Security**: Server-side verification against Change API prevents wallet spoofing
-- **UI**: Token launch form includes searchable dropdown showing all nonprofits with "Crypto Ready" or "No Wallet" badges
-- **Environment Variables**: `CHANGE_API_PUBLIC_KEY`, `CHANGE_API_SECRET_KEY`
-- **Note**: Most nonprofits don't have Solana wallets yet - only those with wallets can be selected for token launches
-
-### Every.org Integration (Backup/Custom Charities)
-- **Purpose**: Verify US 501(c)(3) nonprofits by their EIN for custom charity registration
-- **API Endpoint**: `POST /api/charities/verify-ein` validates EIN against Every.org database
-- **Data Retrieved**: Organization name, description, website, logo, disbursable status
-- **Security**: Server-side re-verification in `/api/charities/apply` prevents client bypassing
-- **Status Flow**: EIN_VERIFIED → EMAIL_VERIFIED → WALLET_VERIFIED → PENDING → APPROVED
-- **Use Case**: For charities not on Change API or without Solana wallets who want to join the platform
-
-### Security Model
-- **Wallet Validation**: All Solana addresses validated with bs58 decoding to verify 32-byte public keys
-- **Server-side Lookup**: Charity wallets looked up server-side from vetted sources (prevents fee diversion)
-- **Charity Enforcement**: Only `APPROVED` status charities can be used for token launches (enforced in all endpoints)
-- **Change API Verification**: Wallet addresses from Change API are re-validated before use
-- **Admin Protection**: ADMIN_SECRET required in ALL environments (no development bypass), uses crypto.timingSafeEqual for constant-time comparison
-- **Rate Limiting**: In-memory rate limiting on public endpoints:
-  - Search: 30 requests/minute
-  - Token operations: 10 requests/minute  
-  - Charity applications: 5 requests/minute
-- **Audit Logging**: All charity submissions and token launches tracked for compliance
+GoodBags is a Solana-based memecoin launcher platform that enables users to create and launch memecoins with built-in charity donations. The platform integrates with Bags.fm and features a comprehensive system for verifying charities, managing donations, and ensuring transparency. Key capabilities include launching tokens tied to over 75 verified charities, an X Account Payout System for charities to claim donations, and an anti-rug pull token approval system where charities endorse tokens launched in their name. The platform charges a 1% fee, split between charity donations (0.75%) and platform operations (0.25%) which fuels an automated token buyback system for FYI tokens. GoodBags aims to provide a secure and transparent way to leverage memecoins for social impact, offering public dashboards for impact tracking and detailed explanations of its mechanisms.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter for lightweight client-side routing
-- **State Management**: TanStack React Query for server state and caching
-- **UI Components**: shadcn/ui component library built on Radix UI primitives
-- **Styling**: Tailwind CSS with custom CSS variables for theming (dark/light mode support)
-- **Form Handling**: React Hook Form with Zod validation
-- **Build Tool**: Vite with React plugin
+The frontend is built with React 18 and TypeScript, utilizing Wouter for routing and TanStack React Query for state management. UI components are developed using shadcn/ui (based on Radix UI primitives) and styled with Tailwind CSS, supporting dark/light modes. Form handling is managed by React Hook Form with Zod validation. Vite is used as the build tool.
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js
-- **Language**: TypeScript with ES modules
-- **API Pattern**: RESTful JSON API endpoints under `/api/*`
-- **Database ORM**: Drizzle ORM with PostgreSQL
-- **Schema Validation**: Zod for request/response validation with drizzle-zod integration
+The backend is a Node.js Express.js application written in TypeScript (ES modules). It exposes RESTful JSON API endpoints and uses Drizzle ORM with PostgreSQL for data persistence. Zod is employed for schema validation, integrated with drizzle-zod.
 
 ### Solana Integration
-- **Wallet Connection**: @solana/wallet-adapter-react with modal UI
-- **Network**: Configurable via VITE_SOLANA_RPC_URL environment variable, defaults to Devnet
-- **Token SDK**: @bagsfm/bags-sdk for token creation functionality
-- **Polyfills**: Buffer polyfill for browser compatibility with Solana libraries
+The platform integrates with Solana using `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. The Solana network connection is configurable via environment variables, defaulting to Devnet.
 
 ### Data Storage
-- **Database**: PostgreSQL via Drizzle ORM
-- **Tables**:
-  - `launched_tokens`: Stores token metadata, mint addresses, creator info, charity selection, and statistics
-  - `donations`: Tracks blockchain-verified charity donations with transaction signatures
-  - `charities`: Registry of charities with verification status, wallet addresses, and categories
-  - `audit_logs`: Security and compliance tracking for charity submissions and token launches
-  - `buybacks`: Tracks automated FYI token buyback transactions
-- **Schema Location**: `shared/schema.ts` contains all table definitions and Zod schemas
+Data is stored in a PostgreSQL database managed by Drizzle ORM. Key tables include `launched_tokens`, `donations`, `charities`, `audit_logs`, and `buybacks`.
 
 ### Key Design Patterns
-- **Monorepo Structure**: Client code in `/client`, server in `/server`, shared types in `/shared`
-- **Path Aliases**: `@/` maps to client/src, `@shared/` maps to shared directory
-- **API Request Pattern**: Centralized `apiRequest` function handles fetch with error handling
-- **Component Organization**: Feature components at root of components folder, UI primitives in `/components/ui`
+The project follows a monorepo structure with distinct `/client`, `/server`, and `/shared` directories. Path aliases (`@/`, `@shared/`) are used for improved module resolution. API requests are handled by a centralized `apiRequest` function.
 
-### Build and Development
-- **Development**: Vite dev server with HMR, Express serves API routes
-- **Production Build**: Vite builds frontend to `dist/public`, esbuild bundles server to `dist/index.cjs`
-- **Database Migrations**: Drizzle Kit with `db:push` command for schema synchronization
+### Security Model
+Security features include wallet validation using bs58 decoding, server-side charity wallet lookups, enforcement of `APPROVED` charity statuses, re-validation of Change API wallet addresses, and `ADMIN_SECRET` protection for admin endpoints. Rate limiting is applied to public endpoints (e.g., Search: 30 req/min, Token operations: 10 req/min, Charity applications: 5 req/min). All sensitive actions are audit logged.
+
+### Unified Charity Search System
+The system combines local verified charities with a broader database from the Change API, allowing users to search and filter charities based on criteria like having an X handle or Solana wallet. Server-side verification is used to prevent wallet spoofing.
+
+### Token Approval System
+This system prevents "rug pulls" by requiring charities to approve (or deny) tokens launched in their name. Charities verify their identity via email and manage token endorsements through a dedicated portal, with an audit trail for all actions.
+
+### Automated FYI Buyback System
+A core feature where 0.25% of platform fees are automatically used to buy FYI tokens via Jupiter, creating continuous buy pressure. The buybacks are tracked and occur approximately every 60 minutes when a minimum SOL balance is met.
 
 ## External Dependencies
 
 ### Blockchain Services
-- **Solana RPC**: Connects to Solana network (Devnet by default, configurable via environment)
-- **Bags.fm SDK**: Token creation and management on Solana
+- **Solana RPC**: For interacting with the Solana blockchain.
+- **Bags.fm SDK**: For token creation and management functionalities.
 
 ### Database
-- **PostgreSQL**: Primary database, connection via DATABASE_URL environment variable
+- **PostgreSQL**: The primary relational database for all application data.
 
-### Environment Variables Required
-- `DATABASE_URL`: PostgreSQL connection string
-- `BAGS_API_KEY`: Bags.fm SDK API key for token creation (required for real launches)
-- `SOLANA_RPC_URL`: Solana RPC endpoint URL
-- `SESSION_SECRET`: Session encryption secret
-- `PLATFORM_WALLET_ADDRESS`: Platform wallet for fee collection (set to buyback wallet)
-- `BUYBACK_WALLET_PRIVATE_KEY`: Private key for automated FYI buyback swaps
-- `ADMIN_SECRET`: Required in ALL environments for admin endpoints (no development bypass)
-- `EVERY_ORG_API_KEY`: Every.org API key for nonprofit EIN verification (get from https://www.every.org/developer)
-
-### Token Launch Flow
-The token launch process uses a multi-step flow with wallet signing:
-1. **POST /api/tokens/prepare**: Creates token metadata via Bags SDK
-2. **POST /api/tokens/config**: Creates fee share config with splits (Creator 98.75%, Charity 1%, Platform 0.25%)
-3. **POST /api/tokens/launch-tx**: Creates unsigned launch transaction
-4. **Client signs and broadcasts**: User wallet signs and submits to Solana
-5. **POST /api/tokens/launch**: Records successful launch in database
-
-### Security
-- Charity wallets are looked up server-side from vetted charity database (prevents fee diversion)
-- All wallet addresses validated before on-chain operations
-- Platform wallet validated at startup; fails in production if invalid
-
-### Partner Referral
-- Partner wallet set to buyback wallet (`8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8`) via Bags SDK's `partner` parameter
-- All Bags.fm referral credits go to buyback wallet for automatic FYI token purchases
-
-### Automated FYI Buyback System
-- **Purpose**: Platform fees automatically buy FYI tokens, creating buy pressure
-- **Buyback Wallet**: `8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8`
-- **Flow**: Platform fees (0.25%) → Buyback wallet → Auto-swap to FYI via Jupiter
-- **Frequency**: Checks every 60 minutes, swaps when balance ≥ 0.015 SOL
-- **Tracking**: All buybacks recorded in `buybacks` table with transaction signatures
-- **API Endpoints**:
-  - `GET /api/buyback/stats` - View buyback statistics
-  - `GET /api/buyback/history` - View buyback transaction history
-  - `POST /api/admin/buyback/execute` - Manually trigger buyback (admin only)
+### Third-Party APIs
+- **Every.org API**: Used for verifying US 501(c)(3) nonprofits by their EIN during charity registration.
+- **Change API**: Provides access to a large database of nonprofits for charity search and details.
 
 ### Third-Party UI Libraries
-- **Radix UI**: Accessible component primitives (dialogs, dropdowns, tooltips, etc.)
-- **Lucide React**: Icon library
-- **React Icons**: Additional icon sets (Solana logo)
-- **date-fns**: Date formatting utilities
-- **embla-carousel-react**: Carousel functionality
-- **react-day-picker**: Calendar/date picker component
+- **Radix UI**: Provides accessible and customizable UI primitives.
+- **Lucide React & React Icons**: Icon libraries.
+- **date-fns**: Utilities for date manipulation and formatting.
+- **embla-carousel-react**: For carousel components.
+- **react-day-picker**: For calendar and date selection.
 
-## Security Audit (January 2026)
-
-### Findings Summary
-
-#### Strengths (No Action Required)
-1. **Input Validation**: All API inputs validated with Zod schemas; Drizzle ORM prevents SQL injection
-2. **Solana Address Validation**: Strict base58 decoding with 32-byte verification
-3. **Wallet Signature Verification**: Uses nacl ed25519 for cryptographic wallet ownership verification
-4. **Timing-Safe Comparisons**: Admin secret uses crypto.timingSafeEqual to prevent timing attacks
-5. **Rate Limiting**: Implemented on sensitive endpoints (5-30 req/min)
-6. **Audit Logging**: All charity and token operations tracked
-7. **No File Uploads**: No file upload endpoints exist
-8. **XSS Prevention**: React escaping + minimal dangerouslySetInnerHTML (CSS only)
-
-#### Critical Action Items
-1. **ADMIN_SECRET Not Set**: Admin endpoints are currently disabled. Set this secret in production for admin functionality.
-2. **Dependency Vulnerabilities**: 14 vulnerabilities found (7 high severity) in transitive dependencies from @bagsfm/bags-sdk. Requires SDK upgrade with breaking changes.
-
-#### Recommended Improvements
-1. **Add Security Headers**: Consider adding helmet middleware for X-Frame-Options, X-Content-Type-Options, CSP headers
-2. **CORS Configuration**: Add explicit CORS policy for trusted origins if needed
-3. **Rate Limiter Scaling**: Current in-memory rate limiter won't work across multiple instances
-4. **express-session**: Package installed but not configured; remove if unused
-
-### Required Environment Variables for Security
-- `ADMIN_SECRET`: Required for admin endpoints (generate a strong random string)
-- `SESSION_SECRET`: For session management (if sessions are used)
-- All API keys stored as secrets (BAGS_API_KEY, BUYBACK_WALLET_PRIVATE_KEY, etc.)
-
-### Dependency Vulnerabilities (npm audit)
-| Package | Severity | Issue |
-|---------|----------|-------|
-| axios (transitive) | High | DoS attack via lack of data size check |
-| bigint-buffer | High | Buffer overflow vulnerability |
-| diff, js-yaml, nanoid, serialize-javascript | Moderate | Various issues |
-
-**Note**: Most vulnerabilities are in @bagsfm/bags-sdk transitive dependencies. Full remediation requires SDK upgrade with potential breaking changes.
+### Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string.
+- `BAGS_API_KEY`: Bags.fm SDK API key.
+- `SOLANA_RPC_URL`: Solana RPC endpoint.
+- `SESSION_SECRET`: Secret for session encryption.
+- `PLATFORM_WALLET_ADDRESS`: Platform wallet for fee collection.
+- `BUYBACK_WALLET_PRIVATE_KEY`: Private key for automated FYI buyback swaps.
+- `ADMIN_SECRET`: Required for admin endpoints.
+- `EVERY_ORG_API_KEY`: API key for Every.org.
+- `CHANGE_API_PUBLIC_KEY`, `CHANGE_API_SECRET_KEY`: API keys for Change API.
