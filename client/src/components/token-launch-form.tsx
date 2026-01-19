@@ -50,7 +50,7 @@ interface SelectedCharity {
   solanaAddress?: string | null;
   twitterHandle?: string | null;
   countryName?: string | null;
-  source: "local";
+  source: "local" | "change";
 }
 
 type ImageSourceType = "url" | "upload" | "generate";
@@ -264,10 +264,14 @@ export function TokenLaunchForm() {
     solanaAddress?: string | null;
     twitterHandle?: string | null;
     countryName?: string | null;
+    source: "local" | "change";
   }) => {
+    const rawId = charity.id.replace(/^(local-|change-)/, "");
+    const source = charity.source;
     setSelectedCharity({
       ...charity,
-      source: "local",
+      id: rawId,
+      source,
     });
   };
 
