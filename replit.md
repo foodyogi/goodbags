@@ -50,6 +50,15 @@ The token launch form supports image uploads via Replit Object Storage:
 ### Automated FYI Buyback System
 A core feature where 0.25% of platform fees are automatically used to buy FYI tokens via Jupiter, creating continuous buy pressure. The buybacks are tracked and occur approximately every 60 minutes when a minimum SOL balance is met.
 
+### Test Mode Token Launches
+Users can test the token launch flow without connecting a wallet or spending SOL:
+- Toggle "Test Mode" in the launch form to simulate the full launch flow
+- Test tokens are saved to the database with `isTest=true` and `charityApprovalStatus="not_applicable"`
+- Test tokens display a purple "TEST" badge on the dashboard
+- Test tokens don't create charity notifications or donation records
+- Dashboard includes Live/Test/All filter to view tokens by type
+- Test tokens have mock addresses (starting with "TEST") and don't show Solscan links
+
 ## External Dependencies
 
 ### Blockchain Services

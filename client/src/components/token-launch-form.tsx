@@ -209,10 +209,10 @@ export function TokenLaunchForm() {
         setLaunchStep("recording");
         
         // Generate mock addresses for test token
-        const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}${Date.now()}`;
         const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-        // Use a test wallet address or connected wallet if available
-        const testCreatorWallet = publicKey?.toBase58() || `test_wallet_${Date.now()}`;
+        // Use connected wallet if available, or generate a valid-length test wallet address
+        const testCreatorWallet = publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
         
         // Save test token to database
         const launchResponse = await apiRequest("POST", "/api/tokens/launch", {
