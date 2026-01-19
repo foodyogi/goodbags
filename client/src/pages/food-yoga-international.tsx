@@ -278,7 +278,7 @@ export default function FoodYogaInternational() {
                 <h3 className="text-xl font-bold mb-2">GoodBags Partnership</h3>
                 <p className="text-muted-foreground mb-4">
                   Food Yoga International is a founding partner and verified charity on GoodBags. 
-                  Token creators can select FYI to receive 0.75% of all trading royalties from their tokens.
+                  Token creators can select FYI to receive 1% of all trading royalties from their tokens.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                   <Badge variant="outline" className="bg-background">

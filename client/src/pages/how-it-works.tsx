@@ -133,7 +133,7 @@ export default function HowItWorksPage() {
                       <p className="text-sm text-muted-foreground">Most of the trading royalty goes to verified charities</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75% direct</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">

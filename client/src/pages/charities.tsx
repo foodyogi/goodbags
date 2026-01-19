@@ -143,7 +143,7 @@ export default function CharitiesPage() {
     queryKey: ["/api/charities"],
   });
 
-  const approvedCharities = charities?.filter(c => c.status === "APPROVED") ?? [];
+  const approvedCharities = charities?.filter(c => c.status === "verified") ?? [];
 
   return (
     <div className="py-12 md:py-16">
