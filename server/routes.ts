@@ -1067,7 +1067,14 @@ export async function registerRoutes(
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       
-      let charityInfo: { id: string; name: string; walletAddress: string; source: string };
+      let charityInfo: { 
+        id: string; 
+        name: string; 
+        walletAddress: string; 
+        twitterHandle?: string;
+        payoutMethod?: string;
+        source: string;
+      };
       
       if (validated.charitySource === "change") {
         // Change API charity - verify the Solana address is provided and valid
@@ -1118,17 +1125,23 @@ export async function registerRoutes(
           });
         }
         
-        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
+        // Charities need either a valid wallet address OR a Twitter handle for Bags.fm payout
+        const hasValidWallet = charity.walletAddress && isValidSolanaAddress(charity.walletAddress);
+        const hasTwitterPayout = charity.twitterHandle && charity.payoutMethod === "twitter";
+        
+        if (!hasValidWallet && !hasTwitterPayout) {
           return res.status(400).json({
             success: false,
-            error: "Selected charity does not have a valid wallet address",
+            error: "Selected charity does not have a valid payout method (wallet or Twitter handle)",
           });
         }
         
         charityInfo = {
           id: charity.id,
           name: charity.name,
-          walletAddress: charity.walletAddress,
+          walletAddress: charity.walletAddress || `twitter:@${charity.twitterHandle}`,
+          twitterHandle: charity.twitterHandle || undefined,
+          payoutMethod: charity.payoutMethod || (hasValidWallet ? "wallet" : "twitter"),
           source: "local",
         };
       }
@@ -1421,18 +1434,21 @@ export async function registerRoutes(
           });
         }
         
-        // SECURITY: Validate wallet address format
-        if (!charity.walletAddress || !isValidSolanaAddress(charity.walletAddress)) {
+        // Charities need either a valid wallet address OR a Twitter handle for Bags.fm payout
+        const hasValidWallet = charity.walletAddress && isValidSolanaAddress(charity.walletAddress);
+        const hasTwitterPayout = charity.twitterHandle && charity.payoutMethod === "twitter";
+        
+        if (!hasValidWallet && !hasTwitterPayout) {
           return res.status(400).json({
             success: false,
-            error: "Selected charity does not have a valid wallet address",
+            error: "Selected charity does not have a valid payout method (wallet or Twitter handle)",
           });
         }
         
         charityInfo = {
           id: charity.id,
           name: charity.name,
-          walletAddress: charity.walletAddress,
+          walletAddress: charity.walletAddress || `twitter:@${charity.twitterHandle}`,
           email: charity.email || null,
           website: charity.website || null,
           twitter: charity.twitterHandle || null,
