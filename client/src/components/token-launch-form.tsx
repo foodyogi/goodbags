@@ -31,7 +31,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link, Sparkles, Info, Coins } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -46,8 +48,12 @@ interface SelectedCharity {
   website?: string | null;
   logoUrl?: string | null;
   solanaAddress?: string | null;
-  source: "change" | "local";
+  twitterHandle?: string | null;
+  countryName?: string | null;
+  source: "local";
 }
+
+type ImageSourceType = "url" | "upload" | "generate";
 
 const tokenLaunchFormSchemaWithCharity = z.object({
   name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
@@ -89,6 +95,7 @@ export function TokenLaunchForm() {
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
+  const [imageSource, setImageSource] = useState<ImageSourceType>("url");
 
   const { data: bagsStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/bags/status"],
@@ -255,10 +262,12 @@ export function TokenLaunchForm() {
     website?: string | null; 
     logoUrl?: string | null; 
     solanaAddress?: string | null;
+    twitterHandle?: string | null;
+    countryName?: string | null;
   }) => {
     setSelectedCharity({
       ...charity,
-      source: "change",
+      source: "local",
     });
   };
 
@@ -417,33 +426,138 @@ export function TokenLaunchForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL (optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://example.com/token-logo.png" 
-                      {...field}
-                      data-testid="input-token-image"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Direct link to your token&apos;s logo image
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+            {/* Image Source Selection */}
+            <div className="space-y-3">
+              <FormLabel>Token Image (optional)</FormLabel>
+              <RadioGroup
+                value={imageSource}
+                onValueChange={(value) => setImageSource(value as ImageSourceType)}
+                className="grid grid-cols-3 gap-2"
+              >
+                <div>
+                  <RadioGroupItem value="url" id="image-url" className="peer sr-only" />
+                  <Label
+                    htmlFor="image-url"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover-elevate cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    data-testid="radio-image-url"
+                  >
+                    <Link className="h-5 w-5 mb-1" />
+                    <span className="text-xs font-medium">URL</span>
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem value="upload" id="image-upload" className="peer sr-only" />
+                  <Label
+                    htmlFor="image-upload"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover-elevate cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    data-testid="radio-image-upload"
+                  >
+                    <Upload className="h-5 w-5 mb-1" />
+                    <span className="text-xs font-medium">Upload</span>
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem value="generate" id="image-generate" className="peer sr-only" />
+                  <Label
+                    htmlFor="image-generate"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover-elevate cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                    data-testid="radio-image-generate"
+                  >
+                    <Sparkles className="h-5 w-5 mb-1" />
+                    <span className="text-xs font-medium">Generate</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+              
+              {imageSource === "url" && (
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/token-logo.png" 
+                          {...field}
+                          data-testid="input-token-image"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Direct link to your token&apos;s logo image
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+              
+              {imageSource === "upload" && (
+                <div className="rounded-lg border-2 border-dashed border-muted p-6 text-center">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Drag and drop an image, or click to browse
+                  </p>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="max-w-[200px] mx-auto"
+                    data-testid="input-image-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        toast({
+                          title: "Image Selected",
+                          description: "For now, please use a URL. Upload support coming soon!",
+                        });
+                        setImageSource("url");
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    PNG, JPG, or GIF up to 2MB
+                  </p>
+                  <Badge variant="secondary" className="mt-2">
+                    Coming Soon
+                  </Badge>
+                </div>
+              )}
+              
+              {imageSource === "generate" && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">AI Image Generation</p>
+                      <p className="text-xs text-muted-foreground">
+                        Describe your token&apos;s image and we&apos;ll generate it for you
+                      </p>
+                    </div>
+                  </div>
+                  <Textarea
+                    placeholder="e.g., A cute cartoon dog with sunglasses on the moon, vibrant colors, crypto-style..."
+                    className="resize-none"
+                    rows={2}
+                    data-testid="input-image-prompt"
+                  />
+                  <Badge variant="secondary" className="mt-1">
+                    Coming Soon
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    For now, please use a URL. AI generation coming soon!
+                  </p>
+                </div>
+              )}
+            </div>
 
             <FormField
               control={form.control}
               name="initialBuyAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Buy Amount (SOL)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-primary" />
+                    Initial Buy Amount (SOL)
+                  </FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input 
@@ -463,6 +577,25 @@ export function TokenLaunchForm() {
                     Amount of SOL to buy at launch (optional)
                   </FormDescription>
                   <FormMessage />
+                  
+                  {/* SOL Funding Best Practice Guidance */}
+                  <div className="mt-3 rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 space-y-2" data-testid="section-sol-guidance">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Best Practice Guidance</p>
+                      </div>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1 pl-6 list-disc">
+                      <li><strong>Minimum recommended:</strong> 0.1 SOL to create initial liquidity</li>
+                      <li><strong>Moderate launch:</strong> 0.5 - 1 SOL for better price stability</li>
+                      <li><strong>Strong launch:</strong> 2+ SOL for significant initial market cap</li>
+                      <li><strong>Transaction fee:</strong> ~0.01 SOL is needed for network fees</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-blue-500/10">
+                      Higher initial buy = larger starting market cap and more trading liquidity
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />
