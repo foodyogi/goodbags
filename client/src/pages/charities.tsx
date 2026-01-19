@@ -17,7 +17,8 @@ import {
   HandHeart,
   Globe,
   Wallet,
-  Twitter
+  Twitter,
+  MapPin
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Charity } from "@shared/schema";
@@ -62,9 +63,17 @@ function CharityCard({ charity }: { charity: Charity }) {
             </div>
             <div>
               <CardTitle className="text-lg">{charity.name}</CardTitle>
-              <Badge variant="outline" className="mt-1">
-                {categoryNames[charity.category] || charity.category}
-              </Badge>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <Badge variant="outline">
+                  {categoryNames[charity.category] || charity.category}
+                </Badge>
+                {charity.countryName && (
+                  <Badge variant="secondary" className="text-xs" data-testid={`badge-country-${charity.id}`}>
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {charity.countryName}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" data-testid={`badge-verified-${charity.id}`}>
@@ -167,6 +176,10 @@ export default function CharitiesPage() {
   });
 
   const approvedCharities = charities?.filter(c => c.status === "verified") ?? [];
+  
+  // Calculate unique countries
+  const uniqueCountries = new Set(approvedCharities.map(c => c.countryCode).filter(Boolean));
+  const countryCount = uniqueCountries.size;
 
   return (
     <div className="py-12 md:py-16">
@@ -174,15 +187,17 @@ export default function CharitiesPage() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-1.5 mb-4" data-testid="badge-verified-charities">
             <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">Verified Charities</span>
+            <span className="text-sm font-medium text-green-600 dark:text-green-400">
+              {approvedCharities.length} Verified Charities
+              {countryCount > 0 && ` from ${countryCount} Countries`}
+            </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="heading-charities">
             Our Verified Partner Charities
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-            Every charity on GoodBags goes through a rigorous 3-step verification process: 
-            email verification, wallet signature, and manual review. 
-            All donation wallets are publicly verifiable on the blockchain.
+            Every charity on GoodBags is verified via their official X account and nonprofit registration records. 
+            Charities claim donations through the Bags.fm app using their verified X account.
           </p>
           <Link href="/charities/apply">
             <Button variant="outline" data-testid="button-apply-charity">

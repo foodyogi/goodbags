@@ -274,16 +274,20 @@ export class DatabaseStorage implements IStorage {
           walletAddress: charity.wallet,
           twitterHandle: charity.twitterHandle,
           payoutMethod: charity.payoutMethod,
+          countryCode: charity.countryCode,
+          countryName: charity.countryName,
           status: CHARITY_STATUS.APPROVED,
           isDefault: i === 0, // First one is default
-          isFeatured: true,
+          isFeatured: i < 10, // First 10 are featured
         });
       } else {
-        // Update existing charity with Twitter handle and payout method if missing
+        // Update existing charity with Twitter handle, payout method, and country info
         await db.update(charities)
           .set({
             twitterHandle: charity.twitterHandle,
             payoutMethod: charity.payoutMethod,
+            countryCode: charity.countryCode,
+            countryName: charity.countryName,
             updatedAt: new Date(),
           })
           .where(eq(charities.id, charity.id));
