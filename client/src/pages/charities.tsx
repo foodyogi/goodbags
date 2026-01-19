@@ -16,7 +16,8 @@ import {
   Users,
   HandHeart,
   Globe,
-  Wallet
+  Wallet,
+  Twitter
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Charity } from "@shared/schema";
@@ -78,22 +79,44 @@ function CharityCard({ charity }: { charity: Charity }) {
         )}
         
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Wallet className="h-4 w-4 shrink-0" />
-            <span className="font-mono text-xs" data-testid={`wallet-${charity.id}`}>
-              {truncateWallet(charity.walletAddress ?? "")}
-            </span>
-            <a 
-              href={`https://solscan.io/account/${charity.walletAddress}?cluster=devnet`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1"
-              data-testid={`link-solscan-${charity.id}`}
-            >
-              <ExternalLink className="h-3 w-3" />
-              Verify
-            </a>
-          </div>
+          {charity.twitterHandle && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Twitter className="h-4 w-4 shrink-0 text-blue-500" />
+              <a 
+                href={`https://x.com/${charity.twitterHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+                data-testid={`link-twitter-${charity.id}`}
+              >
+                @{charity.twitterHandle}
+              </a>
+              {charity.payoutMethod === "twitter" && (
+                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                  Bags.fm Claim
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          {charity.walletAddress && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Wallet className="h-4 w-4 shrink-0" />
+              <span className="font-mono text-xs" data-testid={`wallet-${charity.id}`}>
+                {truncateWallet(charity.walletAddress)}
+              </span>
+              <a 
+                href={`https://solscan.io/account/${charity.walletAddress}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+                data-testid={`link-solscan-${charity.id}`}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Verify
+              </a>
+            </div>
+          )}
           
           {charity.website && (
             <div className="flex items-center gap-2 text-muted-foreground">

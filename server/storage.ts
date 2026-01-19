@@ -260,7 +260,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async seedDefaultCharities(): Promise<void> {
-    // Seed all vetted charities
+    // Seed all vetted charities - insert new or update existing
     for (let i = 0; i < VETTED_CHARITIES.length; i++) {
       const charity = VETTED_CHARITIES[i];
       const existing = await this.getCharityById(charity.id);
@@ -272,10 +272,35 @@ export class DatabaseStorage implements IStorage {
           category: charity.category,
           website: charity.website,
           walletAddress: charity.wallet,
+          twitterHandle: charity.twitterHandle,
+          payoutMethod: charity.payoutMethod,
           status: CHARITY_STATUS.APPROVED,
           isDefault: i === 0, // First one is default
           isFeatured: true,
         });
+      } else {
+        // Update existing charity with Twitter handle and payout method if missing
+        await db.update(charities)
+          .set({
+            twitterHandle: charity.twitterHandle,
+            payoutMethod: charity.payoutMethod,
+            updatedAt: new Date(),
+          })
+          .where(eq(charities.id, charity.id));
+      }
+    }
+    
+    // Clean up duplicate Food Yoga International entries (keep the canonical one)
+    const foodYogaCharities = await db
+      .select()
+      .from(charities)
+      .where(eq(charities.name, "Food Yoga International"));
+    
+    if (foodYogaCharities.length > 1) {
+      // Keep the one with the expected ID, delete others
+      const toDelete = foodYogaCharities.filter(c => c.id !== "food-yoga-international");
+      for (const dup of toDelete) {
+        await db.delete(charities).where(eq(charities.id, dup.id));
       }
     }
   }

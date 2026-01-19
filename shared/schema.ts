@@ -267,18 +267,38 @@ export const FEATURED_IMPACT_PROJECT = {
 
 // Vetted charities - personally managed by admin
 // NOTE: Only add charities here after proper verification (email + wallet + admin approval)
-// The Water Project was removed as it was not properly vetted
 // Charities can use either wallet (direct payout) or twitterHandle (Bags.fm claim system)
+// Primary payout method is "twitter" - charities claim via Bags.fm app with their X account
 export const VETTED_CHARITIES = [
   {
     id: "julianas-animal-sanctuary",
     name: "Juliana's Animal Sanctuary",
     wallet: "JULSxvKLfEDpMqR7ePNvXxGGcNAPtYvWqmCjXhKBVPZ",
-    twitterHandle: "JulianasAnimalS", // X account for Bags.fm claim (optional alternative)
-    payoutMethod: "wallet" as const, // Using wallet for now, can switch to "twitter"
+    twitterHandle: "JulianasAnimalS",
+    payoutMethod: "twitter" as const, // Primary: Bags.fm X claim system
     category: "animals",
     description: "Rescuing and caring for farm animals in Colombia",
     website: "https://julianasanimalsanctuary.org",
+  },
+  {
+    id: "food-yoga-international",
+    name: "Food Yoga International",
+    wallet: "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP",
+    twitterHandle: "FoodforLifeGlob",
+    payoutMethod: "twitter" as const, // Primary: Bags.fm X claim system
+    category: "hunger",
+    description: "Providing plant-based meals to the hungry worldwide",
+    website: "https://ffl.org",
+  },
+  {
+    id: "the-water-project",
+    name: "The Water Project",
+    wallet: "WATERpVLQx4fGjFqJmqSqU1Jc7gU7eSdF8xvRtNsK9zP",
+    twitterHandle: "thewaterproject",
+    payoutMethod: "twitter" as const, // Primary: Bags.fm X claim system
+    category: "community",
+    description: "Building sustainable water projects in sub-Saharan Africa",
+    website: "https://thewaterproject.org",
   },
 ] as const;
 
