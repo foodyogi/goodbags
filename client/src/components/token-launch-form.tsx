@@ -31,7 +31,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link, Sparkles, Info, Coins, FlaskConical } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Sparkles, Info, Coins, FlaskConical, LayoutDashboard } from "lucide-react";
+import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -464,6 +465,12 @@ export function TokenLaunchForm() {
           )}
           
           <div className="flex flex-col gap-2">
+            <Link href="/dashboard">
+              <Button className="w-full gap-2" data-testid="button-view-dashboard">
+                <LayoutDashboard className="h-4 w-4" />
+                View Dashboard
+              </Button>
+            </Link>
             {!launchResult.isTest && (
               <a
                 href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
@@ -478,6 +485,7 @@ export function TokenLaunchForm() {
               </a>
             )}
             <Button 
+              variant="outline"
               onClick={() => setLaunchResult(null)} 
               className="w-full"
               data-testid="button-launch-another"
@@ -628,7 +636,7 @@ export function TokenLaunchForm() {
                     className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover-elevate cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                     data-testid="radio-image-url"
                   >
-                    <Link className="h-5 w-5 mb-1" />
+                    <LinkIcon className="h-5 w-5 mb-1" />
                     <span className="text-xs font-medium">URL</span>
                   </Label>
                 </div>
