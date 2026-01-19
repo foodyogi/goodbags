@@ -31,9 +31,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link, Sparkles, Info, Coins } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link, Sparkles, Info, Coins, FlaskConical } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
@@ -77,6 +78,7 @@ type TokenLaunchFormData = z.infer<typeof tokenLaunchFormSchemaWithCharity>;
 
 interface LaunchResult {
   success: boolean;
+  isTest?: boolean;
   token?: {
     id: string;
     name: string;
@@ -103,6 +105,9 @@ export function TokenLaunchForm() {
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
   const [imageSource, setImageSource] = useState<ImageSourceType>("url");
+  
+  // Test Mode - allows testing the full flow without real transactions
+  const [testMode, setTestMode] = useState(false);
   
   // Token name duplicate detection
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
@@ -187,8 +192,47 @@ export function TokenLaunchForm() {
 
   const launchMutation = useMutation({
     mutationFn: async (data: TokenLaunchFormData) => {
-      if (!publicKey) throw new Error("Wallet not connected");
       if (!selectedCharity) throw new Error("Please select a charity");
+      
+      // Test Mode: Simulate the entire flow without real transactions
+      if (testMode) {
+        setLaunchStep("preparing");
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setLaunchStep("signing-config");
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        setLaunchStep("signing-launch");
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        setLaunchStep("recording");
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Return mock success result
+        const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        
+        return {
+          success: true,
+          isTest: true,
+          token: {
+            id: `test-${Date.now()}`,
+            name: data.name,
+            symbol: data.symbol,
+            mintAddress: mockMintAddress,
+            transactionSignature: mockTxSignature,
+          },
+          charity: {
+            id: selectedCharity.id,
+            name: selectedCharity.name,
+            status: "verified",
+            hasWallet: !!selectedCharity.solanaAddress,
+          },
+        } as LaunchResult & { isTest?: boolean };
+      }
+      
+      // Real Mode: Requires wallet connection
+      if (!publicKey) throw new Error("Wallet not connected");
       
       const creatorWallet = publicKey.toBase58();
       
@@ -355,10 +399,21 @@ export function TokenLaunchForm() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary/20">
             <CheckCircle2 className="h-8 w-8 text-secondary" />
           </div>
-          <CardTitle className="text-2xl">Token Launched!</CardTitle>
+          <CardTitle className="text-2xl">
+            {launchResult.isTest ? "Test Launch Complete!" : "Token Launched!"}
+          </CardTitle>
           <CardDescription>
-            Your token is now live on Solana
+            {launchResult.isTest 
+              ? "This was a test - no real token was created"
+              : "Your token is now live on Solana"
+            }
           </CardDescription>
+          {launchResult.isTest && (
+            <Badge variant="secondary" className="mt-2 gap-1" data-testid="badge-test-mode">
+              <FlaskConical className="h-3 w-3" />
+              Test Mode
+            </Badge>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-muted/50 p-4 space-y-3">
@@ -393,23 +448,25 @@ export function TokenLaunchForm() {
           )}
           
           <div className="flex flex-col gap-2">
-            <a
-              href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full"
-            >
-              <Button variant="outline" className="w-full gap-2" data-testid="button-view-solscan">
-                <ExternalLink className="h-4 w-4" />
-                View on Solscan
-              </Button>
-            </a>
+            {!launchResult.isTest && (
+              <a
+                href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full"
+              >
+                <Button variant="outline" className="w-full gap-2" data-testid="button-view-solscan">
+                  <ExternalLink className="h-4 w-4" />
+                  View on Solscan
+                </Button>
+              </a>
+            )}
             <Button 
               onClick={() => setLaunchResult(null)} 
               className="w-full"
               data-testid="button-launch-another"
             >
-              Launch Another Token
+              {launchResult.isTest ? "Try Another Test" : "Launch Another Token"}
             </Button>
           </div>
         </CardContent>
@@ -790,7 +847,34 @@ export function TokenLaunchForm() {
               </div>
             </div>
 
-            {!connected ? (
+            {/* Test Mode Toggle */}
+            <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-4" data-testid="section-test-mode">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FlaskConical className="h-4 w-4 text-purple-500" />
+                  <div>
+                    <p className="text-sm font-medium">Test Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Simulate a launch without real transactions
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={testMode}
+                  onCheckedChange={setTestMode}
+                  data-testid="switch-test-mode"
+                />
+              </div>
+              {testMode && (
+                <div className="mt-3 pt-3 border-t border-purple-500/20">
+                  <p className="text-xs text-purple-600 dark:text-purple-400">
+                    No wallet required. No SOL spent. No real token created. Perfect for testing the flow.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {!connected && !testMode ? (
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
@@ -808,6 +892,11 @@ export function TokenLaunchForm() {
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {getStepMessage()}
+                  </>
+                ) : testMode ? (
+                  <>
+                    <FlaskConical className="h-4 w-4" />
+                    Test Launch
                   </>
                 ) : (
                   <>
