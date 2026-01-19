@@ -181,3 +181,41 @@ The token launch process uses a multi-step flow with wallet signing:
 - **date-fns**: Date formatting utilities
 - **embla-carousel-react**: Carousel functionality
 - **react-day-picker**: Calendar/date picker component
+
+## Security Audit (January 2026)
+
+### Findings Summary
+
+#### Strengths (No Action Required)
+1. **Input Validation**: All API inputs validated with Zod schemas; Drizzle ORM prevents SQL injection
+2. **Solana Address Validation**: Strict base58 decoding with 32-byte verification
+3. **Wallet Signature Verification**: Uses nacl ed25519 for cryptographic wallet ownership verification
+4. **Timing-Safe Comparisons**: Admin secret uses crypto.timingSafeEqual to prevent timing attacks
+5. **Rate Limiting**: Implemented on sensitive endpoints (5-30 req/min)
+6. **Audit Logging**: All charity and token operations tracked
+7. **No File Uploads**: No file upload endpoints exist
+8. **XSS Prevention**: React escaping + minimal dangerouslySetInnerHTML (CSS only)
+
+#### Critical Action Items
+1. **ADMIN_SECRET Not Set**: Admin endpoints are currently disabled. Set this secret in production for admin functionality.
+2. **Dependency Vulnerabilities**: 14 vulnerabilities found (7 high severity) in transitive dependencies from @bagsfm/bags-sdk. Requires SDK upgrade with breaking changes.
+
+#### Recommended Improvements
+1. **Add Security Headers**: Consider adding helmet middleware for X-Frame-Options, X-Content-Type-Options, CSP headers
+2. **CORS Configuration**: Add explicit CORS policy for trusted origins if needed
+3. **Rate Limiter Scaling**: Current in-memory rate limiter won't work across multiple instances
+4. **express-session**: Package installed but not configured; remove if unused
+
+### Required Environment Variables for Security
+- `ADMIN_SECRET`: Required for admin endpoints (generate a strong random string)
+- `SESSION_SECRET`: For session management (if sessions are used)
+- All API keys stored as secrets (BAGS_API_KEY, BUYBACK_WALLET_PRIVATE_KEY, etc.)
+
+### Dependency Vulnerabilities (npm audit)
+| Package | Severity | Issue |
+|---------|----------|-------|
+| axios (transitive) | High | DoS attack via lack of data size check |
+| bigint-buffer | High | Buffer overflow vulnerability |
+| diff, js-yaml, nanoid, serialize-javascript | Moderate | Various issues |
+
+**Note**: Most vulnerabilities are in @bagsfm/bags-sdk transitive dependencies. Full remediation requires SDK upgrade with potential breaking changes.
