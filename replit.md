@@ -29,6 +29,14 @@ Security features include wallet validation using bs58 decoding, server-side cha
 ### Unified Charity Search System
 The system combines local verified charities with a broader database from the Change API, allowing users to search and filter charities based on criteria like having an X handle or Solana wallet. Server-side verification is used to prevent wallet spoofing.
 
+### Token Name Duplicate Detection
+When users type a token name, a background search checks for existing tokens with similar names:
+- Searches local database for GoodBags-launched tokens
+- Optionally searches Solana Tracker API for Bags.fm tokens (requires `SOLANA_TRACKER_API_KEY`)
+- Debounced at 500ms, minimum 2 characters to trigger search
+- Non-blocking warning: users can still launch with duplicate names
+- Rate limited to 30 requests/minute
+
 ### Token Approval System
 This system prevents "rug pulls" by requiring charities to approve (or deny) tokens launched in their name. Charities verify their identity via email and manage token endorsements through a dedicated portal, with an audit trail for all actions.
 
@@ -65,3 +73,4 @@ A core feature where 0.25% of platform fees are automatically used to buy FYI to
 - `ADMIN_SECRET`: Required for admin endpoints.
 - `EVERY_ORG_API_KEY`: API key for Every.org.
 - `CHANGE_API_PUBLIC_KEY`, `CHANGE_API_SECRET_KEY`: API keys for Change API.
+- `SOLANA_TRACKER_API_KEY`: Optional API key for searching Bags.fm tokens via Solana Tracker.
