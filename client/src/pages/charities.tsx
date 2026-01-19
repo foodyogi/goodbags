@@ -1,8 +1,17 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   CheckCircle, 
   ExternalLink, 
@@ -18,7 +27,10 @@ import {
   Globe,
   Wallet,
   Twitter,
-  MapPin
+  MapPin,
+  Search,
+  X,
+  Filter
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Charity } from "@shared/schema";
@@ -170,7 +182,13 @@ function CharityCardSkeleton() {
   );
 }
 
+const ALL_CATEGORIES = ["hunger", "environment", "education", "health", "animals", "disaster", "community", "other"] as const;
+
 export default function CharitiesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  
   const { data: charities, isLoading } = useQuery<Charity[]>({
     queryKey: ["/api/charities"],
   });
@@ -180,6 +198,57 @@ export default function CharitiesPage() {
   // Calculate unique countries
   const uniqueCountries = new Set(approvedCharities.map(c => c.countryCode).filter(Boolean));
   const countryCount = uniqueCountries.size;
+  
+  // Get available categories from data
+  const availableCategories = useMemo(() => {
+    const cats = new Set(approvedCharities.map(c => c.category));
+    return ALL_CATEGORIES.filter(cat => cats.has(cat));
+  }, [approvedCharities]);
+  
+  // Filter and sort charities
+  const filteredCharities = useMemo(() => {
+    let result = [...approvedCharities];
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query) ||
+        c.twitterHandle?.toLowerCase().includes(query) ||
+        c.countryName?.toLowerCase().includes(query) ||
+        categoryNames[c.category]?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by category
+    if (selectedCategory !== "all") {
+      result = result.filter(c => c.category === selectedCategory);
+    }
+    
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "category":
+          return (categoryNames[a.category] || a.category).localeCompare(categoryNames[b.category] || b.category);
+        case "country":
+          return (a.countryName || "").localeCompare(b.countryName || "");
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  }, [approvedCharities, searchQuery, selectedCategory, sortBy]);
+  
+  const hasFilters = searchQuery.trim() || selectedCategory !== "all";
+  
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+  };
 
   return (
     <div className="py-12 md:py-16">
@@ -237,6 +306,90 @@ export default function CharitiesPage() {
           </div>
         </div>
 
+        {/* Filter and Search Controls */}
+        <div className="mb-6 space-y-4" data-testid="section-filters">
+          {/* Search and Sort Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search charities by name, cause, or country..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-search"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  onClick={() => setSearchQuery("")}
+                  data-testid="button-clear-search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-sort">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name" data-testid="option-sort-name">Sort A-Z</SelectItem>
+                <SelectItem value="category" data-testid="option-sort-category">Sort by Category</SelectItem>
+                <SelectItem value="country" data-testid="option-sort-country">Sort by Country</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Category Filter Chips */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Badge
+              variant={selectedCategory === "all" ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => setSelectedCategory("all")}
+              data-testid="filter-all"
+            >
+              All Categories
+            </Badge>
+            {availableCategories.map((cat) => {
+              const Icon = categoryIcons[cat] || HandHeart;
+              return (
+                <Badge
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedCategory(cat)}
+                  data-testid={`filter-${cat}`}
+                >
+                  <Icon className="h-3 w-3 mr-1" />
+                  {categoryNames[cat] || cat}
+                </Badge>
+              );
+            })}
+          </div>
+          
+          {/* Results count and clear */}
+          {hasFilters && (
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span data-testid="text-results-count">
+                Showing {filteredCharities.length} of {approvedCharities.length} charities
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearFilters}
+                data-testid="button-clear-filters"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear filters
+              </Button>
+            </div>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <CharityCardSkeleton />
@@ -256,9 +409,23 @@ export default function CharitiesPage() {
               </Link>
             </CardContent>
           </Card>
+        ) : filteredCharities.length === 0 ? (
+          <Card className="text-center py-12" data-testid="card-no-results">
+            <CardContent>
+              <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Charities Found</h3>
+              <p className="text-muted-foreground mb-4">
+                No charities match your search or filter criteria.
+              </p>
+              <Button variant="outline" onClick={clearFilters} data-testid="button-clear-filters-empty">
+                <X className="h-4 w-4 mr-2" />
+                Clear Filters
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {approvedCharities.map((charity) => (
+            {filteredCharities.map((charity) => (
               <CharityCard key={charity.id} charity={charity} />
             ))}
           </div>
