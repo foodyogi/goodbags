@@ -467,14 +467,6 @@ export function TokenLaunchForm() {
                     </div>
                   )}
                   
-                  {/* No external search indicator */}
-                  {nameSearchResults && !nameSearchResults.hasExternalSearch && field.value.length >= 2 && nameSearchResults.local.length === 0 && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <Info className="h-3 w-3" />
-                      Checked local tokens only. External Bags.fm search not configured.
-                    </p>
-                  )}
-                  
                   <FormMessage />
                 </FormItem>
               )}
