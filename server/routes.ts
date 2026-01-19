@@ -1204,8 +1204,11 @@ export async function registerRoutes(
         });
       }
 
-      // Validate address formats using strict Solana validation
-      if (!isValidSolanaAddress(tokenMint)) {
+      // Check if this is a mock token (from dev mode when Bags SDK not configured)
+      const isMockToken = tokenMint.startsWith("mock");
+
+      // Validate address formats using strict Solana validation (skip for mock tokens)
+      if (!isMockToken && !isValidSolanaAddress(tokenMint)) {
         return res.status(400).json({
           success: false,
           error: "Invalid token mint address format",

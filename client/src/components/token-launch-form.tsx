@@ -353,6 +353,22 @@ export function TokenLaunchForm() {
   });
 
   const getStepMessage = () => {
+    if (testMode) {
+      // Test mode messages (no wallet signing)
+      switch (launchStep) {
+        case "preparing":
+          return "Simulating token creation...";
+        case "signing-config":
+          return "Simulating configuration...";
+        case "signing-launch":
+          return "Simulating launch...";
+        case "recording":
+          return "Finalizing test...";
+        default:
+          return "Running test...";
+      }
+    }
+    // Real mode messages
     switch (launchStep) {
       case "preparing":
         return "Creating token metadata...";
