@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight, BadgeCheck, AlertCircle, Clock3 } from "lucide-react";
+import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight, BadgeCheck, AlertCircle, Clock3, FlaskConical } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { type LaunchedToken, TOKEN_APPROVAL_STATUS } from "@shared/schema";
@@ -66,7 +66,13 @@ export function TokenCard({ token }: TokenCardProps) {
               <Badge variant="secondary" className="font-mono text-xs shrink-0">
                 {token.symbol}
               </Badge>
-              {getApprovalBadge()}
+              {token.isTest && (
+                <Badge variant="outline" className="text-xs shrink-0 border-purple-500/50 text-purple-600 dark:text-purple-400" data-testid={`badge-test-${token.id}`}>
+                  <FlaskConical className="h-3 w-3 mr-1" />
+                  TEST
+                </Badge>
+              )}
+              {!token.isTest && getApprovalBadge()}
             </div>
             <p className="text-xs text-muted-foreground font-mono mt-1">
               {truncateAddress(token.mintAddress)}
@@ -120,19 +126,21 @@ export function TokenCard({ token }: TokenCardProps) {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
-        <a
-          href={`https://solscan.io/token/${token.mintAddress}?cluster=devnet`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button 
-            variant="outline" 
-            size="icon"
-            data-testid={`button-view-solscan-${token.id}`}
+        {!token.isTest && (
+          <a
+            href={`https://solscan.io/token/${token.mintAddress}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        </a>
+            <Button 
+              variant="outline" 
+              size="icon"
+              data-testid={`button-view-solscan-${token.id}`}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </a>
+        )}
       </CardFooter>
     </Card>
   );

@@ -135,6 +135,8 @@ export const launchedTokens = pgTable("launched_tokens", {
   launchedAt: timestamp("launched_at").defaultNow().notNull(),
   donationCount: integer("donation_count").default(0),
   lastDonationAt: timestamp("last_donation_at"),
+  // Test mode flag - marks tokens created in test mode (not real on-chain tokens)
+  isTest: boolean("is_test").default(false),
 });
 
 // Donation tracking table - blockchain verified

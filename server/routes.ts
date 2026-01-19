@@ -136,6 +136,7 @@ const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
   creatorWallet: z.string().min(32, "Invalid wallet address"),
   charitySource: z.enum(["change", "local"]).default("change"),
   charitySolanaAddress: z.string().optional(), // For Change API charities
+  isTest: z.boolean().optional().default(false), // Test mode flag
 });
 
 // Import Change API for server-side verification
@@ -1465,6 +1466,9 @@ export async function registerRoutes(
       const charityDonation = (initialBuy * CHARITY_FEE_PERCENTAGE / 100).toFixed(9);
       const platformFee = (initialBuy * PLATFORM_FEE_PERCENTAGE / 100).toFixed(9);
       
+      // Check if this is a test mode launch
+      const isTestLaunch = validated.isTest === true;
+      
       // Create the token record with charity approval tracking
       const token = await storage.createLaunchedToken({
         name: validated.name,
@@ -1475,24 +1479,26 @@ export async function registerRoutes(
         creatorWallet: validated.creatorWallet,
         charityId: charityInfo.id,
         // Charity approval tracking
-        charityApprovalStatus: "pending", // All new tokens start pending approval
+        charityApprovalStatus: isTestLaunch ? "not_applicable" : "pending", // Test tokens don't need approval
         charityName: charityInfo.name,
         charityEmail: charityInfo.email,
         charityWebsite: charityInfo.website,
         charityTwitter: charityInfo.twitter,
         charityFacebook: charityInfo.facebook,
-        charityNotifiedAt: charityInfo.email ? new Date() : null, // Mark as notified if we have email
+        charityNotifiedAt: isTestLaunch ? null : (charityInfo.email ? new Date() : null), // Don't notify for test tokens
         // Financial tracking
         initialBuyAmount: validated.initialBuyAmount,
         charityDonated: charityDonation,
         platformFeeCollected: platformFee,
         tradingVolume: validated.initialBuyAmount,
         transactionSignature: transactionSignature || `tx${randomUUID().replace(/-/g, "")}`,
+        // Test mode flag
+        isTest: isTestLaunch,
       });
 
       // Log the launch
       await storage.createAuditLog({
-        action: "TOKEN_LAUNCHED",
+        action: isTestLaunch ? "TEST_TOKEN_LAUNCHED" : "TOKEN_LAUNCHED",
         entityType: "token",
         entityId: token.id,
         actorWallet: validated.creatorWallet,
@@ -1502,11 +1508,12 @@ export async function registerRoutes(
           charityName: charityInfo.name,
           charitySource: charityInfo.source,
           initialBuy,
+          isTest: isTestLaunch,
         }),
       });
       
-      // Record the donation if there was an initial buy and charity has a wallet
-      if (initialBuy > 0 && charityInfo.walletAddress) {
+      // Record the donation if there was an initial buy and charity has a wallet (skip for test tokens)
+      if (initialBuy > 0 && charityInfo.walletAddress && !isTestLaunch) {
         await storage.createDonation({
           tokenMint: mintAddress,
           amount: charityDonation,
@@ -1517,6 +1524,7 @@ export async function registerRoutes(
       
       res.json({
         success: true,
+        isTest: isTestLaunch,
         token: {
           id: token.id,
           name: token.name,

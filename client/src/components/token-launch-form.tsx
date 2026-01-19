@@ -195,7 +195,7 @@ export function TokenLaunchForm() {
     mutationFn: async (data: TokenLaunchFormData) => {
       if (!selectedCharity) throw new Error("Please select a charity");
       
-      // Test Mode: Simulate the entire flow without real transactions
+      // Test Mode: Simulate the flow and save test token to database
       if (testMode) {
         setLaunchStep("preparing");
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -207,29 +207,31 @@ export function TokenLaunchForm() {
         await new Promise(resolve => setTimeout(resolve, 600));
         
         setLaunchStep("recording");
-        await new Promise(resolve => setTimeout(resolve, 400));
         
-        // Return mock success result
+        // Generate mock addresses for test token
         const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
         const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        // Use a test wallet address or connected wallet if available
+        const testCreatorWallet = publicKey?.toBase58() || `test_wallet_${Date.now()}`;
         
-        return {
-          success: true,
+        // Save test token to database
+        const launchResponse = await apiRequest("POST", "/api/tokens/launch", {
+          ...data,
+          charityId: selectedCharity.id,
+          charitySource: selectedCharity.source,
+          charitySolanaAddress: selectedCharity.solanaAddress,
+          creatorWallet: testCreatorWallet,
+          mintAddress: mockMintAddress,
+          transactionSignature: mockTxSignature,
           isTest: true,
-          token: {
-            id: `test-${Date.now()}`,
-            name: data.name,
-            symbol: data.symbol,
-            mintAddress: mockMintAddress,
-            transactionSignature: mockTxSignature,
-          },
-          charity: {
-            id: selectedCharity.id,
-            name: selectedCharity.name,
-            status: "verified",
-            hasWallet: !!selectedCharity.solanaAddress,
-          },
-        } as LaunchResult & { isTest?: boolean };
+        });
+        const launchResult = await launchResponse.json();
+        
+        if (!launchResult.success) {
+          throw new Error(launchResult.error || "Failed to save test token");
+        }
+        
+        return launchResult as LaunchResult;
       }
       
       // Real Mode: Requires wallet connection
@@ -472,17 +474,30 @@ export function TokenLaunchForm() {
               </Button>
             </Link>
             {!launchResult.isTest && (
-              <a
-                href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full gap-2" data-testid="button-view-solscan">
-                  <ExternalLink className="h-4 w-4" />
-                  View on Solscan
-                </Button>
-              </a>
+              <>
+                <a
+                  href={`https://bags.fm/${launchResult.token.mintAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full"
+                >
+                  <Button variant="secondary" className="w-full gap-2" data-testid="button-view-bags">
+                    <ExternalLink className="h-4 w-4" />
+                    View on Bags.fm
+                  </Button>
+                </a>
+                <a
+                  href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full"
+                >
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-view-solscan">
+                    <ExternalLink className="h-4 w-4" />
+                    View on Solscan
+                  </Button>
+                </a>
+              </>
             )}
             <Button 
               variant="outline"
@@ -828,14 +843,22 @@ export function TokenLaunchForm() {
               )}
             </div>
 
-            <div className="rounded-lg border border-muted bg-muted/30 p-4">
+            <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Charity Donation</span>
                 <span className="font-medium">{CHARITY_FEE_PERCENTAGE}% of trades</span>
               </div>
-              <div className="flex items-center justify-between text-sm mt-2">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Platform Fee</span>
                 <span className="font-medium">{PLATFORM_FEE_PERCENTAGE}% of trades</span>
+              </div>
+              <div className="pt-2 border-t border-muted">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">How donations work:</span>{" "}
+                  Charities with an X account claim donations via{" "}
+                  <a href="https://bags.fm" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Bags.fm</a>. 
+                  Charities with Solana wallets receive instant transfers.
+                </p>
               </div>
             </div>
 
