@@ -1534,6 +1534,71 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to fetch tokens" });
     }
   });
+
+  // Search token names to check if already used (for Bags.fm duplicate detection)
+  app.get("/api/tokens/search/name", rateLimitMiddleware(30), async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 2) {
+        return res.json({ 
+          local: [], 
+          external: [],
+          hasExternalSearch: false
+        });
+      }
+
+      // Search local database for tokens launched via GoodBags
+      const localResults = await storage.searchTokensByName(query);
+
+      // Check for Solana Tracker API key for external search
+      const solanaTrackerKey = process.env.SOLANA_TRACKER_API_KEY;
+      let externalResults: { name: string; symbol: string; mintAddress: string; launchpad?: string }[] = [];
+      let hasExternalSearch = false;
+
+      if (solanaTrackerKey) {
+        hasExternalSearch = true;
+        try {
+          // Search Solana Tracker for Bags.fm tokens specifically
+          const searchUrl = new URL("https://data.solanatracker.io/search");
+          searchUrl.searchParams.set("query", query);
+          searchUrl.searchParams.set("launchpad", "bags");
+          searchUrl.searchParams.set("limit", "20");
+          searchUrl.searchParams.set("sortBy", "createdAt");
+          searchUrl.searchParams.set("sortOrder", "desc");
+
+          const response = await fetch(searchUrl.toString(), {
+            headers: {
+              "x-api-key": solanaTrackerKey,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.status === "success" && Array.isArray(data.data)) {
+              externalResults = data.data.map((token: any) => ({
+                name: token.name || "",
+                symbol: token.symbol || "",
+                mintAddress: token.mint || "",
+                launchpad: token.launchpad?.name || "bags",
+              }));
+            }
+          }
+        } catch (extError) {
+          console.error("External token search error:", extError);
+          // Continue with local results only
+        }
+      }
+
+      res.json({
+        local: localResults,
+        external: externalResults,
+        hasExternalSearch,
+      });
+    } catch (error) {
+      console.error("Token name search error:", error);
+      res.status(500).json({ error: "Failed to search tokens" });
+    }
+  });
   
   // Get dashboard data
   app.get("/api/dashboard", async (req, res) => {

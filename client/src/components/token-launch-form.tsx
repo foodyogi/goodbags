@@ -36,9 +36,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
+
+interface TokenNameSearchResult {
+  local: { name: string; symbol: string; mintAddress: string }[];
+  external: { name: string; symbol: string; mintAddress: string; launchpad?: string }[];
+  hasExternalSearch: boolean;
+}
 
 interface SelectedCharity {
   id: string;
@@ -96,6 +102,11 @@ export function TokenLaunchForm() {
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
   const [imageSource, setImageSource] = useState<ImageSourceType>("url");
+  
+  // Token name duplicate detection
+  const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
+  const [isSearchingName, setIsSearchingName] = useState(false);
+  const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: bagsStatus } = useQuery<{ configured: boolean }>({
     queryKey: ["/api/bags/status"],
@@ -111,6 +122,46 @@ export function TokenLaunchForm() {
       initialBuyAmount: "0",
     },
   });
+
+  // Watch the name field for debounced duplicate detection
+  const watchedName = form.watch("name");
+  
+  useEffect(() => {
+    // Clear previous timeout
+    if (nameSearchTimeoutRef.current) {
+      clearTimeout(nameSearchTimeoutRef.current);
+    }
+    
+    // Clear results if name is too short
+    if (!watchedName || watchedName.trim().length < 2) {
+      setNameSearchResults(null);
+      setIsSearchingName(false);
+      return;
+    }
+    
+    setIsSearchingName(true);
+    
+    // Debounce the search by 500ms
+    nameSearchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/tokens/search/name?q=${encodeURIComponent(watchedName.trim())}`);
+        if (response.ok) {
+          const data = await response.json();
+          setNameSearchResults(data);
+        }
+      } catch (error) {
+        console.error("Token name search error:", error);
+      } finally {
+        setIsSearchingName(false);
+      }
+    }, 500);
+    
+    return () => {
+      if (nameSearchTimeoutRef.current) {
+        clearTimeout(nameSearchTimeoutRef.current);
+      }
+    };
+  }, [watchedName]);
 
   const launchMutation = useMutation({
     mutationFn: async (data: TokenLaunchFormData) => {
@@ -369,16 +420,61 @@ export function TokenLaunchForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Token Name</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="e.g. Doge Moon" 
-                      {...field} 
-                      data-testid="input-token-name"
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g. Doge Moon" 
+                        {...field} 
+                        data-testid="input-token-name"
+                      />
+                    </FormControl>
+                    {isSearchingName && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
                   <FormDescription>
                     {field.value.length}/32 characters
                   </FormDescription>
+                  
+                  {/* Duplicate name warning */}
+                  {nameSearchResults && (nameSearchResults.local.length > 0 || nameSearchResults.external.length > 0) && (
+                    <div className="mt-2 rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm" data-testid="warning-token-name-exists">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="space-y-2">
+                          <p className="font-medium text-amber-700 dark:text-amber-400">
+                            Similar tokens found on Bags.fm
+                          </p>
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            {nameSearchResults.local.slice(0, 3).map((token) => (
+                              <div key={token.mintAddress} className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">GoodBags</Badge>
+                                <span>{token.name} ({token.symbol})</span>
+                              </div>
+                            ))}
+                            {nameSearchResults.external.slice(0, 3).map((token) => (
+                              <div key={token.mintAddress} className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">Bags.fm</Badge>
+                                <span>{token.name} ({token.symbol})</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-amber-600 dark:text-amber-500">
+                            You can still launch, but consider a unique name to avoid confusion.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No external search indicator */}
+                  {nameSearchResults && !nameSearchResults.hasExternalSearch && field.value.length >= 2 && nameSearchResults.local.length === 0 && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <Info className="h-3 w-3" />
+                      Checked local tokens only. External Bags.fm search not configured.
+                    </p>
+                  )}
+                  
                   <FormMessage />
                 </FormItem>
               )}

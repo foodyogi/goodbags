@@ -514,6 +514,23 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
+
+  async searchTokensByName(name: string): Promise<{ name: string; symbol: string; mintAddress: string }[]> {
+    const normalizedName = name.toLowerCase().trim();
+    if (normalizedName.length < 2) return [];
+    
+    const results = await db
+      .select({
+        name: launchedTokens.name,
+        symbol: launchedTokens.symbol,
+        mintAddress: launchedTokens.mintAddress,
+      })
+      .from(launchedTokens)
+      .where(sql`LOWER(${launchedTokens.name}) LIKE ${`%${normalizedName}%`}`)
+      .limit(10);
+    
+    return results;
+  }
 }
 
 export const storage = new DatabaseStorage();
