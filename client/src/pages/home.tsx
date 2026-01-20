@@ -5,6 +5,7 @@ import { FeeTransparency } from "@/components/fee-transparency";
 import { LiveImpactStats } from "@/components/live-impact-stats";
 import { TrendingTokens } from "@/components/trending-tokens";
 import { TokenLeaderboard } from "@/components/token-leaderboard";
+import { FeaturesSummary } from "@/components/features-summary";
 import { useQuery } from "@tanstack/react-query";
 import { type LaunchedToken } from "@shared/schema";
 
@@ -31,6 +32,8 @@ export default function Home() {
       )}
       
       <FeeTransparency />
+      
+      <FeaturesSummary />
       
       <FeaturedProject />
       

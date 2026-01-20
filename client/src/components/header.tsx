@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ThemeToggle } from "./theme-toggle";
-import { Rocket, LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy } from "lucide-react";
+import { Rocket, LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -15,7 +15,7 @@ export function Header() {
     { href: "/my-impact", label: "My Impact", icon: Trophy },
     { href: "/charities", label: "Charities", icon: Heart },
     { href: "/buyback", label: "Buyback", icon: TrendingUp },
-    { href: "/how-it-works", label: "How It Works", icon: Info },
+    { href: "/features", label: "Features", icon: Sparkles },
   ];
 
   return (

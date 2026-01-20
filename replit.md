@@ -109,6 +109,20 @@ The platform includes gamification features to drive engagement and community gr
 - Shareable profile with Twitter/X integration
 - Profile link for sharing impact with community
 
+### Features Documentation
+The platform provides comprehensive documentation of all features through:
+
+**Features Summary** (`client/src/components/features-summary.tsx`)
+- Displayed on the homepage after the fee transparency section
+- Highlights 6 key capabilities with brief descriptions
+- Links to the detailed Features page
+
+**Features Page** (`client/src/pages/features.tsx`)
+- Comprehensive documentation of all platform capabilities
+- Organized into sections: Core Features, Gamification & Engagement, Personal & Social Features, Security & Trust, Advanced Features
+- Details 10 achievement badges, leaderboard categories, profile features, and more
+- Accessible via header navigation and footer links
+
 ## External Dependencies
 
 ### Blockchain Services

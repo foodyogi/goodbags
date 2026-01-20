@@ -17,6 +17,7 @@ import CharityTokenApproval from "@/pages/charity-token-approval";
 import CharitiesPage from "@/pages/charities";
 import BuybackPage from "@/pages/buyback";
 import HowItWorksPage from "@/pages/how-it-works";
+import FeaturesPage from "@/pages/features";
 import FoodYogaInternational from "@/pages/food-yoga-international";
 import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
@@ -36,6 +37,7 @@ function MainRouter() {
       <Route path="/charities/apply" component={CharityApply} />
       <Route path="/buyback" component={BuybackPage} />
       <Route path="/how-it-works" component={HowItWorksPage} />
+      <Route path="/features" component={FeaturesPage} />
       <Route path="/ffl" component={FoodYogaInternational} />
       <Route path="/food-yoga-international" component={FoodYogaInternational} />
       <Route path="/admin/charities" component={AdminCharities} />

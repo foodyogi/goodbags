@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils } from "lucide-react";
+import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles } from "lucide-react";
 import { SiSolana } from "react-icons/si";
 
 export function Footer() {
@@ -50,6 +50,14 @@ export function Footer() {
               >
                 <Info className="h-3 w-3" />
                 How It Works
+              </Link>
+              <Link
+                href="/features"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-features"
+              >
+                <Sparkles className="h-3 w-3" />
+                All Features
               </Link>
               <Link
                 href="/charities/apply"
