@@ -31,7 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Sparkles, Info, Coins, FlaskConical, LayoutDashboard } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -62,7 +62,7 @@ interface SelectedCharity {
   source: "local" | "change";
 }
 
-type ImageSourceType = "url" | "upload" | "generate";
+type ImageSourceType = "url" | "upload";
 
 const tokenLaunchFormSchemaWithCharity = z.object({
   name: z.string().min(1, "Token name is required").max(32, "Token name must be 32 characters or less"),
@@ -642,7 +642,7 @@ export function TokenLaunchForm() {
               <RadioGroup
                 value={imageSource}
                 onValueChange={(value) => setImageSource(value as ImageSourceType)}
-                className="grid grid-cols-3 gap-2"
+                className="grid grid-cols-2 gap-2"
               >
                 <div>
                   <RadioGroupItem value="url" id="image-url" className="peer sr-only" />
@@ -664,17 +664,6 @@ export function TokenLaunchForm() {
                   >
                     <Upload className="h-5 w-5 mb-1" />
                     <span className="text-xs font-medium">Upload</span>
-                  </Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="generate" id="image-generate" className="peer sr-only" />
-                  <Label
-                    htmlFor="image-generate"
-                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover-elevate cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                    data-testid="radio-image-generate"
-                  >
-                    <Sparkles className="h-5 w-5 mb-1" />
-                    <span className="text-xs font-medium">Generate</span>
                   </Label>
                 </div>
               </RadioGroup>
@@ -744,31 +733,6 @@ export function TokenLaunchForm() {
                 </div>
               )}
               
-              {imageSource === "generate" && (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">AI Image Generation</p>
-                      <p className="text-xs text-muted-foreground">
-                        Describe your token&apos;s image and we&apos;ll generate it for you
-                      </p>
-                    </div>
-                  </div>
-                  <Textarea
-                    placeholder="e.g., A cute cartoon dog with sunglasses on the moon, vibrant colors, crypto-style..."
-                    className="resize-none"
-                    rows={2}
-                    data-testid="input-image-prompt"
-                  />
-                  <Badge variant="secondary" className="mt-1">
-                    Coming Soon
-                  </Badge>
-                  <p className="text-xs text-muted-foreground">
-                    For now, please use a URL. AI generation coming soon!
-                  </p>
-                </div>
-              )}
             </div>
 
             <FormField
