@@ -1397,7 +1397,7 @@ export async function registerRoutes(
         const verification = await verifyChangeCharityWallet(
           validated.charityId, 
           validated.charitySource, 
-          validated.charitySolanaAddress
+          validated.charitySolanaAddress ?? undefined
         );
         if (!verification.valid) {
           return res.status(400).json({
