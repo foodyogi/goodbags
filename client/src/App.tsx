@@ -9,6 +9,8 @@ import { Footer } from "@/components/footer";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import ImpactPage from "@/pages/impact";
+import MyImpactPage from "@/pages/my-impact";
+import PublicProfilePage from "@/pages/public-profile";
 import CharityApply from "@/pages/charity-apply";
 import AdminCharities from "@/pages/admin-charities";
 import CharityTokenApproval from "@/pages/charity-token-approval";
@@ -27,6 +29,8 @@ function MainRouter() {
       <Route path="/" component={Home} />
       <Route path="/launch" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/my-impact" component={MyImpactPage} />
+      <Route path="/profile/:wallet" component={PublicProfilePage} />
       <Route path="/impact" component={ImpactPage} />
       <Route path="/charities" component={CharitiesPage} />
       <Route path="/charities/apply" component={CharityApply} />

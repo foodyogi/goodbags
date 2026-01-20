@@ -81,6 +81,34 @@ The platform includes features designed to foster community development for laun
 - Clear warning display for denied tokens with reason
 - Pending review state showing awaiting charity response
 
+### Gamification & Personalization
+The platform includes gamification features to drive engagement and community growth:
+
+**Token Leaderboard** (`client/src/components/token-leaderboard.tsx`)
+- Top Givers: Tokens ranked by total charity donations
+- Most Traded: Tokens ranked by trading volume
+- Hot Now: Algorithm combining recency, activity, and value metrics
+- Visual rank badges (gold crown, silver/bronze medals)
+
+**Trending Tokens** (`client/src/components/trending-tokens.tsx`)
+- Real-time trending algorithm based on recent activity
+- "New" badge for tokens launched within 24 hours
+- "Hot" badge for high-activity tokens
+- Time-ago display and quick stats
+
+**Achievement Badges** (`client/src/components/achievement-badges.tsx`)
+- 10 unlockable achievements with progress tracking
+- Categories: Launches (First Launch, Serial Launcher), Donations (Generous Giver, Impact Hero, Legendary Philanthropist), Volume (Volume Driver, Market Maker), Community (Community Builder), Endorsements (Charity Endorsed, Trusted Creator)
+- Progress bars for locked achievements showing path to unlock
+- Compact view for profile display
+
+**My Impact Profile** (`client/src/pages/my-impact.tsx`)
+- Personal dashboard showing all user's launched tokens
+- Aggregate stats: tokens launched, SOL donated, volume generated
+- Earned achievement badges display
+- Shareable profile with Twitter/X integration
+- Profile link for sharing impact with community
+
 ## External Dependencies
 
 ### Blockchain Services

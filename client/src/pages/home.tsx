@@ -3,13 +3,32 @@ import { TokenLaunchForm } from "@/components/token-launch-form";
 import { FeaturedProject } from "@/components/featured-project";
 import { FeeTransparency } from "@/components/fee-transparency";
 import { LiveImpactStats } from "@/components/live-impact-stats";
+import { TrendingTokens } from "@/components/trending-tokens";
+import { TokenLeaderboard } from "@/components/token-leaderboard";
+import { useQuery } from "@tanstack/react-query";
+import { type LaunchedToken } from "@shared/schema";
 
 export default function Home() {
+  const { data: tokens } = useQuery<LaunchedToken[]>({
+    queryKey: ["/api/tokens"],
+  });
+
   return (
     <div className="min-h-screen">
       <HeroSection />
       
       <LiveImpactStats />
+      
+      {tokens && tokens.length > 0 && (
+        <section className="py-12 md:py-16 bg-muted/30">
+          <div className="mx-auto max-w-7xl px-4 md:px-8">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <TrendingTokens tokens={tokens} limit={5} />
+              <TokenLeaderboard tokens={tokens} limit={5} />
+            </div>
+          </div>
+        </section>
+      )}
       
       <FeeTransparency />
       
