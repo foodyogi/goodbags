@@ -26,6 +26,9 @@ import { SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { useState } from "react";
 import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, TOKEN_APPROVAL_STATUS } from "@shared/schema";
+import { CommunityImpact } from "@/components/community-impact";
+import { SocialShare } from "@/components/social-share";
+import { EndorsementCelebration } from "@/components/endorsement-celebration";
 
 interface TokenImpactData {
   token: {
@@ -265,12 +268,43 @@ export default function TokenDetailPage() {
           </CardContent>
         </Card>
 
+        <EndorsementCelebration 
+          status={token.charityApprovalStatus}
+          charityName={token.charityName}
+          note={token.charityApprovalNote}
+          tokenId={token.id}
+        />
+
+        {token.charityApprovalStatus && (
+          <div className="mb-6" />
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <CommunityImpact
+            tokenName={token.name}
+            tokenSymbol={token.symbol}
+            charityName={token.charityName || charityInfo?.name || null}
+            totalDonated={impact.totalDonated}
+            donationCount={impact.donationCount}
+            isApproved={token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED}
+          />
+          
+          <SocialShare
+            tokenName={token.name}
+            tokenSymbol={token.symbol}
+            mintAddress={token.mintAddress}
+            charityName={token.charityName || charityInfo?.name || null}
+            totalDonated={impact.totalDonated}
+            isApproved={token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED}
+          />
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           <Card data-testid="card-impact-stats">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Heart className="h-5 w-5 text-pink-500" />
-                Charitable Impact
+                Donation Details
               </CardTitle>
             </CardHeader>
             <CardContent>

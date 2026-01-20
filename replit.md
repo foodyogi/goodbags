@@ -45,7 +45,7 @@ The token launch form supports image uploads via Replit Object Storage:
 - Users can upload PNG, JPG, GIF, or WebP images up to 10MB
 - Files are uploaded via presigned URLs to Google Cloud Storage
 - Uploaded images are served from `/objects/uploads/...` paths
-- AI image generation option is planned for future release
+- Two options available: URL input or file upload
 
 ### Automated FYI Buyback System
 A core feature where 0.25% of platform fees are automatically used to buy FYI tokens via Jupiter, creating continuous buy pressure. The buybacks are tracked and occur approximately every 60 minutes when a minimum SOL balance is met.
@@ -58,6 +58,28 @@ Users can test the token launch flow without connecting a wallet or spending SOL
 - Test tokens don't create charity notifications or donation records
 - Dashboard includes Live/Test/All filter to view tokens by type
 - Test tokens have mock addresses (starting with "TEST") and don't show Solscan links
+
+### Community Features
+The platform includes features designed to foster community development for launched tokens:
+
+**Community Impact Tracker** (`client/src/components/community-impact.tsx`)
+- Displays total donations per token with compelling visual presentation
+- Shows USD equivalent of SOL donations
+- Includes donation milestone progress bar (First Steps → Legendary)
+- Displays donation count and current milestone status
+- "Charity Endorsed" badge appears when token is approved
+
+**Social Share Integration** (`client/src/components/social-share.tsx`)
+- Twitter/X share buttons with pre-filled text for sharing tokens
+- "See Mentions" button links to Twitter search for token discussions
+- Special "Share Endorsement" button for charity-approved tokens
+- "Share Impact Milestone" button for celebrating donation achievements
+
+**Endorsement Celebration** (`client/src/components/endorsement-celebration.tsx`)
+- Visual celebration display when a charity officially endorses a token
+- Animated badge with gradient background for approved tokens
+- Clear warning display for denied tokens with reason
+- Pending review state showing awaiting charity response
 
 ## External Dependencies
 
