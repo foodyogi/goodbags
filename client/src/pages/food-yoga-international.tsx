@@ -13,8 +13,11 @@ import {
   Shield,
   Target,
   Award,
-  HandHeart
+  HandHeart,
+  CheckCircle2,
+  Wallet
 } from "lucide-react";
+import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 
 const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr";
 
@@ -266,42 +269,81 @@ export default function FoodYogaInternational() {
           </Card>
         </div>
 
-        <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20" data-testid="section-partnership">
+        <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20" data-testid="section-partnership">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="flex-shrink-0">
-                <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <HandHeart className="h-8 w-8 text-green-600" />
-                </div>
+            <div className="flex flex-col lg:flex-row items-start gap-6">
+              <div className="flex-shrink-0 mx-auto lg:mx-0">
+                <img 
+                  src={fyiLogo} 
+                  alt="Food Yoga International Logo" 
+                  className="h-32 w-32 object-contain"
+                  data-testid="img-fyi-logo"
+                />
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-bold mb-2">GoodBags Partnership</h3>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold mb-3 text-center lg:text-left">GoodBags Partnership</h3>
                 <p className="text-muted-foreground mb-4">
-                  Food Yoga International is a founding partner and verified charity on GoodBags. 
-                  Token creators can select FYI to receive 1% of all trading royalties from their tokens.
+                  Food Yoga International (formerly Food For Life Global) is a <strong>founding partner</strong> and verified charity on GoodBags. 
+                  As one of the world's largest plant-based food relief organizations, FYI has been serving humanity since 1974, 
+                  distributing over 8 billion free meals across 65+ countries.
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                  <Badge variant="outline" className="bg-background">
+                
+                <div className="mb-4 space-y-2">
+                  <h4 className="font-semibold text-sm">How GoodBags Supports FYI:</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Token creators can select FYI to receive <strong>0.75%</strong> of all trading royalties</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Donations are sent directly to FYI's verified Solana wallet</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>100% transparent and verifiable on-chain through Solscan</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Every SOL donated helps provide plant-based meals to those in need</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-4">
+                  <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30">
                     <Target className="h-3 w-3 mr-1" />
                     Founding Partner
                   </Badge>
-                  <Badge variant="outline" className="bg-background">
+                  <Badge variant="outline" className="bg-green-500/10 border-green-500/30">
                     <Shield className="h-3 w-3 mr-1" />
                     Verified Charity
                   </Badge>
+                  <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30">
+                    <Wallet className="h-3 w-3 mr-1" />
+                    Solana Wallet Active
+                  </Badge>
                 </div>
-              </div>
-              <div className="flex-shrink-0">
-                <a 
-                  href={`https://solscan.io/account/${PARTNER_WALLET}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" data-testid="button-verify-partnership">
-                    Verify on Solscan
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
-                </a>
+
+                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                  <a 
+                    href={`https://solscan.io/account/${PARTNER_WALLET}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" data-testid="button-verify-partnership">
+                      Verify on Solscan
+                      <ExternalLink className="h-4 w-4 ml-2" />
+                    </Button>
+                  </a>
+                  <a href="https://ffl.org" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" data-testid="button-fyi-website">
+                      <Globe className="h-4 w-4 mr-2" />
+                      Visit FFL.org
+                      <ExternalLink className="h-4 w-4 ml-2" />
+                    </Button>
+                  </a>
+                </div>
               </div>
             </div>
           </CardContent>
