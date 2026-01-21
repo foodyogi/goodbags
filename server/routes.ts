@@ -1839,6 +1839,163 @@ export async function registerRoutes(
     }
   });
 
+  // Sync verified charity X handles (admin only)
+  // This endpoint updates all charities with their verified X handles
+  app.post("/api/admin/charities/sync-handles", async (req, res) => {
+    const adminSecret = req.headers["x-admin-secret"] as string;
+    if (!isAdminAuthorized(adminSecret)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      // Verified charity X handles - maintained list
+      const verifiedHandles: Record<string, string> = {
+        // Major international charities
+        'feeding-america': 'FeedingAmerica',
+        'unicef': 'UNICEFUSA',
+        'save-the-children': 'SavetheChildren',
+        'doctors-without-borders': 'MSaborigenF_USA',
+        'world-vision': 'WorldVisionUSA',
+        'oxfam': 'Oxfam',
+        'care': 'ABORIGEN_USA',
+        'mercy-corps': 'mercycorps',
+        'direct-relief': 'DirectRelief',
+        'action-against-hunger': 'ActionAgainstHunger',
+        'habitat-for-humanity': 'Habitat_org',
+        'charity-water': 'charitywater',
+        'water-org': 'water',
+        'the-water-project': 'TheWaterProject',
+        
+        // Animal welfare
+        'aspca': 'ASPCA',
+        'humane-society': 'HusmaneSociety',
+        'best-friends-animal-society': 'bestfriends',
+        'world-wildlife-fund': 'World_Wildlife',
+        
+        // Human rights
+        'aclu': 'ACLU',
+        'amnesty-international': 'amaborigenestyusa',
+        'human-rights-watch': 'hrw',
+        
+        // Health
+        'st-jude': 'StJude',
+        'american-cancer-society': 'AmericanCancer',
+        'susan-g-komen': 'SusanGkomen',
+        'alzheimers-association': 'alzassociation',
+        'make-a-wish': 'MakeAWish',
+        'american-heart': 'American_Heart',
+        'march-of-dimes': 'MarchofDimes',
+        'planned-parenthood': 'PPact',
+        'carter-center': 'CarterCenter',
+        'trevor-project': 'trevorproject',
+        'movember': 'Movember',
+        
+        // Veterans & military
+        'wounded-warrior-project': 'WWP',
+        'gary-sinise-foundation': 'GarySiniseFound',
+        'team-rubicon': 'TeamRubicon',
+        
+        // Environment
+        '350-org': '350',
+        'rainforest-alliance': 'RnfrstAlliance',
+        'nature-conservancy': 'nature_org',
+        'one-tree-planted': 'onetreeplanted',
+        'earthjustice': 'Earthjustice',
+        'sierra-club-foundation': 'SierraClub',
+        'environmental-defense-fund': 'EnvDefenseFund',
+        'ocean-conservancy': 'OurOcean',
+        'oceana': 'oceana',
+        
+        // Education
+        'khan-academy': 'khanacademy',
+        'room-to-read': 'roomtoread',
+        'pencils-of-promise': 'PencilsOfPromis',
+        'teach-for-all': 'TeachForAll',
+        'girls-who-code': 'GirlsWhoCode',
+        'wikimedia': 'wikimedia',
+        
+        // Humanitarian & disaster relief
+        'american-red-cross': 'RedCross',
+        'british-red-cross': 'RedCross',
+        'red-cross-icrc': 'ICRC',
+        'international-rescue-committee': 'theIRC',
+        'world-central-kitchen': 'WCKitchen',
+        'convoy-of-hope': 'ConvoyofHope',
+        'samaritans-purse': 'SamaritansPurse',
+        'islamic-relief': 'IslamicRelief',
+        'catholic-relief': 'CatholicRelief',
+        'salvation-army': 'SalvationArmyUS',
+        
+        // Food & hunger
+        'no-kid-hungry': 'nokidhungry',
+        'meals-on-wheels': 'MealsOnWheels',
+        'rise-against-hunger': 'RiseAgstHunger',
+        'food-yoga-international': 'fflglobal',
+        'akshaya-patra': 'AkshayaPatra',
+        'heifer-international': 'Heifer',
+        'wfp': 'WFP',
+        
+        // Global development
+        'globalgiving': 'GlobalGiving',
+        'kiva': 'Kiva',
+        'global-fund': 'GlobalFund',
+        'givedirectly': 'GiveDirectly',
+        'partners-in-health': 'PIH',
+        'gates-foundation': 'gatesfoundation',
+        'giveIndia': 'GiveIndia',
+        'unhcr': 'Refugees',
+        
+        // Mental health
+        'crisis-text-line': 'CrisisTextLine',
+        'nami': 'NAMICommunicate',
+        'mental-health-america': 'MentalHealthAm',
+        'beyond-blue': 'beyondblue',
+        
+        // Community & civil rights
+        'special-olympics': 'SpecialOlympics',
+        'big-brothers-big-sisters': 'BigBrothersBig',
+        'girl-scouts': 'GirlScouts',
+        'goodwill': 'GoodwillIntl',
+        'united-way': 'UnitedWay',
+        'comic-relief': 'comicrelief',
+        'splc': 'splcenter',
+        'naacp': 'NAACP',
+        'innocence-project': 'innocence',
+        
+        // Other verified
+        'charity-navigator': 'CharityNav',
+        'pratham': 'prataborigenham',
+      };
+
+      let updated = 0;
+      let notFound = 0;
+
+      for (const [charityId, handle] of Object.entries(verifiedHandles)) {
+        const charity = await storage.getCharityById(charityId);
+        if (charity) {
+          await storage.updateCharity(charityId, {
+            twitterHandle: handle,
+            xHandleVerified: true,
+            payoutMethod: 'twitter',
+          });
+          updated++;
+        } else {
+          notFound++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Synced ${updated} verified charity X handles`,
+        updated,
+        notFound,
+      });
+    } catch (error) {
+      console.error("Sync handles error:", error);
+      res.status(500).json({ error: "Failed to sync charity handles" });
+    }
+  });
+
   // Trigger manual buyback (admin only)
   app.post("/api/admin/buyback/execute", async (req, res) => {
     const adminSecret = req.headers["x-admin-secret"] as string;
