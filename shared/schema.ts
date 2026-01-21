@@ -57,6 +57,7 @@ export const charities = pgTable("charities", {
   email: text("email"),
   walletAddress: text("wallet_address"),
   twitterHandle: text("twitter_handle"), // X account handle for Bags.fm claim system
+  xHandleVerified: boolean("x_handle_verified").default(false), // True if X handle confirmed working with Bags.fm
   payoutMethod: text("payout_method").notNull().default("wallet"), // wallet or twitter
   status: text("status").notNull().default("pending"),
   source: text("source").notNull().default("manual"), // change, everyorg, or manual

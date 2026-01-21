@@ -19,6 +19,7 @@ interface CharityOption {
   logoUrl?: string | null;
   solanaAddress?: string | null;
   twitterHandle?: string | null;
+  xHandleVerified?: boolean | null; // True if X handle confirmed working with Bags.fm
   countryName?: string | null;
   source: "local" | "change";
   email?: string | null;
@@ -115,6 +116,7 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
           logoUrl: null,
           solanaAddress: c.walletAddress,
           twitterHandle: c.twitterHandle,
+          xHandleVerified: c.xHandleVerified,
           countryName: c.countryName,
           source: "local",
           email: null,
@@ -149,7 +151,8 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
 
   const filteredCharities = useMemo(() => {
     return allCharities.filter(c => {
-      if (showOnlyWithX && !c.twitterHandle) return false;
+      // Only show charities with VERIFIED X handles when filter is on
+      if (showOnlyWithX && !(c.twitterHandle && c.xHandleVerified)) return false;
       if (showOnlyWithWallet && !c.solanaAddress) return false;
       return true;
     });
@@ -160,7 +163,9 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
     const notSelectable: CharityOption[] = [];
     
     for (const c of filteredCharities) {
-      if (c.twitterHandle || c.solanaAddress) {
+      // Only verified X handles or direct wallets are selectable for token launches
+      const hasVerifiedX = c.twitterHandle && c.xHandleVerified;
+      if (hasVerifiedX || c.solanaAddress) {
         selectable.push(c);
       } else {
         notSelectable.push(c);
@@ -171,7 +176,8 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
   }, [filteredCharities]);
 
   const handleSelect = (charity: CharityOption) => {
-    if (!charity.twitterHandle && !charity.solanaAddress) return;
+    const hasVerifiedX = charity.twitterHandle && charity.xHandleVerified;
+    if (!hasVerifiedX && !charity.solanaAddress) return;
     onSelect(charity);
   };
 
@@ -208,7 +214,7 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
           />
           <Label htmlFor="filter-x" className="text-sm flex items-center gap-1 cursor-pointer">
             <Twitter className="h-3 w-3 text-blue-500" />
-            Has X Handle
+            Verified X Handle
           </Label>
         </div>
         <div className="flex items-center gap-2">
@@ -307,6 +313,7 @@ interface CharityCardProps {
 
 function CharityCard({ charity, isSelected, onSelect, disabled }: CharityCardProps) {
   const hasX = !!charity.twitterHandle;
+  const isXVerified = hasX && charity.xHandleVerified === true;
   const hasWallet = !!charity.solanaAddress;
   
   return (
@@ -365,12 +372,21 @@ function CharityCard({ charity, isSelected, onSelect, disabled }: CharityCardPro
           </div>
           
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            {hasX ? (
+            {isXVerified ? (
               <div className="flex items-center gap-1 text-xs text-blue-500">
                 <Twitter className="h-3 w-3" />
                 @{charity.twitterHandle}
-                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
-                  Bags.fm Claim
+                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              </div>
+            ) : hasX ? (
+              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                <Twitter className="h-3 w-3" />
+                @{charity.twitterHandle}
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                  Unverified
                 </Badge>
               </div>
             ) : (
@@ -434,6 +450,7 @@ interface SelectedCharityDisplayProps {
 
 export function SelectedCharityDisplay({ charity, onClear }: SelectedCharityDisplayProps) {
   const hasX = !!charity.twitterHandle;
+  const isXVerified = hasX && charity.xHandleVerified === true;
   const hasWallet = !!charity.solanaAddress;
   
   return (
@@ -479,7 +496,7 @@ export function SelectedCharityDisplay({ charity, onClear }: SelectedCharityDisp
           </div>
           
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            {hasX && (
+            {isXVerified && (
               <div className="flex items-center gap-1 text-sm text-blue-500">
                 <Twitter className="h-4 w-4" />
                 <a 
@@ -490,8 +507,9 @@ export function SelectedCharityDisplay({ charity, onClear }: SelectedCharityDisp
                 >
                   @{charity.twitterHandle}
                 </a>
-                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 ml-1">
-                  Bags.fm Claim
+                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 ml-1">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Verified
                 </Badge>
               </div>
             )}
