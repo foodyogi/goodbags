@@ -320,14 +320,21 @@ export async function createFeeShareConfig(
     }
     
     // Use Bags.fm X account claim system
-    // Charity will claim via Bags app by connecting their wallet
+    // First, resolve the X/Twitter handle to a wallet address using Bags API
+    console.log("Bags SDK: Resolving X handle to wallet:", sanitizedHandle);
+    let charityWalletFromTwitter: PublicKey;
+    try {
+      charityWalletFromTwitter = await sdk.state.getLaunchWalletForTwitterUsername(sanitizedHandle);
+      console.log("Bags SDK: Resolved X handle", sanitizedHandle, "to wallet:", charityWalletFromTwitter.toBase58());
+    } catch (error) {
+      console.error("Bags SDK: Failed to resolve X handle to wallet:", error);
+      throw new Error(`Failed to resolve X handle @${sanitizedHandle} to wallet. The charity may need to register with Bags.fm first. Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    
+    // Now use the resolved wallet in the fee claimers
     feeClaimers = [
       { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
-      { 
-        platform: "twitter", 
-        handle: sanitizedHandle,
-        userBps: CHARITY_FEE_BPS // 7500 BPS = 75% of fees
-      },
+      { user: charityWalletFromTwitter, userBps: CHARITY_FEE_BPS },
       { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
     ];
   } else if (params.charityWallet) {
