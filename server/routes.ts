@@ -13,7 +13,8 @@ import {
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
-import bs58 from "bs58";
+import bs58Pkg from "bs58";
+const bs58 = bs58Pkg.default ?? bs58Pkg;
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
