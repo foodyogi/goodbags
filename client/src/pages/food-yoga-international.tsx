@@ -18,35 +18,40 @@ import {
   Wallet
 } from "lucide-react";
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
+import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
 
 const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr";
 
 export default function FoodYogaInternational() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative overflow-hidden bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 text-white">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+      <div className="relative overflow-hidden text-white">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${fyiHeroImage})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
         
         <div className="relative mx-auto max-w-7xl px-4 md:px-8 py-16 md:py-24">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="flex-1">
-              <Badge className="mb-4 bg-white/20 text-white border-white/30" data-testid="badge-partner">
+              <Badge className="mb-4 bg-amber-500/80 text-white border-amber-400/50" data-testid="badge-partner">
                 <Award className="h-3 w-3 mr-1" />
                 GoodBags Partner Charity
               </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-fyi">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg" data-testid="heading-fyi">
                 Food Yoga International
               </h1>
-              <p className="text-xl text-white/90 mb-2">
+              <p className="text-xl text-white/90 mb-2 drop-shadow-md">
                 Formerly Food For Life Global
               </p>
-              <p className="text-lg text-white/80 mb-6 max-w-2xl">
+              <p className="text-lg text-white/90 mb-6 max-w-2xl drop-shadow-md">
                 The world's largest plant-based food relief organization, serving over 1 million free meals daily across 65+ countries.
               </p>
               
               <div className="flex flex-wrap gap-4">
                 <a href="https://ffl.org" target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" className="bg-white text-green-900 hover:bg-white/90" data-testid="button-visit-ffl">
+                  <Button size="lg" className="bg-amber-500 text-white hover:bg-amber-600 border-amber-400" data-testid="button-visit-ffl">
                     <Globe className="h-4 w-4 mr-2" />
                     Visit FFL.org
                     <ExternalLink className="h-4 w-4 ml-2" />
@@ -57,7 +62,7 @@ export default function FoodYogaInternational() {
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
-                  <Button size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10" data-testid="button-verify-wallet">
+                  <Button size="lg" variant="outline" className="border-white/50 text-white hover:bg-white/10 backdrop-blur-sm" data-testid="button-verify-wallet">
                     <Shield className="h-4 w-4 mr-2" />
                     Verify Wallet on Solscan
                   </Button>
@@ -66,10 +71,10 @@ export default function FoodYogaInternational() {
             </div>
             
             <div className="flex-shrink-0">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center">
-                <div className="text-5xl font-bold mb-2">8B+</div>
-                <div className="text-white/80">Meals Served</div>
-                <div className="text-sm text-white/60 mt-1">Since 1974</div>
+              <div className="bg-black/30 backdrop-blur-md rounded-2xl p-8 text-center border border-white/10">
+                <div className="text-5xl font-bold mb-2 text-amber-400">8B+</div>
+                <div className="text-white/90">Meals Served</div>
+                <div className="text-sm text-white/70 mt-1">Since 1974</div>
               </div>
             </div>
           </div>
