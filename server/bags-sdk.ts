@@ -355,14 +355,51 @@ export async function createFeeShareConfig(
     configOptions.partnerConfig = partnerConfigPda;
   }
   
+  console.log("Bags SDK: Creating fee share config with options:", JSON.stringify({
+    payer: creatorPubkey.toBase58(),
+    baseMint: tokenMintPubkey.toBase58(),
+    feeClaimersCount: feeClaimers.length,
+    hasPartner: !!partnerPubkey
+  }));
+  
   const configResult = await sdk.config.createBagsFeeShareConfig(configOptions);
+  
+  // Log the full response structure for debugging
+  console.log("Bags SDK: Config result received:", JSON.stringify({
+    hasTransactions: !!configResult.transactions,
+    transactionsCount: configResult.transactions?.length || 0,
+    hasBundles: !!configResult.bundles,
+    bundlesCount: configResult.bundles?.length || 0,
+    hasMeteorConfigKey: !!configResult.meteoraConfigKey,
+    meteoraConfigKeyType: typeof configResult.meteoraConfigKey
+  }));
+
+  // Validate that meteoraConfigKey exists - it's optional in the SDK types but required for our flow
+  if (!configResult.meteoraConfigKey) {
+    console.error("Bags SDK: createBagsFeeShareConfig returned without meteoraConfigKey. Full result:", 
+      JSON.stringify(configResult, (key, value) => {
+        // Handle PublicKey and other complex objects
+        if (value && typeof value === 'object' && value.toBase58) {
+          return value.toBase58();
+        }
+        if (value instanceof Uint8Array) {
+          return `[Uint8Array: ${value.length} bytes]`;
+        }
+        return value;
+      }, 2)
+    );
+    throw new Error("Failed to create fee share config: Bags API did not return a config key. This may indicate an API error or the config already exists.");
+  }
 
   const serializedTxs = configResult.transactions?.map(tx => 
     Buffer.from(tx.serialize()).toString("base64")
   ) || [];
+  
+  const configKey = configResult.meteoraConfigKey.toBase58();
+  console.log("Bags SDK: Fee share config created successfully. Config key:", configKey);
 
   return {
-    configKey: configResult.meteoraConfigKey.toBase58(),
+    configKey,
     transactions: serializedTxs,
   };
 }
@@ -376,6 +413,14 @@ export async function createLaunchTransaction(
 ): Promise<{ transaction: string }> {
   const sdk = getBagsSDK();
   
+  console.log("Bags SDK: Creating launch transaction:", JSON.stringify({
+    tokenMint,
+    metadataUrl,
+    configKey,
+    creatorWallet,
+    initialBuyLamports
+  }));
+  
   const launchTx = await sdk.tokenLaunch.createLaunchTransaction({
     tokenMint: new PublicKey(tokenMint),
     metadataUrl,
@@ -384,7 +429,12 @@ export async function createLaunchTransaction(
     initialBuyLamports,
   });
 
+  if (!launchTx) {
+    throw new Error("Failed to create launch transaction: Bags API returned empty response");
+  }
+
   const serializedTx = Buffer.from(launchTx.serialize()).toString("base64");
+  console.log("Bags SDK: Launch transaction created successfully");
   
   return { transaction: serializedTx };
 }
