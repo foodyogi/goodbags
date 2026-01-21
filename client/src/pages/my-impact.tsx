@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,7 @@ export default function MyImpactPage() {
                 Connect your Solana wallet to view your personal impact profile, achievements, and statistics.
               </p>
             </div>
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90" />
+            <WalletConnectButton className="!bg-primary hover:!bg-primary/90" />
           </CardContent>
         </Card>
       </div>

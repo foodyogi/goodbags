@@ -1,5 +1,5 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,7 +100,7 @@ export default function ImpactPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90" />
+            <WalletConnectButton className="!bg-primary hover:!bg-primary/90" />
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -766,7 +766,7 @@ export default function CharityApply() {
             </div>
 
             <div className="flex justify-center">
-              <WalletMultiButton className="!bg-primary hover:!bg-primary/90" />
+              <WalletConnectButton className="!bg-primary hover:!bg-primary/90" />
             </div>
           </div>
         ) : (
