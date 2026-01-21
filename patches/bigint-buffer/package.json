@@ -1,0 +1,7 @@
+{
+  "name": "bigint-buffer",
+  "version": "1.1.5",
+  "description": "Pure JavaScript polyfill for bigint-buffer (CVE mitigation)",
+  "main": "index.js",
+  "license": "MIT"
+}
