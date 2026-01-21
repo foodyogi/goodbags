@@ -1,5 +1,6 @@
 import { BagsSDK } from "@bagsfm/bags-sdk";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import bs58 from "bs58";
 import { 
   PLATFORM_WALLET, 
   CHARITY_FEE_BPS, 
@@ -80,6 +81,8 @@ export interface TokenInfoResult {
 export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Promise<TokenInfoResult> {
   const sdk = getBagsSDK();
   
+  console.log(`Bags SDK: Calling createTokenInfoAndMetadata for ${params.name} (${params.symbol})`);
+  
   const result = await sdk.tokenLaunch.createTokenInfoAndMetadata({
     name: params.name,
     symbol: params.symbol.toUpperCase().replace("$", ""),
@@ -89,23 +92,58 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     website: params.websiteUrl || "",
   });
 
+  console.log(`Bags SDK: createTokenInfoAndMetadata returned`);
+  
   // Normalize tokenMint to base58 string - SDK may return PublicKey object, buffer, Keypair, or string
   let tokenMintString: string;
   const rawMint = result.tokenMint as any; // SDK typing may not match runtime type
   
-  // Safe logging for debugging
+  // Detailed logging for debugging
   try {
     const rawType = typeof rawMint;
     const constructorName = rawMint?.constructor?.name || 'unknown';
-    console.log(`Bags SDK raw tokenMint: type=${rawType}, constructor=${constructorName}`);
-  } catch {
-    console.log(`Bags SDK raw tokenMint: logging failed`);
+    const hasToBase58 = typeof rawMint?.toBase58 === 'function';
+    const hasPublicKey = !!rawMint?.publicKey;
+    const hasKeypair = !!rawMint?._keypair;
+    const isUint8 = rawMint instanceof Uint8Array;
+    const isBuffer = Buffer.isBuffer(rawMint);
+    const isArray = Array.isArray(rawMint);
+    const strValue = rawType === 'string' ? rawMint.slice(0, 50) : 'N/A';
+    
+    console.log(`Bags SDK raw tokenMint details:`);
+    console.log(`  type=${rawType}, constructor=${constructorName}`);
+    console.log(`  hasToBase58=${hasToBase58}, hasPublicKey=${hasPublicKey}, hasKeypair=${hasKeypair}`);
+    console.log(`  isUint8=${isUint8}, isBuffer=${isBuffer}, isArray=${isArray}`);
+    if (rawType === 'string') {
+      console.log(`  stringValue="${strValue}..." (length=${rawMint.length})`);
+    }
+    if (hasPublicKey) {
+      const pubKeyType = typeof rawMint.publicKey;
+      const pubKeyConstructor = rawMint.publicKey?.constructor?.name || 'unknown';
+      console.log(`  publicKey: type=${pubKeyType}, constructor=${pubKeyConstructor}`);
+    }
+  } catch (logError) {
+    console.log(`Bags SDK raw tokenMint: logging failed`, logError);
   }
   
-  // Helper to check if a string is valid base58
-  const isBase58 = (str: string): boolean => {
+  // Helper to check if a string is a valid Solana address (matches routes.ts validation exactly)
+  const isValidSolanaAddress = (address: string): boolean => {
+    if (!address || typeof address !== 'string') {
+      return false;
+    }
+    // Basic regex check for base58 characters (no 0, O, I, l)
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-    return base58Regex.test(str);
+    if (!base58Regex.test(address)) {
+      return false;
+    }
+    // Try to decode the base58 address to verify it's valid
+    try {
+      const decoded = bs58.decode(address);
+      // Solana public keys are exactly 32 bytes
+      return decoded.length === 32;
+    } catch {
+      return false;
+    }
   };
 
   // Helper to try decoding hex string to PublicKey
@@ -140,8 +178,8 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
   // Try multiple normalization strategies in order of likelihood
   try {
     if (typeof rawMint === 'string') {
-      // Check if already valid base58
-      if (isBase58(rawMint)) {
+      // Check if already valid Solana address (matches routes.ts validation)
+      if (isValidSolanaAddress(rawMint)) {
         tokenMintString = rawMint;
       } else {
         // Try hex decoding
@@ -188,10 +226,18 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     throw new Error(`Invalid token mint returned from Bags SDK (type: ${rawType}, constructor: ${constructorName})`);
   }
 
-  // Final validation: ensure the normalized tokenMint is valid base58
-  if (!isBase58(tokenMintString)) {
+  // Final validation: ensure the normalized tokenMint passes the same validation as routes.ts
+  if (!isValidSolanaAddress(tokenMintString)) {
     console.error(`Bags SDK: Final tokenMint validation failed: "${tokenMintString.slice(0, 60)}"`);
-    throw new Error(`Token mint normalization produced invalid base58: ${tokenMintString.slice(0, 20)}...`);
+    // Log additional debug info
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    const regexPass = base58Regex.test(tokenMintString);
+    let decodeLength = -1;
+    try {
+      decodeLength = bs58.decode(tokenMintString).length;
+    } catch {}
+    console.error(`  Regex pass: ${regexPass}, Decoded length: ${decodeLength} (need 32)`);
+    throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (regex=${regexPass}, bytes=${decodeLength})`);
   }
 
   console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}`);
