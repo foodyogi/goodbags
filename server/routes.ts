@@ -1973,11 +1973,7 @@ export async function registerRoutes(
       for (const [charityId, handle] of Object.entries(verifiedHandles)) {
         const charity = await storage.getCharityById(charityId);
         if (charity) {
-          await storage.updateCharity(charityId, {
-            twitterHandle: handle,
-            xHandleVerified: true,
-            payoutMethod: 'twitter',
-          });
+          await storage.updateCharityXHandle(charityId, handle, true);
           updated++;
         } else {
           notFound++;

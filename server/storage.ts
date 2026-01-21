@@ -45,6 +45,7 @@ export interface IStorage {
     everyOrgIsDisbursable: boolean;
     registrationNumber: string;
   }): Promise<Charity | undefined>;
+  updateCharityXHandle(id: string, twitterHandle: string, verified: boolean): Promise<Charity | undefined>;
   getDefaultCharity(): Promise<Charity | undefined>;
   seedDefaultCharities(): Promise<void>;
   
@@ -244,6 +245,20 @@ export class DatabaseStorage implements IStorage {
       .set({
         walletVerifiedAt,
         status: CHARITY_STATUS.WALLET_VERIFIED,
+        updatedAt: new Date(),
+      })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateCharityXHandle(id: string, twitterHandle: string, verified: boolean): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({
+        twitterHandle,
+        xHandleVerified: verified,
+        payoutMethod: 'twitter',
         updatedAt: new Date(),
       })
       .where(eq(charities.id, id))
