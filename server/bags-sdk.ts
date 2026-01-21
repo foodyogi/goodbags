@@ -16,6 +16,9 @@ const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.s
 // Allow platform wallet to be overridden via environment variable
 const EFFECTIVE_PLATFORM_WALLET = process.env.PLATFORM_WALLET_ADDRESS || PLATFORM_WALLET;
 
+// Bags.fm Fee Share V2 Program ID
+const BAGS_FEE_SHARE_V2_PROGRAM_ID = new PublicKey("FEE2tBhCKAt7shrod19QttSVREUYPiyMzoku1mL1gqVK");
+
 // Validate platform wallet on startup
 function validatePublicKey(address: string, name: string): PublicKey {
   try {
@@ -23,6 +26,15 @@ function validatePublicKey(address: string, name: string): PublicKey {
   } catch {
     throw new Error(`Invalid ${name} address: ${address}`);
   }
+}
+
+// Derive partner config PDA (same logic as SDK's deriveBagsFeeShareV2PartnerConfigPda)
+function derivePartnerConfigPda(partner: PublicKey): PublicKey {
+  const [partnerConfig] = PublicKey.findProgramAddressSync(
+    [Buffer.from('partner_config'), partner.toBuffer()],
+    BAGS_FEE_SHARE_V2_PROGRAM_ID
+  );
+  return partnerConfig;
 }
 
 // In production, require explicit platform wallet configuration
@@ -275,8 +287,23 @@ export async function createFeeShareConfig(
   const creatorPubkey = validatePublicKey(params.creatorWallet, "creator wallet");
   const platformPubkey = validatePublicKey(EFFECTIVE_PLATFORM_WALLET, "platform wallet");
   
-  // Include partner wallet to earn Bags.fm referral credits
-  const partnerPubkey = validatePublicKey(PARTNER_WALLET, "partner wallet");
+  // Partner is optional - only include if ENABLE_PARTNER_REFERRAL is set
+  // Partner config must exist on-chain for this to work (created via dev.bags.fm)
+  const enablePartner = process.env.ENABLE_PARTNER_REFERRAL === "true";
+  let partnerPubkey: PublicKey | null = null;
+  let partnerConfigPda: PublicKey | null = null;
+  
+  if (enablePartner) {
+    try {
+      partnerPubkey = validatePublicKey(PARTNER_WALLET, "partner wallet");
+      partnerConfigPda = derivePartnerConfigPda(partnerPubkey);
+      console.log("Partner referral enabled with wallet:", PARTNER_WALLET);
+    } catch (e) {
+      console.warn("Partner referral disabled - invalid partner wallet:", e);
+      partnerPubkey = null;
+      partnerConfigPda = null;
+    }
+  }
   
   let feeClaimers: any[];
   
@@ -315,12 +342,20 @@ export async function createFeeShareConfig(
     throw new Error("Either charityWallet or charityTwitterHandle is required");
   }
   
-  const configResult = await sdk.config.createBagsFeeShareConfig({
+  // Build config options - partner is optional
+  const configOptions: any = {
     payer: creatorPubkey,
     baseMint: tokenMintPubkey,
     feeClaimers,
-    partner: partnerPubkey,
-  });
+  };
+  
+  // Only include partner if properly configured
+  if (partnerPubkey && partnerConfigPda) {
+    configOptions.partner = partnerPubkey;
+    configOptions.partnerConfig = partnerConfigPda;
+  }
+  
+  const configResult = await sdk.config.createBagsFeeShareConfig(configOptions);
 
   const serializedTxs = configResult.transactions?.map(tx => 
     Buffer.from(tx.serialize()).toString("base64")
