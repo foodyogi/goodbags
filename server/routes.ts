@@ -1213,7 +1213,14 @@ export async function registerRoutes(
       // Validate address formats using strict Solana validation (skip for mock tokens)
       if (!isMockToken && !isValidSolanaAddress(tokenMint)) {
         const tokenMintStr = String(tokenMint || '');
-        console.error(`Invalid tokenMint received in /api/tokens/config: "${tokenMintStr}" (length: ${tokenMintStr.length}, type: ${typeof tokenMint})`);
+        // Log with character codes to detect invisible/special characters
+        const charCodes = tokenMintStr.slice(0, 50).split('').map(c => c.charCodeAt(0)).join(',');
+        console.error(`Invalid tokenMint received in /api/tokens/config:`);
+        console.error(`  Value: "${tokenMintStr.slice(0, 60)}${tokenMintStr.length > 60 ? '...' : ''}"`);
+        console.error(`  Length: ${tokenMintStr.length}, Type: ${typeof tokenMint}`);
+        console.error(`  First 50 char codes: [${charCodes}]`);
+        console.error(`  Matches base58 regex: ${/^[1-9A-HJ-NP-Za-km-z]+$/.test(tokenMintStr)}`);
+        console.error(`  Matches length 32-44: ${tokenMintStr.length >= 32 && tokenMintStr.length <= 44}`);
         return res.status(400).json({
           success: false,
           error: "Invalid token mint address format",

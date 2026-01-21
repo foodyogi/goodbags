@@ -102,11 +102,66 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     console.log(`Bags SDK raw tokenMint: logging failed`);
   }
   
+  // Helper to check if a string is valid base58
+  const isBase58 = (str: string): boolean => {
+    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    return base58Regex.test(str);
+  };
+
+  // Helper to try decoding hex string to PublicKey
+  const tryHexDecode = (hexStr: string): string | null => {
+    try {
+      // Remove 0x prefix if present
+      const cleanHex = hexStr.startsWith('0x') ? hexStr.slice(2) : hexStr;
+      // Hex should be 64 chars for 32 bytes
+      if (cleanHex.length === 64 && /^[0-9a-fA-F]+$/.test(cleanHex)) {
+        const bytes = new Uint8Array(32);
+        for (let i = 0; i < 32; i++) {
+          bytes[i] = parseInt(cleanHex.substr(i * 2, 2), 16);
+        }
+        return new PublicKey(bytes).toBase58();
+      }
+    } catch {}
+    return null;
+  };
+
+  // Helper to try decoding base64 string to PublicKey
+  const tryBase64Decode = (b64Str: string): string | null => {
+    try {
+      // Base64 for 32 bytes is ~44 chars
+      const decoded = Buffer.from(b64Str, 'base64');
+      if (decoded.length === 32) {
+        return new PublicKey(decoded).toBase58();
+      }
+    } catch {}
+    return null;
+  };
+
   // Try multiple normalization strategies in order of likelihood
   try {
     if (typeof rawMint === 'string') {
-      // Already a string - assume base58
-      tokenMintString = rawMint;
+      // Check if already valid base58
+      if (isBase58(rawMint)) {
+        tokenMintString = rawMint;
+      } else {
+        // Try hex decoding
+        const fromHex = tryHexDecode(rawMint);
+        if (fromHex) {
+          console.log(`Bags SDK: Decoded hex tokenMint to base58: ${fromHex}`);
+          tokenMintString = fromHex;
+        } else {
+          // Try base64 decoding
+          const fromBase64 = tryBase64Decode(rawMint);
+          if (fromBase64) {
+            console.log(`Bags SDK: Decoded base64 tokenMint to base58: ${fromBase64}`);
+            tokenMintString = fromBase64;
+          } else {
+            // Try as-is via PublicKey constructor (handles some edge cases)
+            console.log(`Bags SDK: Attempting PublicKey constructor for string: ${rawMint.slice(0, 20)}...`);
+            tokenMintString = new PublicKey(rawMint).toBase58();
+          }
+        }
+      }
     } else if (rawMint && typeof rawMint.toBase58 === 'function') {
       // PublicKey-like object with toBase58 method
       tokenMintString = rawMint.toBase58();
@@ -131,6 +186,12 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     const constructorName = rawMint?.constructor?.name || 'unknown';
     console.error(`Failed to normalize tokenMint: type=${rawType}, constructor=${constructorName}`, e);
     throw new Error(`Invalid token mint returned from Bags SDK (type: ${rawType}, constructor: ${constructorName})`);
+  }
+
+  // Final validation: ensure the normalized tokenMint is valid base58
+  if (!isBase58(tokenMintString)) {
+    console.error(`Bags SDK: Final tokenMint validation failed: "${tokenMintString.slice(0, 60)}"`);
+    throw new Error(`Token mint normalization produced invalid base58: ${tokenMintString.slice(0, 20)}...`);
   }
 
   console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}`);
