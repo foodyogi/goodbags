@@ -15,7 +15,10 @@ import {
   Award,
   HandHeart,
   CheckCircle2,
-  Wallet
+  Wallet,
+  Copy,
+  Mail,
+  Info
 } from "lucide-react";
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
@@ -268,6 +271,91 @@ export default function FoodYogaInternational() {
                 <div className="text-center p-4 bg-purple-500/10 rounded-lg">
                   <div className="text-3xl font-bold text-purple-600 mb-1">20%</div>
                   <div className="text-sm text-muted-foreground">Fundraising</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mb-12" data-testid="section-wallet">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Wallet className="h-6 w-6 text-amber-500" />
+            Official Solana Wallet
+          </h2>
+          <Card className="border-amber-500/30">
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Food Yoga International Donation Wallet</p>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <code className="flex-1 bg-muted px-4 py-3 rounded-lg font-mono text-sm break-all">
+                      {PARTNER_WALLET}
+                    </code>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(PARTNER_WALLET);
+                        }}
+                        data-testid="button-copy-wallet"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy
+                      </Button>
+                      <a 
+                        href={`https://solscan.io/account/${PARTNER_WALLET}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="outline" size="sm" data-testid="button-view-solscan">
+                          View on Solscan
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">Verified Wallet</p>
+                    <p className="text-sm text-muted-foreground">
+                      This wallet address has been verified as the official Food Yoga International donation wallet. 
+                      All GoodBags token royalties are sent directly to this address.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm mb-2">Want to Label This Wallet on Solscan?</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Solscan can add an official label like "Food Yoga International" to this wallet address, 
+                        making it easily recognizable to anyone viewing transactions. To request a label:
+                      </p>
+                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside mb-3">
+                        <li>Visit <a href="https://solscan.io" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Solscan.io</a></li>
+                        <li>Click on "Feedback" or contact them via their support channels</li>
+                        <li>Request an account label for your organization's wallet</li>
+                        <li>Provide verification of wallet ownership (sign a message from the wallet)</li>
+                      </ol>
+                      <a 
+                        href="mailto:contact@solscan.io?subject=Account%20Label%20Request%20-%20Food%20Yoga%20International&body=Hello%20Solscan%20Team%2C%0A%0AI%20would%20like%20to%20request%20an%20account%20label%20for%20the%20following%20wallet%3A%0A%0AWallet%20Address%3A%203psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr%0AOrganization%3A%20Food%20Yoga%20International%0AWebsite%3A%20https%3A%2F%2Fffl.org%0A%0APlease%20let%20me%20know%20what%20verification%20is%20required.%0A%0AThank%20you!"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="outline" size="sm" data-testid="button-contact-solscan">
+                          <Mail className="h-4 w-4 mr-2" />
+                          Draft Email to Solscan
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
