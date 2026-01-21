@@ -374,12 +374,13 @@ export async function createFeeShareConfig(
     meteoraConfigKeyType: typeof configResult.meteoraConfigKey
   }));
 
-  // Validate that meteoraConfigKey exists - it's optional in the SDK types but required for our flow
-  if (!configResult.meteoraConfigKey) {
-    console.error("Bags SDK: createBagsFeeShareConfig returned without meteoraConfigKey. Full result:", 
+  // Validate that meteoraConfigKey exists and has toBase58 method - it's optional in the SDK types but required for our flow
+  const meteoraKey = configResult.meteoraConfigKey;
+  if (!meteoraKey || typeof meteoraKey.toBase58 !== 'function') {
+    console.error("Bags SDK: createBagsFeeShareConfig returned invalid meteoraConfigKey. Full result:", 
       JSON.stringify(configResult, (key, value) => {
         // Handle PublicKey and other complex objects
-        if (value && typeof value === 'object' && value.toBase58) {
+        if (value && typeof value === 'object' && typeof value.toBase58 === 'function') {
           return value.toBase58();
         }
         if (value instanceof Uint8Array) {
@@ -388,14 +389,15 @@ export async function createFeeShareConfig(
         return value;
       }, 2)
     );
-    throw new Error("Failed to create fee share config: Bags API did not return a config key. This may indicate an API error or the config already exists.");
+    console.error("meteoraConfigKey value:", meteoraKey, "type:", typeof meteoraKey);
+    throw new Error("Failed to create fee share config: Bags API did not return a valid config key (missing toBase58 method). This may indicate an API version mismatch or the config already exists.");
   }
 
   const serializedTxs = configResult.transactions?.map(tx => 
     Buffer.from(tx.serialize()).toString("base64")
   ) || [];
   
-  const configKey = configResult.meteoraConfigKey.toBase58();
+  const configKey = meteoraKey.toBase58();
   console.log("Bags SDK: Fee share config created successfully. Config key:", configKey);
 
   return {
