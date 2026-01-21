@@ -89,26 +89,51 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
     website: params.websiteUrl || "",
   });
 
-  // Normalize tokenMint to base58 string - SDK may return PublicKey object, buffer, or string
+  // Normalize tokenMint to base58 string - SDK may return PublicKey object, buffer, Keypair, or string
   let tokenMintString: string;
   const rawMint = result.tokenMint as any; // SDK typing may not match runtime type
   
-  if (typeof rawMint === 'string') {
-    tokenMintString = rawMint;
-  } else if (rawMint && typeof rawMint.toBase58 === 'function') {
-    // PublicKey-like object
-    tokenMintString = rawMint.toBase58();
-  } else {
-    // Try to convert via PublicKey constructor (handles buffer/array/Uint8Array)
-    try {
+  // Safe logging for debugging
+  try {
+    const rawType = typeof rawMint;
+    const constructorName = rawMint?.constructor?.name || 'unknown';
+    console.log(`Bags SDK raw tokenMint: type=${rawType}, constructor=${constructorName}`);
+  } catch {
+    console.log(`Bags SDK raw tokenMint: logging failed`);
+  }
+  
+  // Try multiple normalization strategies in order of likelihood
+  try {
+    if (typeof rawMint === 'string') {
+      // Already a string - assume base58
+      tokenMintString = rawMint;
+    } else if (rawMint && typeof rawMint.toBase58 === 'function') {
+      // PublicKey-like object with toBase58 method
+      tokenMintString = rawMint.toBase58();
+    } else if (rawMint && rawMint.publicKey && typeof rawMint.publicKey.toBase58 === 'function') {
+      // Keypair-like object - extract the publicKey
+      tokenMintString = rawMint.publicKey.toBase58();
+    } else if (rawMint && rawMint._keypair && rawMint._keypair.publicKey) {
+      // Internal keypair structure (Uint8Array)
+      tokenMintString = new PublicKey(rawMint._keypair.publicKey).toBase58();
+    } else if (rawMint instanceof Uint8Array || Buffer.isBuffer(rawMint)) {
+      // Raw bytes - convert via PublicKey
       tokenMintString = new PublicKey(rawMint).toBase58();
-    } catch (e) {
-      console.error("Failed to normalize tokenMint:", rawMint, e);
-      throw new Error("Invalid token mint returned from Bags SDK");
+    } else if (Array.isArray(rawMint) && rawMint.length === 32) {
+      // Array of 32 bytes
+      tokenMintString = new PublicKey(new Uint8Array(rawMint)).toBase58();
+    } else {
+      // Last resort - try PublicKey constructor
+      tokenMintString = new PublicKey(rawMint).toBase58();
     }
+  } catch (e) {
+    const rawType = typeof rawMint;
+    const constructorName = rawMint?.constructor?.name || 'unknown';
+    console.error(`Failed to normalize tokenMint: type=${rawType}, constructor=${constructorName}`, e);
+    throw new Error(`Invalid token mint returned from Bags SDK (type: ${rawType}, constructor: ${constructorName})`);
   }
 
-  console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}, originalType=${typeof rawMint}`);
+  console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}`);
 
   return {
     tokenMint: tokenMintString,

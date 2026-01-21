@@ -1212,6 +1212,8 @@ export async function registerRoutes(
 
       // Validate address formats using strict Solana validation (skip for mock tokens)
       if (!isMockToken && !isValidSolanaAddress(tokenMint)) {
+        const tokenMintStr = String(tokenMint || '');
+        console.error(`Invalid tokenMint received in /api/tokens/config: "${tokenMintStr}" (length: ${tokenMintStr.length}, type: ${typeof tokenMint})`);
         return res.status(400).json({
           success: false,
           error: "Invalid token mint address format",
