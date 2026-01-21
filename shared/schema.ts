@@ -248,12 +248,13 @@ export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 // For devnet/testing, using a valid test wallet address
 export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as const;
 
-// Convert percentage to basis points (1% = 100 bps, 0.25% = 25 bps)
-// Charity: 0.75% = 75 bps, Platform: 0.25% = 25 bps, Total: 100 bps (1%)
-export const CHARITY_FEE_BPS = 75; // 0.75%
-export const PLATFORM_FEE_BPS = 25; // 0.25%
-export const TOTAL_FEE_BPS = 100; // 1% total
-export const CREATOR_FEE_BPS = 0; // Creator receives nothing
+// Fee distribution in basis points (must total 10000 BPS = 100%)
+// This represents the split of collected fees, not the fee rate
+// Charity: 75% of fees, Platform: 25% of fees
+export const CHARITY_FEE_BPS = 7500; // 75% of fees go to charity
+export const PLATFORM_FEE_BPS = 2500; // 25% of fees go to platform
+export const TOTAL_FEE_BPS = 10000; // Must equal 10000 (100%)
+export const CREATOR_FEE_BPS = 0; // Creator receives 0% of fees
 
 // Partner referral wallet for earning Bags.fm credits
 // PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey

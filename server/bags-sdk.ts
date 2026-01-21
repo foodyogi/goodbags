@@ -299,7 +299,7 @@ export async function createFeeShareConfig(
       { 
         platform: "twitter", 
         handle: sanitizedHandle,
-        percentage: CHARITY_FEE_BPS / 100 // Convert bps to percentage (75 bps = 0.75%)
+        userBps: CHARITY_FEE_BPS // 7500 BPS = 75% of fees
       },
       { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
     ];
