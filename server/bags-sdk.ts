@@ -178,25 +178,28 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
   // Try multiple normalization strategies in order of likelihood
   try {
     if (typeof rawMint === 'string') {
+      // Trim whitespace and remove any hidden characters that might be in the response
+      const trimmedMint = rawMint.trim().replace(/[\r\n\t\x00-\x1F\x7F]/g, '');
+      
       // Check if already valid Solana address (matches routes.ts validation)
-      if (isValidSolanaAddress(rawMint)) {
-        tokenMintString = rawMint;
+      if (isValidSolanaAddress(trimmedMint)) {
+        tokenMintString = trimmedMint;
       } else {
         // Try hex decoding
-        const fromHex = tryHexDecode(rawMint);
+        const fromHex = tryHexDecode(trimmedMint);
         if (fromHex) {
           console.log(`Bags SDK: Decoded hex tokenMint to base58: ${fromHex}`);
           tokenMintString = fromHex;
         } else {
           // Try base64 decoding
-          const fromBase64 = tryBase64Decode(rawMint);
+          const fromBase64 = tryBase64Decode(trimmedMint);
           if (fromBase64) {
             console.log(`Bags SDK: Decoded base64 tokenMint to base58: ${fromBase64}`);
             tokenMintString = fromBase64;
           } else {
             // Try as-is via PublicKey constructor (handles some edge cases)
-            console.log(`Bags SDK: Attempting PublicKey constructor for string: ${rawMint.slice(0, 20)}...`);
-            tokenMintString = new PublicKey(rawMint).toBase58();
+            console.log(`Bags SDK: Attempting PublicKey constructor for string: ${trimmedMint.slice(0, 20)}...`);
+            tokenMintString = new PublicKey(trimmedMint).toBase58();
           }
         }
       }
@@ -228,16 +231,21 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
 
   // Final validation: ensure the normalized tokenMint passes the same validation as routes.ts
   if (!isValidSolanaAddress(tokenMintString)) {
-    console.error(`Bags SDK: Final tokenMint validation failed: "${tokenMintString.slice(0, 60)}"`);
+    console.error(`Bags SDK: Final tokenMint validation failed: "${tokenMintString}"`);
+    console.error(`  tokenMintString length: ${tokenMintString.length}`);
+    console.error(`  Raw mint type: ${typeof rawMint}, Raw value (first 100 chars): ${String(rawMint).slice(0, 100)}`);
     // Log additional debug info
     const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
     const regexPass = base58Regex.test(tokenMintString);
     let decodeLength = -1;
+    let decodeError = '';
     try {
       decodeLength = bs58.decode(tokenMintString).length;
-    } catch {}
-    console.error(`  Regex pass: ${regexPass}, Decoded length: ${decodeLength} (need 32)`);
-    throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (regex=${regexPass}, bytes=${decodeLength})`);
+    } catch (e: any) {
+      decodeError = e.message || 'unknown decode error';
+    }
+    console.error(`  Regex pass: ${regexPass}, Decoded length: ${decodeLength} (need 32), Decode error: ${decodeError}`);
+    throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (len=${tokenMintString.length}, regex=${regexPass}, bytes=${decodeLength})`);
   }
 
   console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}`);
