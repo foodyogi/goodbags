@@ -34,20 +34,26 @@ function isInsidePhantomBrowser(): boolean {
   return hasPhantom || isPhantomApp;
 }
 
-function openInPhantomBrowser(e: React.MouseEvent, redirectPath?: string) {
+function openInPhantomApp(e: React.MouseEvent, redirectPath?: string) {
   e.preventDefault();
   e.stopPropagation();
   
   const currentPath = window.location.pathname + window.location.search;
   const targetPath = redirectPath || currentPath;
   
+  // Build the full URL with redirect parameter
   const urlWithRedirect = new URL(window.location.origin);
   urlWithRedirect.searchParams.set('wallet_redirect', targetPath);
+  const fullUrl = urlWithRedirect.toString();
   
-  const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(urlWithRedirect.toString())}`;
+  // Use direct phantom:// scheme to open installed app
+  // This opens the URL in Phantom's in-app browser
+  const phantomDeepLink = `phantom://browse/${encodeURIComponent(fullUrl)}`;
   
-  console.log('[WalletConnectButton] Opening Phantom browser with path:', targetPath);
-  window.location.href = phantomBrowseUrl;
+  console.log('[WalletConnectButton] Opening Phantom app with deep link:', phantomDeepLink);
+  
+  // Try to open the app directly
+  window.location.href = phantomDeepLink;
 }
 
 function truncateAddress(address: string): string {
@@ -100,7 +106,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     
     // On mobile without provider, open in Phantom
     if (isMobile && !hasProvider) {
-      openInPhantomBrowser(e, targetRedirectPath);
+      openInPhantomApp(e, targetRedirectPath);
       return;
     }
     
