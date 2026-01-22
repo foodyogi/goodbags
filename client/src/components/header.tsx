@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { WalletConnectButton } from "./wallet-connect-button";
+import { UserMenu } from "./user-menu";
 import { ThemeToggle } from "./theme-toggle";
 import { Rocket, LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,8 +55,8 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <div className="hidden sm:block" data-testid="wallet-connect-container">
-            <WalletConnectButton className="!bg-primary hover:!bg-primary/90 !h-9 !rounded-md !px-4 !font-medium !text-sm" />
+          <div className="hidden sm:block" data-testid="user-menu-container">
+            <UserMenu />
           </div>
           <Button
             variant="ghost"
@@ -90,8 +90,8 @@ export function Header() {
                 </Link>
               );
             })}
-            <div className="pt-2 sm:hidden" data-testid="wallet-connect-mobile">
-              <WalletConnectButton className="!bg-primary hover:!bg-primary/90 !w-full !h-10 !rounded-md !font-medium" />
+            <div className="pt-2 sm:hidden" data-testid="user-menu-mobile">
+              <UserMenu />
             </div>
           </nav>
         </div>

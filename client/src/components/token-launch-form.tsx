@@ -2,8 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { WalletConnectButton } from "@/components/wallet-connect-button";
-import { saveRedirectPath } from "@/lib/solana";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
@@ -104,6 +104,7 @@ export function TokenLaunchForm() {
   const { connected, publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
@@ -116,14 +117,16 @@ export function TokenLaunchForm() {
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Save redirect path when form renders with wallet disconnected
-  // This ensures mobile wallet redirects work correctly
-  useEffect(() => {
-    if (!connected && !testMode) {
-      saveRedirectPath("/launch");
-    }
-  }, [connected, testMode]);
+  
+  // Get user's backend wallet (for authenticated users)
+  const { data: backendWallet } = useQuery<{ walletAddress: string | null }>({
+    queryKey: ["/api/user/wallet"],
+    enabled: isAuthenticated,
+  });
+  
+  // Determine if user can launch (has wallet connection)
+  const hasWalletForLaunch = connected && publicKey;
+  const hasBackendWallet = !!backendWallet?.walletAddress;
   
   // Image upload
   const { uploadFile, isUploading: isUploadingImage, progress: uploadProgress } = useUpload({
@@ -221,8 +224,8 @@ export function TokenLaunchForm() {
         // Generate mock addresses for test token
         const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}${Date.now()}`;
         const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-        // Use connected wallet if available, or generate a valid-length test wallet address
-        const testCreatorWallet = publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        // Use backend wallet, connected wallet, or generate a valid-length test wallet address
+        const testCreatorWallet = backendWallet?.walletAddress || publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
         
         // Save test token to database
         const launchResponse = await apiRequest("POST", "/api/tokens/launch", {
@@ -896,16 +899,31 @@ export function TokenLaunchForm() {
               )}
             </div>
 
-            {!connected && !testMode ? (
+            {!isAuthenticated && !testMode ? (
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Connect your wallet to launch a token
+                  Login to launch a token
                 </p>
-                <WalletConnectButton 
+                <Button
+                  type="button"
+                  onClick={() => window.location.href = "/api/login"}
+                  className="gap-2"
+                  data-testid="button-login-launch"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Login with X
+                </Button>
+              </div>
+            ) : !hasWalletForLaunch && !testMode ? (
+              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  Connect your wallet to sign the transaction
+                </p>
+                <WalletMultiButton 
                   className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-md !px-6 !font-medium !text-sm"
                   data-testid="button-connect-wallet-launch"
-                  redirectPath="/launch"
                 />
               </div>
             ) : (
