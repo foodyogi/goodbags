@@ -510,6 +510,7 @@ export function TokenLaunchForm() {
               </>
             )}
             <Button 
+              type="button"
               variant="outline"
               onClick={() => setLaunchResult(null)} 
               className="w-full"

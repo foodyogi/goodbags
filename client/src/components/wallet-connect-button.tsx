@@ -22,7 +22,11 @@ function hasPhantomProvider(): boolean {
 }
 
 // Open the current page in Phantom's in-app browser
-function openInPhantomBrowser() {
+function openInPhantomBrowser(e: React.MouseEvent) {
+  // Prevent any form submission
+  e.preventDefault();
+  e.stopPropagation();
+  
   const currentUrl = encodeURIComponent(window.location.href);
   window.location.href = `https://phantom.app/ul/browse/${currentUrl}?ref=${currentUrl}`;
 }
