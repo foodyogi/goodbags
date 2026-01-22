@@ -21,6 +21,13 @@ export function saveCurrentPath() {
   }
 }
 
+export function saveRedirectPath(path: string) {
+  if (typeof window !== 'undefined' && path) {
+    localStorage.setItem(WALLET_REDIRECT_KEY, path);
+    console.log('[WalletRedirect] Saved redirect path:', path);
+  }
+}
+
 export function clearSavedPath() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(WALLET_REDIRECT_KEY);

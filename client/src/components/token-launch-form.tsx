@@ -895,6 +895,7 @@ export function TokenLaunchForm() {
                 <WalletConnectButton 
                   className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-md !px-6 !font-medium !text-sm"
                   data-testid="button-connect-wallet-launch"
+                  redirectPath="/launch"
                 />
               </div>
             ) : (
