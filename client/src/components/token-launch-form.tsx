@@ -45,6 +45,12 @@ import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
 import { useUpload } from "@/hooks/use-upload";
 
+// Helper to get URL params (works in Phantom browser)
+function getUrlParams(): URLSearchParams {
+  if (typeof window === 'undefined') return new URLSearchParams();
+  return new URLSearchParams(window.location.search);
+}
+
 interface TokenNameSearchResult {
   local: { name: string; symbol: string; mintAddress: string }[];
   external: { name: string; symbol: string; mintAddress: string; launchpad?: string }[];
@@ -117,6 +123,10 @@ export function TokenLaunchForm() {
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Track if form was pre-filled from URL (mobile flow)
+  const [prefilledFromUrl, setPrefilledFromUrl] = useState(false);
+  const urlParamsProcessedRef = useRef(false);
+  
   // Wallet adapter is required for signing transactions (real launches)
   const hasWalletForSigning = connected && publicKey;
   
@@ -155,6 +165,56 @@ export function TokenLaunchForm() {
       initialBuyAmount: "0",
     },
   });
+
+  // Populate form from URL params (mobile flow - coming from Phantom deep link)
+  useEffect(() => {
+    // Only run once
+    if (urlParamsProcessedRef.current) return;
+    
+    const params = getUrlParams();
+    const launchReady = params.get('launch_ready') === '1';
+    
+    if (!launchReady) return;
+    
+    urlParamsProcessedRef.current = true;
+    console.log('[TokenLaunchForm] Detected launch_ready params, populating form...');
+    
+    // Populate form fields
+    const name = params.get('name');
+    const symbol = params.get('symbol');
+    const desc = params.get('desc');
+    const img = params.get('img');
+    const buy = params.get('buy');
+    
+    if (name) form.setValue('name', name);
+    if (symbol) form.setValue('symbol', symbol);
+    if (desc) form.setValue('description', desc);
+    if (img) form.setValue('imageUrl', img);
+    if (buy) form.setValue('initialBuyAmount', buy);
+    
+    // Populate charity if passed
+    const charityId = params.get('charity');
+    const charityName = params.get('charityName');
+    const charitySource = params.get('charitySource') as 'local' | 'change' | null;
+    
+    if (charityId && charityName && charitySource) {
+      setSelectedCharity({
+        id: charityId,
+        name: charityName,
+        category: 'general',
+        source: charitySource,
+      });
+    }
+    
+    setPrefilledFromUrl(true);
+    
+    // Clean up URL params (optional - keeps URL clean)
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.search = '';
+    window.history.replaceState({}, '', cleanUrl.toString());
+    
+    console.log('[TokenLaunchForm] Form populated from URL params');
+  }, [form]);
 
   // Watch the name field for debounced duplicate detection
   const watchedName = form.watch("name");
@@ -538,8 +598,23 @@ export function TokenLaunchForm() {
         )}
       </CardHeader>
       <CardContent>
+        {/* Ready to Launch Status - shows when form is pre-filled from mobile deep link */}
+        {prefilledFromUrl && hasWalletForSigning && !testMode && (
+          <div className="mb-4 rounded-lg border border-primary/50 bg-primary/10 p-4" data-testid="ready-to-launch-status">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
+              <p className="text-sm font-bold text-primary">
+                Ready to Launch!
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your token details have been saved. Review below and click "Launch Token" to mint on Solana.
+            </p>
+          </div>
+        )}
+        
         {/* Wallet Status Indicator */}
-        {hasWalletForSigning && !testMode && (
+        {hasWalletForSigning && !testMode && !prefilledFromUrl && (
           <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 flex items-center gap-3" data-testid="wallet-connected-status">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <div className="flex-1">
@@ -918,7 +993,17 @@ export function TokenLaunchForm() {
                   Connect your wallet to launch your token
                 </p>
                 <WalletConnectButton 
-                  redirectPath="/launch"
+                  redirectPath="/"
+                  formData={{
+                    name: form.getValues('name'),
+                    symbol: form.getValues('symbol'),
+                    description: form.getValues('description'),
+                    imageUrl: form.getValues('imageUrl'),
+                    initialBuyAmount: form.getValues('initialBuyAmount'),
+                    charityId: selectedCharity?.id,
+                    charityName: selectedCharity?.name,
+                    charitySource: selectedCharity?.source,
+                  }}
                   data-testid="button-connect-wallet-launch"
                 />
               </div>

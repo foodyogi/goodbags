@@ -10,10 +10,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface FormDataForPhantom {
+  name?: string;
+  symbol?: string;
+  description?: string;
+  imageUrl?: string;
+  initialBuyAmount?: string;
+  charityId?: string;
+  charityName?: string;
+  charitySource?: string;
+}
+
 interface WalletConnectButtonProps {
   className?: string;
   "data-testid"?: string;
   redirectPath?: string;
+  formData?: FormDataForPhantom;
 }
 
 function isMobileBrowser(): boolean {
@@ -34,23 +46,37 @@ function isInsidePhantomBrowser(): boolean {
   return hasPhantom || isPhantomApp;
 }
 
-function openInPhantomApp(e: React.MouseEvent, redirectPath?: string) {
+function openInPhantomApp(e: React.MouseEvent, redirectPath?: string, formData?: FormDataForPhantom) {
   e.preventDefault();
   e.stopPropagation();
   
-  const currentPath = window.location.pathname + window.location.search;
-  const targetPath = redirectPath || currentPath;
+  // Build the full URL with form data as URL parameters
+  const url = new URL(window.location.origin);
+  url.pathname = redirectPath || '/';
   
-  // Build the full URL with redirect parameter
-  const urlWithRedirect = new URL(window.location.origin);
-  urlWithRedirect.searchParams.set('wallet_redirect', targetPath);
-  const fullUrl = urlWithRedirect.toString();
+  // Add form data as URL params so form is pre-filled in Phantom
+  if (formData) {
+    if (formData.name) url.searchParams.set('name', formData.name);
+    if (formData.symbol) url.searchParams.set('symbol', formData.symbol);
+    if (formData.description) url.searchParams.set('desc', formData.description);
+    if (formData.imageUrl) url.searchParams.set('img', formData.imageUrl);
+    if (formData.initialBuyAmount) url.searchParams.set('buy', formData.initialBuyAmount);
+    if (formData.charityId) url.searchParams.set('charity', formData.charityId);
+    if (formData.charityName) url.searchParams.set('charityName', formData.charityName);
+    if (formData.charitySource) url.searchParams.set('charitySource', formData.charitySource);
+  }
+  
+  // Mark this as coming from a launch intent
+  url.searchParams.set('launch_ready', '1');
+  
+  const fullUrl = url.toString();
   
   // Use direct phantom:// scheme to open installed app
   // This opens the URL in Phantom's in-app browser
   const phantomDeepLink = `phantom://browse/${encodeURIComponent(fullUrl)}`;
   
   console.log('[WalletConnectButton] Opening Phantom app with deep link:', phantomDeepLink);
+  console.log('[WalletConnectButton] Form data:', formData);
   
   // Try to open the app directly
   window.location.href = phantomDeepLink;
@@ -60,7 +86,7 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
-export function WalletConnectButton({ className, "data-testid": testId, redirectPath }: WalletConnectButtonProps) {
+export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData }: WalletConnectButtonProps) {
   const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
   const { setVisible } = useWalletModal();
   const autoConnectAttemptedRef = useRef(false);
@@ -104,9 +130,9 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     e.preventDefault();
     e.stopPropagation();
     
-    // On mobile without provider, open in Phantom
+    // On mobile without provider, open in Phantom with form data
     if (isMobile && !hasProvider) {
-      openInPhantomApp(e, targetRedirectPath);
+      openInPhantomApp(e, targetRedirectPath, formData);
       return;
     }
     
