@@ -14,6 +14,34 @@ The frontend is built with React 18 and TypeScript, utilizing Wouter for routing
 ### Backend Architecture
 The backend is a Node.js Express.js application written in TypeScript (ES modules). It exposes RESTful JSON API endpoints and uses Drizzle ORM with PostgreSQL for data persistence. Zod is employed for schema validation, integrated with drizzle-zod.
 
+### Authentication System
+The platform uses Replit Auth for user authentication, supporting multiple login providers (X/Twitter, Google, GitHub, Apple, email). Key features:
+
+**User Authentication** (`server/replit_integrations/auth/replitAuth.ts`)
+- Users login via `/api/login` which redirects to Replit Auth
+- Sessions are stored in PostgreSQL with express-session
+- User profile available at `/api/auth/user`
+- Logout via `/api/logout`
+
+**Backend Wallet Storage** (`server/routes.ts`)
+- Users can link their Solana wallet address to their account
+- Wallet connection requires cryptographic signature verification
+- Endpoints: `GET /api/user/wallet`, `POST /api/user/wallet/connect`, `POST /api/user/wallet/disconnect`
+- Backend wallet is for identity/tracking purposes
+
+**Token Launch Flow**
+- Unauthenticated users see "Login with X" prompt
+- Authenticated users without wallet adapter connected see wallet connect prompt
+- Wallet adapter is required for signing transactions (real launches)
+- Test Mode bypasses authentication and wallet requirements entirely
+
+**Key Files**
+- `client/src/hooks/use-auth.ts` - React hook for auth state
+- `client/src/components/user-menu.tsx` - User profile dropdown with wallet status
+- `client/src/components/wallet-connection-modal.tsx` - Modal for linking wallet to account
+- `shared/models/auth.ts` - Auth-related types
+- `shared/schema.ts` - User and session database schemas
+
 ### Solana Integration
 The platform integrates with Solana using `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. The Solana network connection is configurable via environment variables, defaulting to Devnet.
 
