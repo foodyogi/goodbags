@@ -9,6 +9,7 @@ import {
   CHARITY_STATUS,
   TOKEN_APPROVAL_STATUS,
   type Charity,
+  users,
 } from "@shared/schema";
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
@@ -18,6 +19,9 @@ const bs58 = bs58Pkg.default ?? bs58Pkg;
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { setupAuth, registerAuthRoutes, isAuthenticated, authStorage } from "./replit_integrations/auth";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Admin secret for approving charities - REQUIRED in all environments
 // SECURITY FIX: No bypass allowed - must always set ADMIN_SECRET
@@ -218,6 +222,10 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Setup Replit Auth BEFORE other routes
+  await setupAuth(app);
+  registerAuthRoutes(app);
+  
   // Seed default charities on startup
   await storage.seedDefaultCharities();
   
@@ -226,6 +234,107 @@ export async function registerRoutes(
   
   // Register object storage routes for image uploads
   registerObjectStorageRoutes(app);
+
+  // === USER WALLET CONNECTION ENDPOINTS ===
+  
+  // Get user's connected wallet
+  app.get("/api/user/wallet", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      const user = await authStorage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ 
+        walletAddress: user.walletAddress || null,
+        walletConnectedAt: user.walletConnectedAt || null
+      });
+    } catch (error) {
+      console.error("Get wallet error:", error);
+      res.status(500).json({ error: "Failed to get wallet" });
+    }
+  });
+  
+  // Connect wallet to user account (backend wallet storage)
+  app.post("/api/user/wallet/connect", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      const { walletAddress, signature, message } = req.body;
+      
+      // Validate wallet address format
+      if (!walletAddress || !isValidSolanaAddress(walletAddress)) {
+        return res.status(400).json({ error: "Invalid wallet address" });
+      }
+      
+      // Verify the signature to prove wallet ownership
+      if (!signature || !message) {
+        return res.status(400).json({ error: "Signature and message required" });
+      }
+      
+      try {
+        const messageBytes = new TextEncoder().encode(message);
+        const signatureBytes = bs58.decode(signature);
+        const publicKeyBytes = bs58.decode(walletAddress);
+        
+        const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+        if (!isValid) {
+          return res.status(400).json({ error: "Invalid signature" });
+        }
+      } catch (e) {
+        return res.status(400).json({ error: "Failed to verify signature" });
+      }
+      
+      // Update user with wallet address
+      await db.update(users)
+        .set({ 
+          walletAddress, 
+          walletConnectedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      res.json({ 
+        success: true, 
+        walletAddress,
+        message: "Wallet connected successfully" 
+      });
+    } catch (error) {
+      console.error("Connect wallet error:", error);
+      res.status(500).json({ error: "Failed to connect wallet" });
+    }
+  });
+  
+  // Disconnect wallet from user account
+  app.post("/api/user/wallet/disconnect", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      await db.update(users)
+        .set({ 
+          walletAddress: null, 
+          walletConnectedAt: null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      res.json({ success: true, message: "Wallet disconnected successfully" });
+    } catch (error) {
+      console.error("Disconnect wallet error:", error);
+      res.status(500).json({ error: "Failed to disconnect wallet" });
+    }
+  });
 
   // === CHARITY ENDPOINTS ===
   

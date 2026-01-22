@@ -4,6 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// Export auth models (sessions and users tables)
+export * from "./models/auth";
+
 // Charity verification status enum values
 export const CHARITY_STATUS = {
   PENDING: "pending",           // Initial submission
