@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
+import { saveRedirectPath } from "@/lib/solana";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
@@ -115,6 +116,14 @@ export function TokenLaunchForm() {
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save redirect path when form renders with wallet disconnected
+  // This ensures mobile wallet redirects work correctly
+  useEffect(() => {
+    if (!connected && !testMode) {
+      saveRedirectPath("/launch");
+    }
+  }, [connected, testMode]);
   
   // Image upload
   const { uploadFile, isUploading: isUploadingImage, progress: uploadProgress } = useUpload({
