@@ -124,20 +124,6 @@ interface SolanaProviderProps {
   children: React.ReactNode;
 }
 
-// Check if there's a wallet provider available (desktop extension or in-app browser)
-function hasWalletProvider(): boolean {
-  if (typeof window === 'undefined') return false;
-  return !!(window as any).phantom?.solana || 
-         !!(window as any).solana?.isPhantom ||
-         !!(window as any).solflare;
-}
-
-// Check if we're on mobile
-function isMobileBrowser(): boolean {
-  if (typeof window === 'undefined') return false;
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-}
-
 export function SolanaProvider({ children }: SolanaProviderProps) {
   // Use mainnet for production (Bags.fm runs on mainnet)
   // Can be overridden via VITE_SOLANA_RPC_URL env var
@@ -155,26 +141,13 @@ export function SolanaProvider({ children }: SolanaProviderProps) {
     []
   );
 
-  // Only auto-connect if:
-  // 1. We have a wallet provider available (extension installed or in-app browser)
-  // 2. We're NOT on mobile without a provider (this causes redirect to phantom.com)
-  const shouldAutoConnect = useMemo(() => {
-    const hasProvider = hasWalletProvider();
-    const isMobile = isMobileBrowser();
-    
-    // Don't auto-connect on mobile without provider - it redirects to download page
-    if (isMobile && !hasProvider) {
-      console.log('[SolanaProvider] Mobile without provider - disabling autoConnect');
-      return false;
-    }
-    
-    // Auto-connect if we have a provider
-    return hasProvider;
-  }, []);
+  // Disable autoConnect entirely to prevent unwanted redirects
+  // Users will manually click to connect their wallet
+  // AutoConnect causes redirects to wallet download pages (phantom.com, brave wallet, etc.)
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect={shouldAutoConnect}>
+      <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
           <WalletRouteRestorer>
             {children}
