@@ -70,12 +70,26 @@ Trade: ${bagsUrl}
   
   const shareOnTwitter = (type: 'launch' | 'milestone' | 'endorsed' = 'launch') => {
     const text = encodeURIComponent(getShareText(type));
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'width=550,height=420');
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${text}`;
+    // Use window.location for mobile to avoid popup blockers
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = twitterUrl;
+    } else {
+      window.open(twitterUrl, '_blank', 'width=550,height=420');
+    }
   };
 
   const searchOnTwitter = () => {
     const query = encodeURIComponent(`$${tokenSymbol} OR ${tokenName}`);
-    window.open(`https://twitter.com/search?q=${query}&f=live`, '_blank');
+    const searchUrl = `https://twitter.com/search?q=${query}&f=live`;
+    // Use window.location for mobile to avoid popup blockers
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = searchUrl;
+    } else {
+      window.open(searchUrl, '_blank');
+    }
   };
 
   return (
