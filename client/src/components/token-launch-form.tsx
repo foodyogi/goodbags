@@ -538,6 +538,24 @@ export function TokenLaunchForm() {
         )}
       </CardHeader>
       <CardContent>
+        {/* Wallet Status Indicator */}
+        {hasWalletForSigning && !testMode && (
+          <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 flex items-center gap-3" data-testid="wallet-connected-status">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                Wallet Connected
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {publicKey?.toString().slice(0, 4)}...{publicKey?.toString().slice(-4)}
+              </p>
+            </div>
+            <WalletMultiButton 
+              className="!bg-transparent !p-0 !h-auto !text-xs !text-muted-foreground hover:!text-foreground"
+            />
+          </div>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit((data) => launchMutation.mutate(data))} className="space-y-5">
             <FormField

@@ -39,9 +39,10 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const hasRestoredRef = useRef(false);
   const initialCheckDoneRef = useRef(false);
+  const walletCheckDoneRef = useRef(false);
 
-  // On initial page load, check if we need to redirect
-  // This handles the case where user returns from mobile wallet to homepage
+  // On initial page load, check if we need to redirect from localStorage
+  // This handles the case where user returns from mobile wallet to same browser
   useEffect(() => {
     if (initialCheckDoneRef.current) return;
     initialCheckDoneRef.current = true;
@@ -52,7 +53,6 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
     console.log('[WalletRedirect] Initial check - savedPath:', savedPath, 'currentPath:', currentPath);
     
     // If we have a saved path and we're on homepage, redirect immediately
-    // Don't wait for wallet to connect - the form will handle wallet state
     if (savedPath && currentPath === '/' && savedPath !== '/') {
       console.log('[WalletRedirect] Redirecting on page load to:', savedPath);
       localStorage.removeItem(WALLET_REDIRECT_KEY);
@@ -61,7 +61,24 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
     }
   }, [setLocation]);
 
-  // Also handle the case where wallet connects while on the page
+  // Handle wallet browser scenario (e.g., Phantom's built-in browser)
+  // If wallet is connected and we're on homepage, redirect to /launch
+  // This covers the case where Phantom opens our app in its browser with wallet pre-connected
+  useEffect(() => {
+    if (walletCheckDoneRef.current) return;
+    
+    const currentPath = window.location.pathname;
+    
+    // Only trigger if wallet is connected and we're on homepage
+    if (connected && currentPath === '/' && !hasRestoredRef.current) {
+      walletCheckDoneRef.current = true;
+      console.log('[WalletRedirect] Wallet connected on homepage, redirecting to /launch');
+      hasRestoredRef.current = true;
+      setLocation('/launch');
+    }
+  }, [connected, setLocation]);
+
+  // Handle the case where wallet connects while on the page
   // (for desktop wallets that don't leave the page)
   useEffect(() => {
     if (connected && !hasRestoredRef.current) {
