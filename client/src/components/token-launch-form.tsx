@@ -6,7 +6,6 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
-import { useAuth } from "@/hooks/use-auth";
 
 function base64ToUint8Array(base64: string): Uint8Array {
   if (typeof Buffer !== "undefined") {
@@ -104,7 +103,6 @@ export function TokenLaunchForm() {
   const { connected, publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
@@ -520,72 +518,7 @@ export function TokenLaunchForm() {
     );
   }
 
-  // Show login prompt if user is not authenticated
-  if (!isAuthenticated && !authLoading) {
-    return (
-      <Card className="w-full max-w-lg mx-auto">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Rocket className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Launch Your Memecoin</CardTitle>
-          <CardDescription>
-            Create tokens that make a difference - {CHARITY_FEE_PERCENTAGE}% of every trade goes to verified charities
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              Login with X to launch your token and join the community of creators making an impact.
-            </p>
-            <Button 
-              className="w-full" 
-              size="lg"
-              onClick={() => window.location.href = "/api/login"}
-              data-testid="button-login-to-launch"
-            >
-              <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-              Login with X to Launch
-            </Button>
-          </div>
-          
-          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <Heart className="h-4 w-4 text-pink-500" />
-              Why login?
-            </h4>
-            <ul className="text-sm text-muted-foreground space-y-2">
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
-                Track all tokens you launch in one place
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
-                Build your reputation as a trusted creator
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
-                Earn achievement badges and climb leaderboards
-              </li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <Card className="w-full max-w-lg mx-auto">
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
+  // Login is now optional - users just need wallet connection like Bags.fm
 
   return (
     <Card className="w-full max-w-lg mx-auto">
