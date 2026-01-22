@@ -1,8 +1,14 @@
-import { useEffect, useRef } from "react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WalletConnectButtonProps {
   className?: string;
@@ -22,8 +28,6 @@ function hasPhantomProvider(): boolean {
 
 function isInsidePhantomBrowser(): boolean {
   if (typeof window === 'undefined') return false;
-  // Check if we're inside Phantom's in-app browser
-  // Phantom browser has the provider already injected and often has specific user agent
   const hasPhantom = hasPhantomProvider();
   const userAgent = navigator.userAgent.toLowerCase();
   const isPhantomApp = userAgent.includes('phantom');
@@ -34,59 +38,54 @@ function openInPhantomBrowser(e: React.MouseEvent, redirectPath?: string) {
   e.preventDefault();
   e.stopPropagation();
   
-  // Build URL with redirect path as query parameter
-  // This is crucial because localStorage doesn't persist across browser contexts
-  // Preserve full path + query string from current URL or use provided redirectPath
   const currentPath = window.location.pathname + window.location.search;
   const targetPath = redirectPath || currentPath;
   
-  // Build URL preserving the base, adding wallet_redirect param
   const urlWithRedirect = new URL(window.location.origin);
   urlWithRedirect.searchParams.set('wallet_redirect', targetPath);
   
   const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(urlWithRedirect.toString())}`;
   
-  console.log('[WalletConnectButton] Redirecting to Phantom browser with redirect path:', targetPath);
-  console.log('[WalletConnectButton] Full Phantom URL:', phantomBrowseUrl);
+  console.log('[WalletConnectButton] Opening Phantom browser with path:', targetPath);
   window.location.href = phantomBrowseUrl;
 }
 
+function truncateAddress(address: string): string {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
 export function WalletConnectButton({ className, "data-testid": testId, redirectPath }: WalletConnectButtonProps) {
-  const { connected, publicKey, connecting, select, wallets, connect } = useWallet();
+  const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
+  const { setVisible } = useWalletModal();
   const autoConnectAttemptedRef = useRef(false);
+  const [userClickedConnect, setUserClickedConnect] = useState(false);
 
   const isMobile = isMobileBrowser();
   const hasProvider = hasPhantomProvider();
   const isInPhantom = isInsidePhantomBrowser();
   
-  // Default to current path if no redirect specified
   const targetRedirectPath = redirectPath || (typeof window !== 'undefined' ? window.location.pathname : '/launch');
 
-  // Auto-connect when inside Phantom's browser
+  // Only auto-connect when inside Phantom's browser (user explicitly opened in Phantom)
   useEffect(() => {
     if (autoConnectAttemptedRef.current) return;
     if (connected || connecting) return;
     
-    // If we're inside Phantom's browser and have the provider, try to auto-connect
+    // Only auto-connect in Phantom browser when provider is available
     if (isInPhantom && hasProvider) {
       autoConnectAttemptedRef.current = true;
-      console.log('[WalletConnectButton] Inside Phantom browser, attempting auto-connect...');
+      console.log('[WalletConnectButton] Inside Phantom browser, auto-connecting...');
       
-      // Find the Phantom wallet adapter
       const phantomWallet = wallets.find(w => 
         w.adapter.name.toLowerCase().includes('phantom')
       );
       
       if (phantomWallet) {
-        console.log('[WalletConnectButton] Found Phantom wallet adapter, selecting...');
         select(phantomWallet.adapter.name);
-        
-        // Give it a moment to select, then try to connect
         setTimeout(() => {
           if (!connected) {
-            console.log('[WalletConnectButton] Attempting connect after select...');
             connect().catch((err) => {
-              console.log('[WalletConnectButton] Auto-connect failed (user may need to approve):', err);
+              console.log('[WalletConnectButton] Auto-connect failed:', err);
             });
           }
         }, 100);
@@ -94,9 +93,53 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     }
   }, [isInPhantom, hasProvider, connected, connecting, wallets, select, connect]);
 
-  console.log('[WalletConnectButton] isMobile:', isMobile, 'hasProvider:', hasProvider, 'isInPhantom:', isInPhantom, 'connected:', connected, 'publicKey:', publicKey?.toBase58());
+  // Handle user-initiated connect
+  const handleConnectClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // On mobile without provider, open in Phantom
+    if (isMobile && !hasProvider) {
+      openInPhantomBrowser(e, targetRedirectPath);
+      return;
+    }
+    
+    // Mark that user explicitly clicked connect
+    setUserClickedConnect(true);
+    
+    // Open the wallet modal (this is safe - user explicitly clicked)
+    setVisible(true);
+  };
 
-  // Show loading state during connection
+  console.log('[WalletConnectButton] isMobile:', isMobile, 'hasProvider:', hasProvider, 'connected:', connected);
+
+  // Connected state - show wallet address with dropdown
+  if (connected && publicKey) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className={className}
+            data-testid={testId}
+          >
+            <Wallet className="h-4 w-4 mr-2" />
+            {truncateAddress(publicKey.toBase58())}
+            <ChevronDown className="h-4 w-4 ml-2" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => disconnect()}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Disconnect
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  // Connecting state
   if (connecting) {
     return (
       <Button
@@ -111,26 +154,27 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     );
   }
 
-  // On mobile without Phantom provider (not in Phantom browser), show deep link
-  if (isMobile && !hasProvider && !connected) {
-    return (
-      <Button
-        type="button"
-        onClick={(e) => openInPhantomBrowser(e, targetRedirectPath)}
-        className={className}
-        data-testid={testId}
-      >
-        <ExternalLink className="h-4 w-4 mr-2" />
-        Open in Phantom
-      </Button>
-    );
-  }
-
-  // Standard wallet multi-button for desktop or when provider is available
+  // Not connected - show connect button
+  // On mobile without provider: opens Phantom
+  // On desktop or with provider: opens wallet modal
   return (
-    <WalletMultiButton 
+    <Button
+      type="button"
+      onClick={handleConnectClick}
       className={className}
       data-testid={testId}
-    />
+    >
+      {isMobile && !hasProvider ? (
+        <>
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Open in Phantom
+        </>
+      ) : (
+        <>
+          <Wallet className="h-4 w-4 mr-2" />
+          Connect Wallet
+        </>
+      )}
+    </Button>
   );
 }
