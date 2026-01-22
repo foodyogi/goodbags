@@ -40,6 +40,7 @@ export function WalletConnectButton({ className, "data-testid": testId }: Wallet
   if (isMobile && !hasProvider && !connected) {
     return (
       <Button
+        type="button"
         onClick={openInPhantomBrowser}
         className={className}
         data-testid={testId}
