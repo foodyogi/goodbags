@@ -38,46 +38,38 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
   const { connected, connecting } = useWallet();
   const [location, setLocation] = useLocation();
   const hasRestoredRef = useRef(false);
-  const initialCheckDoneRef = useRef(false);
+  const wasConnectedRef = useRef(false);
 
-  // On initial mount, check if we're at "/" and have a saved path - this handles mobile wallet returns
+  // Track connection state changes to detect when user returns from mobile wallet
   useEffect(() => {
-    if (initialCheckDoneRef.current) return;
-    initialCheckDoneRef.current = true;
-    
-    const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
-    const currentPath = window.location.pathname;
-    
-    console.log('[WalletRedirect] Initial check - savedPath:', savedPath, 'currentPath:', currentPath);
-    
-    // If we're at root and have a saved path, redirect immediately
-    // This handles mobile wallet redirect back to the app
-    if (savedPath && currentPath === '/' && savedPath !== '/') {
-      console.log('[WalletRedirect] Redirecting from / to:', savedPath);
-      localStorage.removeItem(WALLET_REDIRECT_KEY);
-      hasRestoredRef.current = true;
-      setLocation(savedPath);
-    }
-  }, [setLocation]);
-
-  // Also handle wallet connection state changes (for desktop flow)
-  useEffect(() => {
-    if (hasRestoredRef.current) return;
-    
-    if (connected && !connecting) {
+    // If wallet just became connected (wasn't connected before, now is)
+    if (connected && !wasConnectedRef.current) {
       const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
-      console.log('[WalletRedirect] Wallet connected - savedPath:', savedPath, 'location:', location);
+      const currentPath = window.location.pathname;
       
-      if (savedPath && savedPath !== location) {
+      console.log('[WalletRedirect] Wallet just connected - savedPath:', savedPath, 'currentPath:', currentPath);
+      
+      // Redirect if we have a saved path and we're not already there
+      if (savedPath && savedPath !== currentPath && !hasRestoredRef.current) {
         console.log('[WalletRedirect] Redirecting to:', savedPath);
         localStorage.removeItem(WALLET_REDIRECT_KEY);
         hasRestoredRef.current = true;
         setLocation(savedPath);
       } else if (savedPath) {
+        // Clear saved path if we're already at the right location
         localStorage.removeItem(WALLET_REDIRECT_KEY);
       }
     }
-  }, [connected, connecting, location, setLocation]);
+    
+    // Update the ref to track current connection state
+    wasConnectedRef.current = connected;
+  }, [connected, setLocation]);
+
+  // Debug logging
+  useEffect(() => {
+    const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
+    console.log('[WalletRedirect] State - connected:', connected, 'connecting:', connecting, 'savedPath:', savedPath, 'location:', location);
+  }, [connected, connecting, location]);
 
   return <>{children}</>;
 }
