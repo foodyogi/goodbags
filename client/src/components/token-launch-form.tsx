@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
@@ -104,7 +103,6 @@ export function TokenLaunchForm() {
   const { connected, publicKey, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
@@ -118,20 +116,8 @@ export function TokenLaunchForm() {
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Get user's backend wallet (for authenticated users)
-  const { data: backendWallet } = useQuery<{ walletAddress: string | null }>({
-    queryKey: ["/api/user/wallet"],
-    enabled: isAuthenticated,
-  });
-  
-  // Determine if user can launch
-  // - Backend wallet is for identity/tracking (linked via modal)
-  // - Wallet adapter is required for signing transactions (real launches)
+  // Wallet adapter is required for signing transactions (real launches)
   const hasWalletForSigning = connected && publicKey;
-  const hasBackendWallet = !!backendWallet?.walletAddress;
-  
-  // Show loading state while auth is resolving
-  const isAuthLoading = authLoading;
   
   // Image upload
   const { uploadFile, isUploading: isUploadingImage, progress: uploadProgress } = useUpload({
@@ -229,8 +215,8 @@ export function TokenLaunchForm() {
         // Generate mock addresses for test token
         const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}${Date.now()}`;
         const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-        // Use backend wallet, connected wallet, or generate a valid-length test wallet address
-        const testCreatorWallet = backendWallet?.walletAddress || publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+        // Use connected wallet or generate a valid-length test wallet address
+        const testCreatorWallet = publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
         
         // Save test token to database
         const launchResponse = await apiRequest("POST", "/api/tokens/launch", {
@@ -904,36 +890,11 @@ export function TokenLaunchForm() {
               )}
             </div>
 
-            {isAuthLoading && !testMode ? (
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <Loader2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground animate-spin" />
-                <p className="text-sm text-muted-foreground">
-                  Loading...
-                </p>
-              </div>
-            ) : !isAuthenticated && !testMode ? (
+            {!hasWalletForSigning && !testMode ? (
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Login to launch a token
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => window.location.href = "/api/login"}
-                  className="gap-2"
-                  data-testid="button-login-launch"
-                >
-                  <Wallet className="h-4 w-4" />
-                  Login with X
-                </Button>
-              </div>
-            ) : !hasWalletForSigning && !testMode ? (
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-3">
-                  {hasBackendWallet 
-                    ? "Connect your wallet to sign the transaction" 
-                    : "Connect your wallet to launch"}
+                  Connect your wallet to add liquidity
                 </p>
                 <WalletMultiButton 
                   className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-md !px-6 !font-medium !text-sm"
