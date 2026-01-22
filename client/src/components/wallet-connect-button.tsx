@@ -30,24 +30,37 @@ function isInsidePhantomBrowser(): boolean {
   return hasPhantom || isPhantomApp;
 }
 
-function openInPhantomBrowser(e: React.MouseEvent) {
+function openInPhantomBrowser(e: React.MouseEvent, redirectPath?: string) {
   e.preventDefault();
   e.stopPropagation();
   
-  const currentUrl = window.location.href;
-  const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}`;
+  // Build URL with redirect path as query parameter
+  // This is crucial because localStorage doesn't persist across browser contexts
+  // Preserve full path + query string from current URL or use provided redirectPath
+  const currentPath = window.location.pathname + window.location.search;
+  const targetPath = redirectPath || currentPath;
   
-  console.log('[WalletConnectButton] Redirecting to Phantom browser:', phantomBrowseUrl);
+  // Build URL preserving the base, adding wallet_redirect param
+  const urlWithRedirect = new URL(window.location.origin);
+  urlWithRedirect.searchParams.set('wallet_redirect', targetPath);
+  
+  const phantomBrowseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(urlWithRedirect.toString())}`;
+  
+  console.log('[WalletConnectButton] Redirecting to Phantom browser with redirect path:', targetPath);
+  console.log('[WalletConnectButton] Full Phantom URL:', phantomBrowseUrl);
   window.location.href = phantomBrowseUrl;
 }
 
-export function WalletConnectButton({ className, "data-testid": testId }: WalletConnectButtonProps) {
+export function WalletConnectButton({ className, "data-testid": testId, redirectPath }: WalletConnectButtonProps) {
   const { connected, publicKey, connecting, select, wallets, connect } = useWallet();
   const autoConnectAttemptedRef = useRef(false);
 
   const isMobile = isMobileBrowser();
   const hasProvider = hasPhantomProvider();
   const isInPhantom = isInsidePhantomBrowser();
+  
+  // Default to current path if no redirect specified
+  const targetRedirectPath = redirectPath || (typeof window !== 'undefined' ? window.location.pathname : '/launch');
 
   // Auto-connect when inside Phantom's browser
   useEffect(() => {
@@ -103,7 +116,7 @@ export function WalletConnectButton({ className, "data-testid": testId }: Wallet
     return (
       <Button
         type="button"
-        onClick={openInPhantomBrowser}
+        onClick={(e) => openInPhantomBrowser(e, targetRedirectPath)}
         className={className}
         data-testid={testId}
       >

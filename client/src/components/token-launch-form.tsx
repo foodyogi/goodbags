@@ -4,7 +4,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
-import { saveRedirectPath } from "@/lib/solana";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
@@ -918,11 +917,10 @@ export function TokenLaunchForm() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Connect your wallet to launch your token
                 </p>
-                <div onClick={() => saveRedirectPath('/launch')}>
-                  <WalletConnectButton 
-                    data-testid="button-connect-wallet-launch"
-                  />
-                </div>
+                <WalletConnectButton 
+                  redirectPath="/launch"
+                  data-testid="button-connect-wallet-launch"
+                />
               </div>
             ) : (
               <Button 
