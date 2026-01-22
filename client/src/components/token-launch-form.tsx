@@ -3,7 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { saveCurrentPath } from "@/lib/solana";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
+import { saveRedirectPath } from "@/lib/solana";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
 import { z } from "zod";
@@ -915,11 +916,10 @@ export function TokenLaunchForm() {
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Connect your wallet to add liquidity
+                  Connect your wallet to launch your token
                 </p>
-                <div onClick={() => saveCurrentPath()}>
-                  <WalletMultiButton 
-                    className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-md !px-6 !font-medium !text-sm"
+                <div onClick={() => saveRedirectPath('/launch')}>
+                  <WalletConnectButton 
                     data-testid="button-connect-wallet-launch"
                   />
                 </div>

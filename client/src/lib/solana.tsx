@@ -1,10 +1,8 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
-import { clusterApiUrl } from '@solana/web3.js';
 import { useLocation } from 'wouter';
 
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -110,12 +108,13 @@ interface SolanaProviderProps {
 }
 
 export function SolanaProvider({ children }: SolanaProviderProps) {
-  const network = WalletAdapterNetwork.Devnet;
-  
+  // Use mainnet for production (Bags.fm runs on mainnet)
+  // Can be overridden via VITE_SOLANA_RPC_URL env var
   const endpoint = useMemo(() => {
     const rpcUrl = import.meta.env.VITE_SOLANA_RPC_URL;
-    return rpcUrl || clusterApiUrl(network);
-  }, [network]);
+    // Default to mainnet-beta for production Bags.fm integration
+    return rpcUrl || "https://api.mainnet-beta.solana.com";
+  }, []);
 
   const wallets = useMemo(
     () => [
