@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
@@ -16,6 +16,7 @@ export function saveCurrentPath() {
     const currentPath = window.location.pathname + window.location.search;
     if (currentPath && currentPath !== '/') {
       localStorage.setItem(WALLET_REDIRECT_KEY, currentPath);
+      console.log('[WalletRedirect] Saved path:', currentPath);
     }
   }
 }
@@ -29,12 +30,41 @@ export function clearSavedPath() {
 function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
   const { connected, connecting } = useWallet();
   const [location, setLocation] = useLocation();
+  const hasRestoredRef = useRef(false);
+  const initialCheckDoneRef = useRef(false);
 
+  // On initial mount, check if we're at "/" and have a saved path - this handles mobile wallet returns
   useEffect(() => {
+    if (initialCheckDoneRef.current) return;
+    initialCheckDoneRef.current = true;
+    
+    const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
+    const currentPath = window.location.pathname;
+    
+    console.log('[WalletRedirect] Initial check - savedPath:', savedPath, 'currentPath:', currentPath);
+    
+    // If we're at root and have a saved path, redirect immediately
+    // This handles mobile wallet redirect back to the app
+    if (savedPath && currentPath === '/' && savedPath !== '/') {
+      console.log('[WalletRedirect] Redirecting from / to:', savedPath);
+      localStorage.removeItem(WALLET_REDIRECT_KEY);
+      hasRestoredRef.current = true;
+      setLocation(savedPath);
+    }
+  }, [setLocation]);
+
+  // Also handle wallet connection state changes (for desktop flow)
+  useEffect(() => {
+    if (hasRestoredRef.current) return;
+    
     if (connected && !connecting) {
       const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
+      console.log('[WalletRedirect] Wallet connected - savedPath:', savedPath, 'location:', location);
+      
       if (savedPath && savedPath !== location) {
+        console.log('[WalletRedirect] Redirecting to:', savedPath);
         localStorage.removeItem(WALLET_REDIRECT_KEY);
+        hasRestoredRef.current = true;
         setLocation(savedPath);
       } else if (savedPath) {
         localStorage.removeItem(WALLET_REDIRECT_KEY);

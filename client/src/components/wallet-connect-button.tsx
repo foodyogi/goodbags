@@ -10,16 +10,18 @@ interface WalletConnectButtonProps {
 export function WalletConnectButton({ className, "data-testid": testId }: WalletConnectButtonProps) {
   const { connected } = useWallet();
 
-  const handleInteraction = () => {
+  const handleInteraction = (e: React.MouseEvent | React.PointerEvent | React.TouchEvent) => {
     if (!connected) {
+      console.log('[WalletConnectButton] Saving path before wallet connect');
       saveCurrentPath();
     }
   };
 
   return (
     <div 
-      onPointerDown={handleInteraction}
-      onTouchStart={handleInteraction}
+      onClickCapture={handleInteraction}
+      onPointerDownCapture={handleInteraction}
+      onTouchStartCapture={handleInteraction}
     >
       <WalletMultiButton 
         className={className}
