@@ -124,9 +124,14 @@ export function TokenLaunchForm() {
     enabled: isAuthenticated,
   });
   
-  // Determine if user can launch (has wallet connection)
-  const hasWalletForLaunch = connected && publicKey;
+  // Determine if user can launch
+  // - Backend wallet is for identity/tracking (linked via modal)
+  // - Wallet adapter is required for signing transactions (real launches)
+  const hasWalletForSigning = connected && publicKey;
   const hasBackendWallet = !!backendWallet?.walletAddress;
+  
+  // Show loading state while auth is resolving
+  const isAuthLoading = authLoading;
   
   // Image upload
   const { uploadFile, isUploading: isUploadingImage, progress: uploadProgress } = useUpload({
@@ -899,7 +904,14 @@ export function TokenLaunchForm() {
               )}
             </div>
 
-            {!isAuthenticated && !testMode ? (
+            {isAuthLoading && !testMode ? (
+              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                <Loader2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  Loading...
+                </p>
+              </div>
+            ) : !isAuthenticated && !testMode ? (
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
@@ -915,11 +927,13 @@ export function TokenLaunchForm() {
                   Login with X
                 </Button>
               </div>
-            ) : !hasWalletForLaunch && !testMode ? (
+            ) : !hasWalletForSigning && !testMode ? (
               <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                 <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-3">
-                  Connect your wallet to sign the transaction
+                  {hasBackendWallet 
+                    ? "Connect your wallet to sign the transaction" 
+                    : "Connect your wallet to launch"}
                 </p>
                 <WalletMultiButton 
                   className="!bg-primary hover:!bg-primary/90 !h-10 !rounded-md !px-6 !font-medium !text-sm"
