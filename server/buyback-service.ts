@@ -1,7 +1,8 @@
 import { createJupiterApiClient, QuoteResponse } from "@jup-ag/api";
 import { Connection, Keypair, VersionedTransaction, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import bs58Pkg from "bs58";
-const bs58 = bs58Pkg.default ?? bs58Pkg;
+// Handle ESM/CommonJS interop for bs58
+const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import { storage } from "./storage";
 import { FEATURED_IMPACT_PROJECT } from "@shared/schema";
 

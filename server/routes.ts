@@ -15,7 +15,8 @@ import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
 import bs58Pkg from "bs58";
-const bs58 = bs58Pkg.default ?? bs58Pkg;
+// Handle ESM/CommonJS interop for bs58
+const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";

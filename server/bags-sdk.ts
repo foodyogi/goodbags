@@ -1,6 +1,8 @@
 import { BagsSDK } from "@bagsfm/bags-sdk";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import bs58 from "bs58";
+import bs58Pkg from "bs58";
+// Handle ESM/CommonJS interop for bs58
+const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import { 
   PLATFORM_WALLET, 
   CHARITY_FEE_BPS, 
