@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut } from "lucide-react";
+import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +38,29 @@ function hasPhantomProvider(): boolean {
   return !!(window as any).phantom?.solana || !!(window as any).solana?.isPhantom;
 }
 
+// Check if we're inside Phantom's in-app browser (more robust detection)
 function isInsidePhantomBrowser(): boolean {
   if (typeof window === 'undefined') return false;
+  
+  // Check provider directly
   const hasPhantom = hasPhantomProvider();
+  
+  // Check user agent for Phantom
   const userAgent = navigator.userAgent.toLowerCase();
   const isPhantomApp = userAgent.includes('phantom');
-  return hasPhantom || isPhantomApp;
+  
+  // Check if URL has launch_ready param (means we came from deep link)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasLaunchReady = urlParams.get('launch_ready') === '1';
+  
+  return hasPhantom || isPhantomApp || (isMobileBrowser() && hasLaunchReady);
+}
+
+// Check if we came from a Phantom deep link (form data in URL)
+function cameFromPhantomDeepLink(): boolean {
+  if (typeof window === 'undefined') return false;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('launch_ready') === '1';
 }
 
 function openInPhantomApp(e: React.MouseEvent, redirectPath?: string, formData?: FormDataForPhantom) {
@@ -91,39 +108,79 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   const { setVisible } = useWalletModal();
   const autoConnectAttemptedRef = useRef(false);
   const [userClickedConnect, setUserClickedConnect] = useState(false);
+  const [providerReady, setProviderReady] = useState(hasPhantomProvider());
+  const [waitingForProvider, setWaitingForProvider] = useState(false);
+  const providerCheckCountRef = useRef(0);
+  
+  // IMPORTANT: Store deep-link flag in state on mount so it persists even after URL cleanup
+  const [fromDeepLink] = useState(() => cameFromPhantomDeepLink());
 
   const isMobile = isMobileBrowser();
-  const hasProvider = hasPhantomProvider();
   const isInPhantom = isInsidePhantomBrowser();
   
   const targetRedirectPath = redirectPath || (typeof window !== 'undefined' ? window.location.pathname : '/launch');
 
-  // Only auto-connect when inside Phantom's browser (user explicitly opened in Phantom)
+  // Determine if we should auto-connect (came from deep link OR we're in Phantom browser)
+  const shouldAutoConnect = fromDeepLink || isInPhantom;
+  
+  // Poll for Phantom provider (handles timing issues where provider injects after page load)
+  useEffect(() => {
+    // Only poll if we should auto-connect and don't have provider yet
+    if (!shouldAutoConnect || providerReady || connected) return;
+    
+    setWaitingForProvider(true);
+    console.log('[WalletConnectButton] Waiting for Phantom provider to inject...');
+    
+    const maxAttempts = 20; // 20 attempts * 250ms = 5 seconds max
+    const checkInterval = setInterval(() => {
+      providerCheckCountRef.current++;
+      const hasIt = hasPhantomProvider();
+      
+      console.log(`[WalletConnectButton] Provider check #${providerCheckCountRef.current}: ${hasIt}`);
+      
+      if (hasIt) {
+        setProviderReady(true);
+        setWaitingForProvider(false);
+        clearInterval(checkInterval);
+      } else if (providerCheckCountRef.current >= maxAttempts) {
+        console.log('[WalletConnectButton] Provider not found after max attempts');
+        setWaitingForProvider(false);
+        clearInterval(checkInterval);
+      }
+    }, 250);
+    
+    return () => clearInterval(checkInterval);
+  }, [shouldAutoConnect, providerReady, connected]);
+
+  // Auto-connect when provider becomes available and we should auto-connect
   useEffect(() => {
     if (autoConnectAttemptedRef.current) return;
     if (connected || connecting) return;
+    if (!providerReady) return;
+    if (!shouldAutoConnect) return;
     
-    // Only auto-connect in Phantom browser when provider is available
-    if (isInPhantom && hasProvider) {
-      autoConnectAttemptedRef.current = true;
-      console.log('[WalletConnectButton] Inside Phantom browser, auto-connecting...');
+    autoConnectAttemptedRef.current = true;
+    console.log('[WalletConnectButton] Provider ready, auto-connecting...');
+    
+    const phantomWallet = wallets.find(w => 
+      w.adapter.name.toLowerCase().includes('phantom')
+    );
+    
+    if (phantomWallet) {
+      console.log('[WalletConnectButton] Found Phantom wallet, selecting...');
+      select(phantomWallet.adapter.name);
       
-      const phantomWallet = wallets.find(w => 
-        w.adapter.name.toLowerCase().includes('phantom')
-      );
-      
-      if (phantomWallet) {
-        select(phantomWallet.adapter.name);
-        setTimeout(() => {
-          if (!connected) {
-            connect().catch((err) => {
-              console.log('[WalletConnectButton] Auto-connect failed:', err);
-            });
-          }
-        }, 100);
-      }
+      // Small delay to let selection take effect
+      setTimeout(() => {
+        console.log('[WalletConnectButton] Attempting connect...');
+        connect().catch((err) => {
+          console.log('[WalletConnectButton] Auto-connect failed:', err);
+        });
+      }, 200);
+    } else {
+      console.log('[WalletConnectButton] Phantom wallet not found in adapters, available:', wallets.map(w => w.adapter.name));
     }
-  }, [isInPhantom, hasProvider, connected, connecting, wallets, select, connect]);
+  }, [providerReady, shouldAutoConnect, connected, connecting, wallets, select, connect]);
 
   // Handle user-initiated connect
   const handleConnectClick = (e: React.MouseEvent) => {
@@ -131,7 +188,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     e.stopPropagation();
     
     // On mobile without provider, open in Phantom with form data
-    if (isMobile && !hasProvider) {
+    if (isMobile && !providerReady) {
       openInPhantomApp(e, targetRedirectPath, formData);
       return;
     }
@@ -143,7 +200,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     setVisible(true);
   };
 
-  console.log('[WalletConnectButton] isMobile:', isMobile, 'hasProvider:', hasProvider, 'connected:', connected);
+  console.log('[WalletConnectButton] isMobile:', isMobile, 'providerReady:', providerReady, 'connected:', connected, 'fromDeepLink:', fromDeepLink, 'waitingForProvider:', waitingForProvider);
 
   // Connected state - show wallet address with dropdown
   if (connected && publicKey) {
@@ -186,6 +243,21 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     );
   }
 
+  // Waiting for Phantom provider (came from deep link, detecting wallet)
+  if (waitingForProvider && fromDeepLink) {
+    return (
+      <Button
+        type="button"
+        disabled
+        className={className}
+        data-testid={testId}
+      >
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        Detecting Wallet...
+      </Button>
+    );
+  }
+
   // Not connected - show connect button
   // On mobile without provider: opens Phantom
   // On desktop or with provider: opens wallet modal
@@ -196,7 +268,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
       className={className}
       data-testid={testId}
     >
-      {isMobile && !hasProvider ? (
+      {isMobile && !providerReady ? (
         <>
           <ExternalLink className="h-4 w-4 mr-2" />
           Open in Phantom

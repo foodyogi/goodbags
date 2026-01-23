@@ -107,7 +107,7 @@ interface LaunchResult {
 type LaunchStep = "idle" | "preparing" | "signing-config" | "signing-launch" | "recording" | "complete";
 
 export function TokenLaunchForm() {
-  const { connected, publicKey, signTransaction, signAllTransactions } = useWallet();
+  const { connected, publicKey, signTransaction, signAllTransactions, connecting } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
@@ -610,6 +610,37 @@ export function TokenLaunchForm() {
             <p className="text-xs text-muted-foreground">
               Your token details have been saved. Review below and click "Launch Token" to mint on Solana.
             </p>
+          </div>
+        )}
+
+        {/* Waiting for wallet connection - shows when form pre-filled but wallet not yet connected */}
+        {prefilledFromUrl && !hasWalletForSigning && !testMode && connecting && (
+          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="connecting-wallet-status">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+              <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                Connecting Wallet...
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Please approve the connection request in your wallet.
+            </p>
+          </div>
+        )}
+
+        {/* Form pre-filled but wallet not connected (and not currently connecting) */}
+        {prefilledFromUrl && !hasWalletForSigning && !testMode && !connecting && (
+          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="wallet-needed-status">
+            <div className="flex items-center gap-3 mb-2">
+              <Wallet className="h-4 w-4 text-amber-600" />
+              <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                Connect Wallet to Launch
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Your token details are saved below. Connect your wallet to complete the launch.
+            </p>
+            <WalletMultiButton className="!h-9 !text-sm" />
           </div>
         )}
         
