@@ -26,6 +26,7 @@ interface WalletConnectButtonProps {
   "data-testid"?: string;
   redirectPath?: string;
   formData?: FormDataForPhantom;
+  onBeforeRedirect?: () => void;
 }
 
 function isMobileBrowser(): boolean {
@@ -166,7 +167,7 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
-export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData }: WalletConnectButtonProps) {
+export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData, onBeforeRedirect }: WalletConnectButtonProps) {
   const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
   const { setVisible } = useWalletModal();
   const autoConnectAttemptedRef = useRef(false);
@@ -293,6 +294,10 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     // This is more reliable than checking providerReady which can be affected by other wallets like Brave
     if (isMobile && !isInPhantom) {
       console.log('[WalletConnectButton] Mobile browser detected without Phantom - opening deep link');
+      // Call callback before redirect to allow parent to save form data
+      if (onBeforeRedirect) {
+        onBeforeRedirect();
+      }
       openInPhantomApp(e, targetRedirectPath, formData);
       return;
     }

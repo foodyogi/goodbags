@@ -51,6 +51,71 @@ function getUrlParams(): URLSearchParams {
   return new URLSearchParams(window.location.search);
 }
 
+// LocalStorage key for persisting form data across wallet connection round-trips
+const FORM_DATA_STORAGE_KEY = 'goodbags_token_form_data';
+
+interface StoredFormData {
+  name: string;
+  symbol: string;
+  description: string;
+  imageUrl: string;
+  initialBuyAmount: string;
+  charity?: {
+    id: string;
+    name: string;
+    category: string;
+    source: 'local' | 'change';
+    solanaAddress?: string | null;
+  };
+  timestamp: number;
+}
+
+// Save form data to localStorage (called before wallet connection redirect)
+function saveFormDataToStorage(data: Omit<StoredFormData, 'timestamp'>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const stored: StoredFormData = {
+      ...data,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(FORM_DATA_STORAGE_KEY, JSON.stringify(stored));
+    console.log('[TokenLaunchForm] Form data saved to localStorage');
+  } catch (e) {
+    console.error('[TokenLaunchForm] Failed to save form data:', e);
+  }
+}
+
+// Load form data from localStorage (called on mount)
+function loadFormDataFromStorage(): StoredFormData | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(FORM_DATA_STORAGE_KEY);
+    if (!stored) return null;
+    const data = JSON.parse(stored) as StoredFormData;
+    // Only use stored data if it's less than 30 minutes old
+    const thirtyMinutes = 30 * 60 * 1000;
+    if (Date.now() - data.timestamp > thirtyMinutes) {
+      clearFormDataFromStorage();
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('[TokenLaunchForm] Failed to load form data:', e);
+    return null;
+  }
+}
+
+// Clear form data from localStorage (called after successful launch or form reset)
+function clearFormDataFromStorage(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(FORM_DATA_STORAGE_KEY);
+    console.log('[TokenLaunchForm] Form data cleared from localStorage');
+  } catch (e) {
+    console.error('[TokenLaunchForm] Failed to clear form data:', e);
+  }
+}
+
 interface TokenNameSearchResult {
   local: { name: string; symbol: string; mintAddress: string }[];
   external: { name: string; symbol: string; mintAddress: string; launchpad?: string }[];
@@ -123,9 +188,16 @@ export function TokenLaunchForm() {
   const [isSearchingName, setIsSearchingName] = useState(false);
   const nameSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Track if form was pre-filled from URL (mobile flow)
+  // Track if form was pre-filled from URL or localStorage (mobile flow)
   const [prefilledFromUrl, setPrefilledFromUrl] = useState(false);
   const urlParamsProcessedRef = useRef(false);
+  const formRestoredRef = useRef(false);
+  
+  // Ref to launch button section for auto-scroll after wallet connection
+  const launchButtonRef = useRef<HTMLDivElement>(null);
+  
+  // Track previous connection state for detecting wallet connection
+  const wasConnectedRef = useRef(connected);
   
   // Wallet adapter is required for signing transactions (real launches)
   const hasWalletForSigning = connected && publicKey;
@@ -215,6 +287,60 @@ export function TokenLaunchForm() {
     
     console.log('[TokenLaunchForm] Form populated from URL params');
   }, [form]);
+  
+  // Fallback: Restore form data from localStorage if URL params weren't available
+  useEffect(() => {
+    // Only run once, and only if URL params weren't processed
+    if (formRestoredRef.current || urlParamsProcessedRef.current) return;
+    formRestoredRef.current = true;
+    
+    const storedData = loadFormDataFromStorage();
+    if (!storedData) return;
+    
+    console.log('[TokenLaunchForm] Restoring form data from localStorage...');
+    
+    // Restore form fields
+    if (storedData.name) form.setValue('name', storedData.name);
+    if (storedData.symbol) form.setValue('symbol', storedData.symbol);
+    if (storedData.description) form.setValue('description', storedData.description);
+    if (storedData.imageUrl) form.setValue('imageUrl', storedData.imageUrl);
+    if (storedData.initialBuyAmount) form.setValue('initialBuyAmount', storedData.initialBuyAmount);
+    
+    // Restore charity selection
+    if (storedData.charity) {
+      setSelectedCharity({
+        id: storedData.charity.id,
+        name: storedData.charity.name,
+        category: storedData.charity.category,
+        source: storedData.charity.source,
+        solanaAddress: storedData.charity.solanaAddress,
+      });
+    }
+    
+    // Check if any data was actually restored
+    const hasData = storedData.name || storedData.symbol || storedData.charity;
+    if (hasData) {
+      setPrefilledFromUrl(true);
+      console.log('[TokenLaunchForm] Form restored from localStorage');
+    }
+  }, [form]);
+  
+  // Auto-scroll to launch button when wallet connects (after returning from Phantom)
+  useEffect(() => {
+    const justConnected = connected && !wasConnectedRef.current;
+    wasConnectedRef.current = connected;
+    
+    if (justConnected && prefilledFromUrl && launchButtonRef.current) {
+      // Small delay to let the UI update
+      setTimeout(() => {
+        launchButtonRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        console.log('[TokenLaunchForm] Auto-scrolled to launch button after wallet connection');
+      }, 300);
+    }
+  }, [connected, prefilledFromUrl]);
 
   // Watch the name field for debounced duplicate detection
   const watchedName = form.watch("name");
@@ -401,6 +527,9 @@ export function TokenLaunchForm() {
       setLaunchStep("complete");
       if (data.success && data.token) {
         setLaunchResult(data);
+        // Clear stored form data after successful launch
+        clearFormDataFromStorage();
+        setPrefilledFromUrl(false);
         queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
         toast({
@@ -567,7 +696,11 @@ export function TokenLaunchForm() {
             <Button 
               type="button"
               variant="outline"
-              onClick={() => setLaunchResult(null)} 
+              onClick={() => {
+                clearFormDataFromStorage();
+                setSelectedCharity(null);
+                setLaunchResult(null);
+              }} 
               className="w-full"
               data-testid="button-launch-another"
             >
@@ -1017,52 +1150,71 @@ export function TokenLaunchForm() {
               )}
             </div>
 
-            {!hasWalletForSigning && !testMode ? (
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-3">
-                  Connect your wallet to launch your token
-                </p>
-                <WalletConnectButton 
-                  redirectPath="/"
-                  formData={{
-                    name: form.getValues('name'),
-                    symbol: form.getValues('symbol'),
-                    description: form.getValues('description'),
-                    imageUrl: form.getValues('imageUrl'),
-                    initialBuyAmount: form.getValues('initialBuyAmount'),
-                    charityId: selectedCharity?.id,
-                    charityName: selectedCharity?.name,
-                    charitySource: selectedCharity?.source,
-                  }}
-                  data-testid="button-connect-wallet-launch"
-                />
-              </div>
-            ) : (
-              <Button 
-                type="submit" 
-                className="w-full gap-2"
-                disabled={launchMutation.isPending || !selectedCharity}
-                data-testid="button-submit-launch"
-              >
-                {launchMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {getStepMessage()}
-                  </>
-                ) : testMode ? (
-                  <>
-                    <FlaskConical className="h-4 w-4" />
-                    Test Launch
-                  </>
-                ) : (
-                  <>
-                    <Rocket className="h-4 w-4" />
-                    Launch Token
-                  </>
-                )}
-              </Button>
-            )}
+            <div ref={launchButtonRef}>
+              {!hasWalletForSigning && !testMode ? (
+                <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                  <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Connect your wallet to launch your token
+                  </p>
+                  <WalletConnectButton 
+                    redirectPath="/"
+                    formData={{
+                      name: form.getValues('name'),
+                      symbol: form.getValues('symbol'),
+                      description: form.getValues('description'),
+                      imageUrl: form.getValues('imageUrl'),
+                      initialBuyAmount: form.getValues('initialBuyAmount'),
+                      charityId: selectedCharity?.id,
+                      charityName: selectedCharity?.name,
+                      charitySource: selectedCharity?.source,
+                    }}
+                    onBeforeRedirect={() => {
+                      // Save form data to localStorage before wallet redirect
+                      saveFormDataToStorage({
+                        name: form.getValues('name') || '',
+                        symbol: form.getValues('symbol') || '',
+                        description: form.getValues('description') || '',
+                        imageUrl: form.getValues('imageUrl') || '',
+                        initialBuyAmount: form.getValues('initialBuyAmount') || '0',
+                        charity: selectedCharity ? {
+                          id: selectedCharity.id,
+                          name: selectedCharity.name,
+                          category: selectedCharity.category,
+                          source: selectedCharity.source,
+                          solanaAddress: selectedCharity.solanaAddress,
+                        } : undefined,
+                      });
+                    }}
+                    data-testid="button-connect-wallet-launch"
+                  />
+                </div>
+              ) : (
+                <Button 
+                  type="submit" 
+                  className="w-full gap-2"
+                  disabled={launchMutation.isPending || !selectedCharity}
+                  data-testid="button-submit-launch"
+                >
+                  {launchMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {getStepMessage()}
+                    </>
+                  ) : testMode ? (
+                    <>
+                      <FlaskConical className="h-4 w-4" />
+                      Test Launch
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="h-4 w-4" />
+                      Launch Token
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
       </CardContent>
