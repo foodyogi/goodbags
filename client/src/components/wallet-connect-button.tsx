@@ -38,6 +38,38 @@ function hasPhantomProvider(): boolean {
   return !!(window as any).phantom?.solana || !!(window as any).solana?.isPhantom;
 }
 
+// SessionStorage key to persist deep-link intent across page loads in Phantom's browser
+const PHANTOM_DEEP_LINK_KEY = 'goodbags_phantom_deep_link';
+
+// Save deep-link intent to sessionStorage (survives page loads in same browser tab)
+function saveDeepLinkIntent(): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(PHANTOM_DEEP_LINK_KEY, 'true');
+    console.log('[WalletConnectButton] Saved deep-link intent to sessionStorage');
+  }
+}
+
+// Check if we have a deep-link intent (from URL params OR sessionStorage)
+function hasDeepLinkIntent(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // Check URL params first
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasLaunchReady = urlParams.get('launch_ready') === '1';
+  
+  // Also check sessionStorage (persists after URL cleanup)
+  const hasSessionFlag = sessionStorage.getItem(PHANTOM_DEEP_LINK_KEY) === 'true';
+  
+  return hasLaunchReady || hasSessionFlag;
+}
+
+// Clear the deep-link intent after successful connection
+function clearDeepLinkIntent(): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(PHANTOM_DEEP_LINK_KEY);
+  }
+}
+
 // Check if we're inside Phantom's in-app browser (more robust detection)
 function isInsidePhantomBrowser(): boolean {
   if (typeof window === 'undefined') return false;
@@ -49,23 +81,27 @@ function isInsidePhantomBrowser(): boolean {
   const userAgent = navigator.userAgent.toLowerCase();
   const isPhantomApp = userAgent.includes('phantom');
   
-  // Check if URL has launch_ready param (means we came from deep link)
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasLaunchReady = urlParams.get('launch_ready') === '1';
+  // Check if we have deep-link intent (URL params or sessionStorage)
+  const hasIntent = hasDeepLinkIntent();
   
-  return hasPhantom || isPhantomApp || (isMobileBrowser() && hasLaunchReady);
+  console.log('[WalletConnectButton] isInsidePhantomBrowser check:', { hasPhantom, isPhantomApp, hasIntent, isMobile: isMobileBrowser() });
+  
+  return hasPhantom || isPhantomApp || (isMobileBrowser() && hasIntent);
 }
 
-// Check if we came from a Phantom deep link (form data in URL)
+// Check if we came from a Phantom deep link (form data in URL or sessionStorage)
 function cameFromPhantomDeepLink(): boolean {
   if (typeof window === 'undefined') return false;
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('launch_ready') === '1';
+  return hasDeepLinkIntent();
 }
 
 function openInPhantomApp(e: React.MouseEvent, redirectPath?: string, formData?: FormDataForPhantom) {
   e.preventDefault();
   e.stopPropagation();
+  
+  // Save deep-link intent to sessionStorage BEFORE redirecting
+  // This ensures it persists even if URL params get cleaned up
+  saveDeepLinkIntent();
   
   // Build the full URL with form data as URL parameters
   const url = new URL(window.location.origin);
@@ -113,7 +149,16 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   const providerCheckCountRef = useRef(0);
   
   // IMPORTANT: Store deep-link flag in state on mount so it persists even after URL cleanup
-  const [fromDeepLink] = useState(() => cameFromPhantomDeepLink());
+  // Also save to sessionStorage when we detect launch_ready=1, so it survives URL cleanup
+  const [fromDeepLink] = useState(() => {
+    const hasIntent = cameFromPhantomDeepLink();
+    if (hasIntent) {
+      // Save to sessionStorage in case URL gets cleaned before other components mount
+      saveDeepLinkIntent();
+      console.log('[WalletConnectButton] Detected deep-link intent on mount, saved to sessionStorage');
+    }
+    return hasIntent;
+  });
 
   const isMobile = isMobileBrowser();
   const isInPhantom = isInsidePhantomBrowser();
@@ -131,19 +176,20 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     setWaitingForProvider(true);
     console.log('[WalletConnectButton] Waiting for Phantom provider to inject...');
     
-    const maxAttempts = 20; // 20 attempts * 250ms = 5 seconds max
+    const maxAttempts = 40; // 40 attempts * 250ms = 10 seconds max (more time for Phantom)
     const checkInterval = setInterval(() => {
       providerCheckCountRef.current++;
       const hasIt = hasPhantomProvider();
       
-      console.log(`[WalletConnectButton] Provider check #${providerCheckCountRef.current}: ${hasIt}`);
+      console.log(`[WalletConnectButton] Provider check #${providerCheckCountRef.current}/${maxAttempts}: hasProvider=${hasIt}`);
       
       if (hasIt) {
+        console.log('[WalletConnectButton] ✓ Phantom provider detected!');
         setProviderReady(true);
         setWaitingForProvider(false);
         clearInterval(checkInterval);
       } else if (providerCheckCountRef.current >= maxAttempts) {
-        console.log('[WalletConnectButton] Provider not found after max attempts');
+        console.log('[WalletConnectButton] ✗ Provider not found after max attempts');
         setWaitingForProvider(false);
         clearInterval(checkInterval);
       }
@@ -160,27 +206,42 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     if (!shouldAutoConnect) return;
     
     autoConnectAttemptedRef.current = true;
-    console.log('[WalletConnectButton] Provider ready, auto-connecting...');
+    console.log('[WalletConnectButton] Provider ready, initiating auto-connect...');
     
     const phantomWallet = wallets.find(w => 
       w.adapter.name.toLowerCase().includes('phantom')
     );
     
     if (phantomWallet) {
-      console.log('[WalletConnectButton] Found Phantom wallet, selecting...');
+      console.log('[WalletConnectButton] Found Phantom wallet adapter:', phantomWallet.adapter.name);
+      console.log('[WalletConnectButton] Selecting Phantom wallet...');
       select(phantomWallet.adapter.name);
       
-      // Small delay to let selection take effect
+      // Small delay to let selection take effect, then connect
       setTimeout(() => {
-        console.log('[WalletConnectButton] Attempting connect...');
-        connect().catch((err) => {
-          console.log('[WalletConnectButton] Auto-connect failed:', err);
-        });
-      }, 200);
+        console.log('[WalletConnectButton] Calling connect()...');
+        connect()
+          .then(() => {
+            console.log('[WalletConnectButton] ✓ Auto-connect successful!');
+            // Clear the deep-link intent after successful connection
+            clearDeepLinkIntent();
+          })
+          .catch((err) => {
+            console.log('[WalletConnectButton] ✗ Auto-connect failed:', err?.message || err);
+          });
+      }, 300);
     } else {
-      console.log('[WalletConnectButton] Phantom wallet not found in adapters, available:', wallets.map(w => w.adapter.name));
+      console.log('[WalletConnectButton] ✗ Phantom wallet not found in adapters');
+      console.log('[WalletConnectButton] Available wallets:', wallets.map(w => w.adapter.name).join(', '));
     }
   }, [providerReady, shouldAutoConnect, connected, connecting, wallets, select, connect]);
+  
+  // Clear deep-link intent when connected
+  useEffect(() => {
+    if (connected) {
+      clearDeepLinkIntent();
+    }
+  }, [connected]);
 
   // Handle user-initiated connect
   const handleConnectClick = (e: React.MouseEvent) => {
@@ -202,7 +263,16 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     setVisible(true);
   };
 
-  console.log('[WalletConnectButton] isMobile:', isMobile, 'isInPhantom:', isInPhantom, 'providerReady:', providerReady, 'connected:', connected, 'fromDeepLink:', fromDeepLink);
+  console.log('[WalletConnectButton] State:', { 
+    isMobile, 
+    isInPhantom, 
+    providerReady, 
+    connected, 
+    connecting,
+    fromDeepLink,
+    shouldAutoConnect,
+    waitingForProvider 
+  });
 
   // Connected state - show wallet address with dropdown
   if (connected && publicKey) {
