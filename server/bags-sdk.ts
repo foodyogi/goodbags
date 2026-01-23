@@ -257,7 +257,21 @@ export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Pro
       decodeError = e.message || 'unknown decode error';
     }
     console.error(`  Regex pass: ${regexPass}, Decoded length: ${decodeLength} (need 32), Decode error: ${decodeError}`);
-    throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (len=${tokenMintString.length}, regex=${regexPass}, bytes=${decodeLength})`);
+    
+    // Try one more fallback: use PublicKey constructor which is more lenient
+    try {
+      const fallbackPubkey = new PublicKey(tokenMintString);
+      const fallbackAddress = fallbackPubkey.toBase58();
+      console.log(`Bags SDK: PublicKey fallback succeeded: ${fallbackAddress}`);
+      if (isValidSolanaAddress(fallbackAddress)) {
+        tokenMintString = fallbackAddress;
+      } else {
+        throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (len=${tokenMintString.length}, regex=${regexPass}, bytes=${decodeLength}, err=${decodeError})`);
+      }
+    } catch (fallbackError: any) {
+      console.error(`Bags SDK: PublicKey fallback also failed:`, fallbackError.message);
+      throw new Error(`Token mint normalization produced invalid address: ${tokenMintString.slice(0, 20)}... (len=${tokenMintString.length}, regex=${regexPass}, bytes=${decodeLength}, err=${decodeError})`);
+    }
   }
 
   console.log(`Bags SDK createTokenInfoAndMetadata: tokenMint=${tokenMintString}`);
