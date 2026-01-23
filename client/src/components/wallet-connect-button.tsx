@@ -49,18 +49,38 @@ function saveDeepLinkIntent(): void {
   }
 }
 
-// Check if we have a deep-link intent (from URL params OR sessionStorage)
+// Check if URL has launch_ready param (definitive proof we came from deep link)
+function hasLaunchReadyParam(): boolean {
+  if (typeof window === 'undefined') return false;
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('launch_ready') === '1';
+}
+
+// Check if we have a deep-link intent
+// IMPORTANT: Only trust sessionStorage if we ALSO have Phantom provider OR URL params
+// This prevents stale sessionStorage from causing issues in non-Phantom browsers
 function hasDeepLinkIntent(): boolean {
   if (typeof window === 'undefined') return false;
   
-  // Check URL params first
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasLaunchReady = urlParams.get('launch_ready') === '1';
+  // URL params are definitive proof
+  if (hasLaunchReadyParam()) {
+    return true;
+  }
   
-  // Also check sessionStorage (persists after URL cleanup)
+  // SessionStorage is only valid if we have Phantom provider
+  // (meaning we're actually in Phantom's browser)
   const hasSessionFlag = sessionStorage.getItem(PHANTOM_DEEP_LINK_KEY) === 'true';
+  if (hasSessionFlag && hasPhantomProvider()) {
+    return true;
+  }
   
-  return hasLaunchReady || hasSessionFlag;
+  // If we have sessionStorage flag but NO Phantom provider, clear it (stale flag)
+  if (hasSessionFlag && !hasPhantomProvider()) {
+    console.log('[WalletConnectButton] Clearing stale sessionStorage flag (not in Phantom)');
+    sessionStorage.removeItem(PHANTOM_DEEP_LINK_KEY);
+  }
+  
+  return false;
 }
 
 // Clear the deep-link intent after successful connection
@@ -70,23 +90,30 @@ function clearDeepLinkIntent(): void {
   }
 }
 
-// Check if we're inside Phantom's in-app browser (more robust detection)
+// Check if we're inside Phantom's in-app browser (strict detection)
 function isInsidePhantomBrowser(): boolean {
   if (typeof window === 'undefined') return false;
   
-  // Check provider directly
+  // Check provider directly - most reliable indicator
   const hasPhantom = hasPhantomProvider();
   
   // Check user agent for Phantom
   const userAgent = navigator.userAgent.toLowerCase();
   const isPhantomApp = userAgent.includes('phantom');
   
-  // Check if we have deep-link intent (URL params or sessionStorage)
-  const hasIntent = hasDeepLinkIntent();
+  // Check URL params (definitive proof we came from deep link)
+  const hasUrlParam = hasLaunchReadyParam();
   
-  console.log('[WalletConnectButton] isInsidePhantomBrowser check:', { hasPhantom, isPhantomApp, hasIntent, isMobile: isMobileBrowser() });
+  console.log('[WalletConnectButton] isInsidePhantomBrowser check:', { 
+    hasPhantom, 
+    isPhantomApp, 
+    hasUrlParam, 
+    isMobile: isMobileBrowser() 
+  });
   
-  return hasPhantom || isPhantomApp || (isMobileBrowser() && hasIntent);
+  // Only return true if we have actual evidence of being in Phantom
+  // DO NOT rely solely on sessionStorage - that can persist incorrectly
+  return hasPhantom || isPhantomApp || hasUrlParam;
 }
 
 // Check if we came from a Phantom deep link (form data in URL or sessionStorage)
@@ -149,13 +176,27 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   const providerCheckCountRef = useRef(0);
   
   // IMPORTANT: Store deep-link flag in state on mount so it persists even after URL cleanup
-  // Also save to sessionStorage when we detect launch_ready=1, so it survives URL cleanup
+  // Only save to sessionStorage if we have definitive proof (URL params)
   const [fromDeepLink] = useState(() => {
+    // First, clear any stale sessionStorage flags if we're NOT in Phantom
+    // This prevents false positives on mobile browsers
+    const hasPhantom = hasPhantomProvider();
+    const hasUrlParam = hasLaunchReadyParam();
+    const hasSessionFlag = typeof window !== 'undefined' && 
+      sessionStorage.getItem(PHANTOM_DEEP_LINK_KEY) === 'true';
+    
+    // If we have sessionStorage but no Phantom provider and no URL params, it's stale
+    if (hasSessionFlag && !hasPhantom && !hasUrlParam) {
+      console.log('[WalletConnectButton] Clearing stale sessionStorage on mount');
+      sessionStorage.removeItem(PHANTOM_DEEP_LINK_KEY);
+      return false;
+    }
+    
     const hasIntent = cameFromPhantomDeepLink();
-    if (hasIntent) {
-      // Save to sessionStorage in case URL gets cleaned before other components mount
+    if (hasIntent && hasUrlParam) {
+      // Only save to sessionStorage if we have URL params (definitive proof)
       saveDeepLinkIntent();
-      console.log('[WalletConnectButton] Detected deep-link intent on mount, saved to sessionStorage');
+      console.log('[WalletConnectButton] Detected deep-link from URL params, saved to sessionStorage');
     }
     return hasIntent;
   });
