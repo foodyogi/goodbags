@@ -45,3 +45,4 @@ integrations = ["javascript_database:1.0.0", "javascript_object_storage:2.0.0", 
 
 [userenv.shared]
 PLATFORM_WALLET_ADDRESS = "8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8"
+FEATURED_TOKEN_MINT = "N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS"

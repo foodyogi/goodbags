@@ -4,13 +4,28 @@ import bs58Pkg from "bs58";
 // Handle ESM/CommonJS interop for bs58
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import { storage } from "./storage";
-import { FEATURED_IMPACT_PROJECT } from "@shared/schema";
 
 const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
 const connection = new Connection(SOLANA_RPC_URL, "confirmed");
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
-const FYI_MINT = FEATURED_IMPACT_PROJECT.tokenMint;
+
+// Validate and get FYI token mint from environment
+function getFyiMint(): string {
+  const mint = process.env.FEATURED_TOKEN_MINT;
+  if (!mint) {
+    console.warn("FEATURED_TOKEN_MINT not configured - buyback disabled");
+    return "";
+  }
+  // Basic Solana address validation (base58, 32-44 chars)
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) {
+    console.error("Invalid FEATURED_TOKEN_MINT format - buyback disabled");
+    return "";
+  }
+  return mint;
+}
+
+const FYI_MINT = getFyiMint();
 
 const MIN_BUYBACK_SOL = 0.01;
 const SLIPPAGE_BPS = 100;
@@ -79,6 +94,14 @@ export async function executeBuyback(solAmount?: number): Promise<{
   fyiReceived?: number;
   error?: string;
 }> {
+  // Fail fast if token mint not configured
+  if (!FYI_MINT) {
+    return {
+      success: false,
+      error: "FEATURED_TOKEN_MINT not configured - buyback disabled",
+    };
+  }
+
   try {
     const keypair = getBuybackKeypair();
     

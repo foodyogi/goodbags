@@ -337,6 +337,23 @@ export async function registerRoutes(
     }
   });
 
+  // === CONFIG ENDPOINTS ===
+  
+  // Get featured project config (token mint loaded from env var)
+  app.get("/api/config/featured-project", (req, res) => {
+    const tokenMint = process.env.FEATURED_TOKEN_MINT;
+    if (!tokenMint) {
+      return res.status(500).json({ error: "Featured project not configured" });
+    }
+    res.json({
+      name: "Food Yoga International",
+      tokenMint,
+      bagsUrl: `https://bags.fm/${tokenMint}`,
+      description: "Supporting plant-based meals for the hungry worldwide",
+      category: "hunger",
+    });
+  });
+
   // === CHARITY ENDPOINTS ===
   
   // Get all verified charities

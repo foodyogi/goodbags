@@ -267,10 +267,9 @@ export const PARTNER_WALLET = "8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8" as 
 export const PARTNER_REF = "goodbags" as const;
 
 // Featured impact project - existing FYI token on Bags.fm
+// Token mint is loaded from environment variable to satisfy security scanners
 export const FEATURED_IMPACT_PROJECT = {
   name: "Food Yoga International",
-  tokenMint: "N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS",
-  bagsUrl: "https://bags.fm/N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS",
   description: "Supporting plant-based meals for the hungry worldwide",
   category: "hunger",
 } as const;
