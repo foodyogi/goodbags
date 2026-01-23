@@ -133,6 +133,9 @@ export function SolanaProvider({ children }: SolanaProviderProps) {
     return rpcUrl || "https://api.mainnet-beta.solana.com";
   }, []);
 
+  // Always include all wallet adapters
+  // The redirect issue is NOT caused by adapter initialization
+  // but by other code that triggers wallet connection
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
