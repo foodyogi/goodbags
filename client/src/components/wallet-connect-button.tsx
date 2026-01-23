@@ -187,8 +187,10 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     e.preventDefault();
     e.stopPropagation();
     
-    // On mobile without provider, open in Phantom with form data
-    if (isMobile && !providerReady) {
+    // On mobile, if we're NOT inside Phantom's browser, always use deep link
+    // This is more reliable than checking providerReady which can be affected by other wallets like Brave
+    if (isMobile && !isInPhantom) {
+      console.log('[WalletConnectButton] Mobile browser detected without Phantom - opening deep link');
       openInPhantomApp(e, targetRedirectPath, formData);
       return;
     }
@@ -196,11 +198,11 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     // Mark that user explicitly clicked connect
     setUserClickedConnect(true);
     
-    // Open the wallet modal (this is safe - user explicitly clicked)
+    // Open the wallet modal (on desktop or inside Phantom browser)
     setVisible(true);
   };
 
-  console.log('[WalletConnectButton] isMobile:', isMobile, 'providerReady:', providerReady, 'connected:', connected, 'fromDeepLink:', fromDeepLink, 'waitingForProvider:', waitingForProvider);
+  console.log('[WalletConnectButton] isMobile:', isMobile, 'isInPhantom:', isInPhantom, 'providerReady:', providerReady, 'connected:', connected, 'fromDeepLink:', fromDeepLink);
 
   // Connected state - show wallet address with dropdown
   if (connected && publicKey) {
@@ -259,8 +261,10 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   }
 
   // Not connected - show connect button
-  // On mobile without provider: opens Phantom
-  // On desktop or with provider: opens wallet modal
+  // On mobile (not in Phantom): shows "Open in Phantom" to use deep link
+  // On desktop or inside Phantom: shows "Connect Wallet" for modal
+  const showDeepLinkButton = isMobile && !isInPhantom;
+  
   return (
     <Button
       type="button"
@@ -268,7 +272,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
       className={className}
       data-testid={testId}
     >
-      {isMobile && !providerReady ? (
+      {showDeepLinkButton ? (
         <>
           <ExternalLink className="h-4 w-4 mr-2" />
           Open in Phantom
