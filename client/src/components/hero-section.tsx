@@ -25,11 +25,11 @@ export function HeroSection() {
       <div className="relative mx-auto max-w-7xl px-4 md:px-8">
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
           <div className="flex flex-col gap-4 md:gap-6">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-2">
               <img 
                 src={goodbagsLogo} 
                 alt="GoodBags Logo" 
-                className="h-16 w-16 md:h-20 md:w-20 rounded-xl object-contain"
+                className="h-24 w-24 md:h-40 md:w-40 rounded-2xl object-contain"
               />
               <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
                 <Heart className="h-4 w-4 text-pink-500" />
