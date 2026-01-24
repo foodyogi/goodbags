@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Rocket, Heart, Coins, TrendingUp, Shield } from "lucide-react";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 import charitableDogCoin from "@assets/generated_images/charitable_dog_meme_coin.png";
 import dogFeedingCoin from "@assets/generated_images/dog_feeding_charity_coin.png";
@@ -26,11 +26,7 @@ export function HeroSection() {
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
           <div className="flex flex-col gap-4 md:gap-6">
             <div className="flex items-center gap-4 mb-2">
-              <img 
-                src={goodbagsLogo} 
-                alt="GoodBags Logo" 
-                className="h-24 w-24 md:h-40 md:w-40 rounded-2xl object-contain"
-              />
+              <ThemedLogo className="h-24 w-24 md:h-40 md:w-40 rounded-2xl object-contain" />
               <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
                 <Heart className="h-4 w-4 text-pink-500" />
                 <span className="text-sm font-medium text-pink-600 dark:text-pink-400">

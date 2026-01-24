@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { FyiCoin } from "@/components/fyi-coin";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 interface BuybackStats {
   totalSolSpent: string;
@@ -78,11 +78,7 @@ export default function BuybackPage() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img 
-              src={goodbagsLogo} 
-              alt="GoodBags Logo" 
-              className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain"
-            />
+            <ThemedLogo className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain" />
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1.5 mb-4" data-testid="badge-buyback">
             <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />

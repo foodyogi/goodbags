@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles, Mail } from "lucide-react";
 import { SiSolana, SiX } from "react-icons/si";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 export function Footer() {
   return (
@@ -10,11 +10,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <img 
-                src={goodbagsLogo} 
-                alt="GoodBags Logo" 
-                className="h-8 w-8 rounded-md object-contain"
-              />
+              <ThemedLogo className="h-8 w-8 rounded-md object-contain" />
               <span className="font-semibold text-foreground">GoodBags</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">

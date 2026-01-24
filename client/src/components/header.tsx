@@ -4,7 +4,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 export function Header() {
   const [location] = useLocation();
@@ -23,11 +23,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         <Link href="/" className="flex items-center gap-2 group" data-testid="link-home">
-          <img 
-            src={goodbagsLogo} 
-            alt="GoodBags Logo" 
-            className="h-10 w-10 rounded-lg object-contain"
-          />
+          <ThemedLogo className="h-10 w-10 rounded-lg object-contain" />
           <div className="flex flex-col">
             <span className="text-lg font-bold leading-tight">GoodBags</span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">

@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Charity } from "@shared/schema";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 const categoryIcons: Record<string, React.ElementType> = {
   hunger: Heart,
@@ -256,11 +256,7 @@ export default function CharitiesPage() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img 
-              src={goodbagsLogo} 
-              alt="GoodBags Logo" 
-              className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain"
-            />
+            <ThemedLogo className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain" />
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-1.5 mb-4" data-testid="badge-verified-charities">
             <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />

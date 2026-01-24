@@ -22,7 +22,7 @@ import {
   ArrowRight,
   Sparkles
 } from "lucide-react";
-import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
+import { ThemedLogo } from "@/components/themed-logo";
 
 const coreFeatures = [
   {
@@ -211,11 +211,7 @@ export default function FeaturesPage() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img 
-              src={goodbagsLogo} 
-              alt="GoodBags Logo" 
-              className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain"
-            />
+            <ThemedLogo className="h-28 w-28 md:h-40 md:w-40 rounded-2xl object-contain" />
           </div>
           <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
             <Sparkles className="h-3 w-3 mr-1" />
