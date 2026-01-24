@@ -8,6 +8,42 @@ import { useLocation } from 'wouter';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 const WALLET_REDIRECT_KEY = 'goodbags_wallet_redirect_path';
+const WALLET_LOCAL_STORAGE_KEY = 'walletName';
+
+// CRITICAL: Clear stale wallet localStorage on mobile to prevent redirect to phantom.app
+// This MUST run synchronously before React renders to prevent the wallet adapter
+// from reading the stale value and triggering a redirect
+// The redirect happens because:
+// 1. User previously selected Phantom wallet (stored in localStorage as "walletName")
+// 2. On page load, WalletProvider reads this and instantiates PhantomWalletAdapter
+// 3. PhantomWalletAdapter.connect() is called (by various triggers)
+// 4. If Phantom is "Loadable" (not installed), it redirects to https://phantom.app
+function preventMobileWalletRedirect(): void {
+  if (typeof window === 'undefined') return;
+  
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (!isMobile) return;
+  
+  // Check if Phantom is actually available (installed)
+  const hasPhantom = !!(window as any).phantom?.solana || !!(window as any).solana?.isPhantom;
+  
+  // Check if we have URL evidence that we came from a deep link (intentional)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasLaunchReady = urlParams.get('launch_ready') === '1';
+  
+  // If we're on mobile, Phantom is NOT installed, and we don't have deep link evidence,
+  // clear the wallet localStorage to prevent any auto-connection attempts
+  if (!hasPhantom && !hasLaunchReady) {
+    const storedWallet = localStorage.getItem(WALLET_LOCAL_STORAGE_KEY);
+    if (storedWallet) {
+      console.log('[SolanaProvider] Clearing stale wallet localStorage to prevent redirect:', storedWallet);
+      localStorage.removeItem(WALLET_LOCAL_STORAGE_KEY);
+    }
+  }
+}
+
+// Run this synchronously on module load (before React renders)
+preventMobileWalletRedirect();
 
 export function saveCurrentPath() {
   if (typeof window !== 'undefined') {
@@ -139,6 +175,12 @@ interface SolanaProviderProps {
 }
 
 export function SolanaProvider({ children }: SolanaProviderProps) {
+  // Run the redirect prevention check again on component mount
+  // This catches cases where the module-level check might have missed
+  useEffect(() => {
+    preventMobileWalletRedirect();
+  }, []);
+
   // Use mainnet for production (Bags.fm runs on mainnet)
   // Can be overridden via VITE_SOLANA_RPC_URL env var
   const endpoint = useMemo(() => {
