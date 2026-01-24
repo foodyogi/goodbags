@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SolanaProvider } from "@/lib/solana";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { VerificationNotice } from "@/components/verification-notice";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import ImpactPage from "@/pages/impact";
@@ -77,6 +78,7 @@ function App() {
         <SolanaProvider>
           <div className="flex min-h-screen flex-col">
             <Header />
+            <VerificationNotice />
             <main className="flex-1">
               <MainRouter />
             </main>
