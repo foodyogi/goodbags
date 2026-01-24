@@ -42,16 +42,26 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
   // On initial page load, check for redirect from URL params (Phantom deep link) or localStorage
   // URL params are used when coming from Phantom's browser (different browser context)
   // localStorage is used when staying in the same browser (desktop wallet flows)
+  // IMPORTANT: On mobile, clear stale localStorage to prevent unwanted behavior on refresh
   useEffect(() => {
     if (initialCheckDoneRef.current) return;
     initialCheckDoneRef.current = true;
 
     const urlParams = new URLSearchParams(window.location.search);
     const urlRedirectPath = urlParams.get('wallet_redirect');
+    const hasLaunchReady = urlParams.get('launch_ready') === '1';
     const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
     const currentPath = window.location.pathname;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     console.log('[WalletRedirect] Initial check - urlRedirectPath:', urlRedirectPath, 'savedPath:', savedPath, 'currentPath:', currentPath);
+    
+    // On mobile without URL evidence, clear any stale localStorage to prevent issues on refresh
+    if (isMobile && !hasLaunchReady && !urlRedirectPath && savedPath) {
+      console.log('[WalletRedirect] Clearing stale localStorage on mobile refresh');
+      localStorage.removeItem(WALLET_REDIRECT_KEY);
+      return;
+    }
     
     // Priority: URL parameter (from Phantom deep link) > localStorage
     const redirectPath = urlRedirectPath || savedPath;
@@ -73,20 +83,24 @@ function WalletRouteRestorer({ children }: { children: React.ReactNode }) {
   // Handle wallet browser scenario (e.g., Phantom's built-in browser)
   // If wallet is connected and we're on homepage, redirect to saved path (or /launch as fallback)
   // This covers the case where Phantom opens our app in its browser with wallet pre-connected
+  // IMPORTANT: Only do this if we have explicit URL params, not just localStorage
   useEffect(() => {
     if (walletCheckDoneRef.current) return;
     
     const currentPath = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasLaunchReady = urlParams.get('launch_ready') === '1';
     
-    // Only trigger if wallet is connected and we're on homepage
-    if (connected && currentPath === '/' && !hasRestoredRef.current) {
+    // Only trigger if wallet is connected, we're on homepage, AND we have URL evidence
+    // This prevents unwanted redirects on regular page loads
+    if (connected && currentPath === '/' && !hasRestoredRef.current && hasLaunchReady) {
       walletCheckDoneRef.current = true;
       
       // Use saved redirect path from localStorage, fallback to /launch
       const savedPath = localStorage.getItem(WALLET_REDIRECT_KEY);
       const targetPath = savedPath && savedPath !== '/' ? savedPath : '/launch';
       
-      console.log('[WalletRedirect] Wallet connected on homepage, redirecting to:', targetPath);
+      console.log('[WalletRedirect] Wallet connected on homepage with launch_ready, redirecting to:', targetPath);
       localStorage.removeItem(WALLET_REDIRECT_KEY);
       hasRestoredRef.current = true;
       setLocation(targetPath);

@@ -211,9 +211,17 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   const shouldAutoConnect = fromDeepLink || isInPhantom;
   
   // Poll for Phantom provider (handles timing issues where provider injects after page load)
+  // IMPORTANT: Only poll on mobile if we have strong evidence of being in Phantom browser
   useEffect(() => {
     // Only poll if we should auto-connect and don't have provider yet
     if (!shouldAutoConnect || providerReady || connected) return;
+    
+    // On mobile, only poll if we have URL param evidence (definitive proof of deep link)
+    // This prevents polling/waiting on regular mobile browsers
+    if (isMobile && !hasLaunchReadyParam()) {
+      console.log('[WalletConnectButton] Skipping provider poll: mobile without URL params');
+      return;
+    }
     
     setWaitingForProvider(true);
     console.log('[WalletConnectButton] Waiting for Phantom provider to inject...');
@@ -241,11 +249,20 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   }, [shouldAutoConnect, providerReady, connected]);
 
   // Auto-connect when provider becomes available and we should auto-connect
+  // IMPORTANT: Only auto-connect if we're actually inside Phantom's browser (has provider)
+  // Never try to auto-connect on regular mobile browsers - this can cause unwanted redirects
   useEffect(() => {
     if (autoConnectAttemptedRef.current) return;
     if (connected || connecting) return;
     if (!providerReady) return;
     if (!shouldAutoConnect) return;
+    
+    // Extra safety: on mobile, only auto-connect if we actually have Phantom provider
+    // This prevents any redirect attempts on regular mobile browsers
+    if (isMobile && !hasPhantomProvider()) {
+      console.log('[WalletConnectButton] Skipping auto-connect: mobile without Phantom provider');
+      return;
+    }
     
     autoConnectAttemptedRef.current = true;
     console.log('[WalletConnectButton] Provider ready, initiating auto-connect...');
