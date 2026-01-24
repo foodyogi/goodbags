@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Rocket, Heart, Coins, TrendingUp, Shield } from "lucide-react";
+import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
 
 import charitableDogCoin from "@assets/generated_images/charitable_dog_meme_coin.png";
 import dogFeedingCoin from "@assets/generated_images/dog_feeding_charity_coin.png";
@@ -24,11 +25,18 @@ export function HeroSection() {
       <div className="relative mx-auto max-w-7xl px-4 md:px-8">
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
           <div className="flex flex-col gap-4 md:gap-6">
-            <div className="inline-flex items-center gap-2 w-fit rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
-              <Heart className="h-4 w-4 text-pink-500" />
-              <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
-                1% of every trade goes to charity
-              </span>
+            <div className="flex items-center gap-3 mb-2">
+              <img 
+                src={goodbagsLogo} 
+                alt="GoodBags Logo" 
+                className="h-16 w-16 md:h-20 md:w-20 rounded-xl object-contain"
+              />
+              <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
+                <Heart className="h-4 w-4 text-pink-500" />
+                <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
+                  1% of every trade goes to charity
+                </span>
+              </div>
             </div>
             
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">

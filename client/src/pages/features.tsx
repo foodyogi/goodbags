@@ -22,6 +22,7 @@ import {
   ArrowRight,
   Sparkles
 } from "lucide-react";
+import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
 
 const coreFeatures = [
   {
@@ -209,6 +210,13 @@ export default function FeaturesPage() {
     <div className="py-12 md:py-16">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={goodbagsLogo} 
+              alt="GoodBags Logo" 
+              className="h-20 w-20 rounded-xl object-contain"
+            />
+          </div>
           <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
             <Sparkles className="h-3 w-3 mr-1" />
             Platform Features

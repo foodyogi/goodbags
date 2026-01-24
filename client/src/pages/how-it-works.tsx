@@ -14,6 +14,7 @@ import {
   FileCheck,
   ArrowRight
 } from "lucide-react";
+import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
 
 const steps = [
   {
@@ -74,6 +75,13 @@ export default function HowItWorksPage() {
     <div className="py-12 md:py-16">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-12">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={goodbagsLogo} 
+              alt="GoodBags Logo" 
+              className="h-20 w-20 rounded-xl object-contain"
+            />
+          </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 mb-4" data-testid="badge-how-it-works">
             <Shield className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">Trust & Security</span>
