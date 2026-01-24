@@ -9,8 +9,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 md:px-8 py-8">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <ThemedLogo className="h-8 w-8 rounded-md object-contain" />
+            <div className="flex items-center gap-3 mb-3">
+              <ThemedLogo className="h-16 w-16 rounded-xl object-contain" />
               <span className="font-semibold text-foreground">GoodBags</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
