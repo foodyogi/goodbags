@@ -189,16 +189,34 @@ export function SolanaProvider({ children }: SolanaProviderProps) {
     return rpcUrl || "https://api.mainnet-beta.solana.com";
   }, []);
 
-  // Always include all wallet adapters
-  // The redirect issue is NOT caused by adapter initialization
-  // but by other code that triggers wallet connection
-  const wallets = useMemo(
-    () => [
+  // Conditionally include wallet adapters
+  // On mobile, only include Phantom adapter if Phantom is actually installed
+  // This prevents the Phantom adapter from setting readyState to "Loadable" on iOS
+  // which causes redirects to phantom.app when connect() is called
+  const wallets = useMemo(() => {
+    const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const hasPhantom = typeof window !== 'undefined' && 
+      (!!(window as any).phantom?.solana || !!(window as any).solana?.isPhantom);
+    const hasLaunchReady = typeof window !== 'undefined' && 
+      new URLSearchParams(window.location.search).get('launch_ready') === '1';
+    
+    console.log('[SolanaProvider] Wallet adapter config - isMobile:', isMobile, 'hasPhantom:', hasPhantom, 'hasLaunchReady:', hasLaunchReady);
+    
+    // On mobile without Phantom installed and without deep link evidence,
+    // DON'T include PhantomWalletAdapter to prevent redirect behavior
+    if (isMobile && !hasPhantom && !hasLaunchReady) {
+      console.log('[SolanaProvider] Mobile without Phantom - excluding Phantom adapter to prevent redirects');
+      return [
+        new SolflareWalletAdapter(),
+      ];
+    }
+    
+    // On desktop or when Phantom is installed, include all adapters
+    return [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-    ],
-    []
-  );
+    ];
+  }, []);
 
   // Disable autoConnect entirely to prevent unwanted redirects
   // Users will manually click to connect their wallet
