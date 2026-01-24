@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles } from "lucide-react";
-import { SiSolana } from "react-icons/si";
+import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles, Mail } from "lucide-react";
+import { SiSolana, SiX } from "react-icons/si";
+import goodbagsLogo from "@assets/goodbagsLOGO_1769291918959.png";
 
 export function Footer() {
   return (
@@ -8,12 +9,37 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 md:px-8 py-8">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <div className="flex items-center gap-2 text-sm mb-3">
+            <div className="flex items-center gap-2 mb-3">
+              <img 
+                src={goodbagsLogo} 
+                alt="GoodBags Logo" 
+                className="h-8 w-8 rounded-md object-contain"
+              />
               <span className="font-semibold text-foreground">GoodBags</span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-3">
               Launch memecoins that make a difference. Every trade supports verified charities.
             </p>
+            <div className="flex flex-col gap-1.5">
+              <a
+                href="mailto:contact@master22solutions.com"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-email"
+              >
+                <Mail className="h-3 w-3" />
+                contact@master22solutions.com
+              </a>
+              <a
+                href="https://x.com/goodbagstech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-x"
+              >
+                <SiX className="h-3 w-3" />
+                @goodbagstech
+              </a>
+            </div>
           </div>
 
           <div>
@@ -109,13 +135,18 @@ export function Footer() {
 
         <div className="mt-8 pt-6 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Built with</span>
-            <Heart className="h-3 w-3 text-pink-500" />
-            <span>for social impact</span>
+            <span>&copy; {new Date().getFullYear()} Master 22 Solutions. All rights reserved.</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Shield className="h-3 w-3 text-green-500" />
-            <span>All transactions verifiable on-chain</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Built with</span>
+              <Heart className="h-3 w-3 text-pink-500" />
+              <span>for social impact</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Shield className="h-3 w-3 text-green-500" />
+              <span>On-chain verified</span>
+            </div>
           </div>
         </div>
       </div>
