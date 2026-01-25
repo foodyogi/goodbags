@@ -1,14 +1,14 @@
-// CRITICAL: Prevent mobile redirect to phantom.app BEFORE any other code runs
+// CRITICAL: Prevent unwanted wallet redirects BEFORE any other code runs
 // This MUST be the very first thing that executes
-// The issue: Solana wallet adapter stores "walletName" in localStorage
-// On iOS, Phantom adapter sets readyState to "Loadable" and redirects when connect() is called
-(function preventMobileWalletRedirectImmediate() {
+// Issues addressed:
+// 1. On iOS, Phantom adapter sets readyState to "Loadable" and redirects to phantom.app
+// 2. Brave browser auto-opens brave://wallet/crypto/unlock when it detects Solana code
+(function preventWalletRedirectImmediate() {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  console.log('[polyfills] Running redirect prevention, isMobile:', isMobile);
-  
-  if (!isMobile) return;
+  const isBrave = !!(navigator as any).brave;
+  console.log('[polyfills] Running redirect prevention, isMobile:', isMobile, 'isBrave:', isBrave);
   
   // Check if Phantom is actually installed
   const hasPhantom = !!(window as any).phantom?.solana || !!(window as any).solana?.isPhantom;
@@ -17,13 +17,16 @@
   const urlParams = new URLSearchParams(window.location.search);
   const hasLaunchReady = urlParams.get('launch_ready') === '1';
   
-  console.log('[polyfills] Mobile check - hasPhantom:', hasPhantom, 'hasLaunchReady:', hasLaunchReady);
+  console.log('[polyfills] Wallet check - hasPhantom:', hasPhantom, 'hasLaunchReady:', hasLaunchReady);
   console.log('[polyfills] Current walletName in localStorage:', localStorage.getItem('walletName'));
   
-  // If Phantom is NOT installed and we don't have deep link evidence,
-  // clear ALL wallet-related localStorage to prevent redirect
-  if (!hasPhantom && !hasLaunchReady) {
-    console.log('[polyfills] Activating redirect protection...');
+  // Determine if we need redirect protection
+  // - On mobile without Phantom installed (prevents phantom.app redirects)
+  // - On Brave browser (prevents brave://wallet redirects)
+  const needsProtection = (isMobile && !hasPhantom && !hasLaunchReady) || isBrave;
+  
+  if (needsProtection) {
+    console.log('[polyfills] Activating redirect protection (mobile:', isMobile, 'brave:', isBrave, ')...');
     const storedWallet = localStorage.getItem('walletName');
     if (storedWallet) {
       console.log('[polyfills] EARLY: Clearing stale wallet localStorage:', storedWallet);
@@ -38,39 +41,23 @@
       }
     });
     
-    // AGGRESSIVE FIX: Intercept any redirect to phantom.app
-    // This catches redirects that might happen from the wallet adapter
+    // AGGRESSIVE FIX: Intercept any redirect to wallet URLs
+    // This catches redirects that might happen from wallet adapters
     // even after we've cleared localStorage
-    const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
     let blockingRedirects = true;
     
-    // Monitor location.href changes for phantom.app redirects
-    const originalHref = window.location.href;
-    Object.defineProperty(window, '__phantomRedirectBlocked', { value: false, writable: true });
+    // Helper to check if URL should be blocked
+    const shouldBlockUrl = (url: string): boolean => {
+      const blockedPatterns = [
+        'phantom.app',
+        'phantom://',
+        'brave://wallet',
+        'brave://crypto',
+      ];
+      return blockedPatterns.some(pattern => url.includes(pattern));
+    };
     
-    // Create a proxy to intercept location.href assignments
-    const locationProxy = new Proxy(window.location, {
-      set(target, prop, value) {
-        if (prop === 'href' && typeof value === 'string' && blockingRedirects) {
-          // Block redirects to phantom.app unless user-initiated
-          if (value.includes('phantom.app') || value.includes('phantom://')) {
-            console.log('[polyfills] BLOCKED automatic redirect to:', value);
-            (window as any).__phantomRedirectBlocked = true;
-            return true; // Pretend we set it, but don't actually redirect
-          }
-        }
-        // Allow other redirects
-        (target as any)[prop] = value;
-        return true;
-      },
-      get(target, prop) {
-        const value = (target as any)[prop];
-        if (typeof value === 'function') {
-          return value.bind(target);
-        }
-        return value;
-      }
-    });
+    Object.defineProperty(window, '__walletRedirectBlocked', { value: false, writable: true });
     
     // We can't fully replace window.location, but we can intercept href assignments
     // by patching the original location object
@@ -81,12 +68,10 @@
         Object.defineProperty(window.location, 'href', {
           get: originalHrefDescriptor.get,
           set: function(value) {
-            if (typeof value === 'string' && blockingRedirects) {
-              if (value.includes('phantom.app') || value.includes('phantom://')) {
-                console.log('[polyfills] BLOCKED redirect to:', value);
-                (window as any).__phantomRedirectBlocked = true;
-                return; // Don't redirect
-              }
+            if (typeof value === 'string' && blockingRedirects && shouldBlockUrl(value)) {
+              console.log('[polyfills] BLOCKED redirect to:', value);
+              (window as any).__walletRedirectBlocked = true;
+              return; // Don't redirect
             }
             originalSet.call(this, value);
           },
@@ -97,6 +82,17 @@
     } catch (e) {
       console.log('[polyfills] Could not intercept location.href:', e);
     }
+    
+    // Also intercept window.open for new tab redirects (like Brave does)
+    const originalWindowOpen = window.open;
+    window.open = function(url?: string | URL, target?: string, features?: string) {
+      if (url && typeof url === 'string' && blockingRedirects && shouldBlockUrl(url)) {
+        console.log('[polyfills] BLOCKED window.open to:', url);
+        (window as any).__walletRedirectBlocked = true;
+        return null; // Don't open the new window
+      }
+      return originalWindowOpen.call(this, url, target, features);
+    };
     
     // Allow user-initiated redirects after a short delay
     setTimeout(() => {
