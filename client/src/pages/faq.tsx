@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -159,6 +160,10 @@ const faqCategories = [
 ];
 
 export default function FAQPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="py-12 md:py-16">
       <div className="mx-auto max-w-4xl px-4 md:px-8">

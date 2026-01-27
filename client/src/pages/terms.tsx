@@ -1,9 +1,14 @@
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Shield, AlertTriangle } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
 
 export default function TermsPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="py-12 md:py-16">
       <div className="mx-auto max-w-4xl px-4 md:px-8">
