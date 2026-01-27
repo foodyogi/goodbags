@@ -20,6 +20,10 @@ import BuybackPage from "@/pages/buyback";
 import HowItWorksPage from "@/pages/how-it-works";
 import FeaturesPage from "@/pages/features";
 import FoodYogaInternational from "@/pages/food-yoga-international";
+import HelpPage from "@/pages/help";
+import FAQPage from "@/pages/faq";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
 import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
 import TokenDetailPage from "@/pages/token-detail";
@@ -39,6 +43,10 @@ function MainRouter() {
       <Route path="/buyback" component={BuybackPage} />
       <Route path="/how-it-works" component={HowItWorksPage} />
       <Route path="/features" component={FeaturesPage} />
+      <Route path="/help" component={HelpPage} />
+      <Route path="/faq" component={FAQPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route path="/ffl" component={FoodYogaInternational} />
       <Route path="/food-yoga-international" component={FoodYogaInternational} />
       <Route path="/admin/charities" component={AdminCharities} />

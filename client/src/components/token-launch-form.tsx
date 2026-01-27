@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -800,14 +800,30 @@ export function TokenLaunchForm() {
             <FormField
               control={form.control}
               name="name"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Token Name</FormLabel>
+                  <FormLabel className="flex items-center justify-between">
+                    <span>Token Name</span>
+                    {field.value.length > 0 && (
+                      field.value.length >= 1 && field.value.length <= 32 ? (
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-3 w-3" />
+                          Valid
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-destructive">
+                          <XCircle className="h-3 w-3" />
+                          Too long
+                        </span>
+                      )
+                    )}
+                  </FormLabel>
                   <div className="relative">
                     <FormControl>
                       <Input 
                         placeholder="e.g. Doge Moon" 
                         {...field} 
+                        className={field.value.length > 0 ? (field.value.length <= 32 ? "border-green-500/50 focus-visible:ring-green-500/30" : "border-destructive") : ""}
                         data-testid="input-token-name"
                       />
                     </FormControl>
@@ -815,8 +831,9 @@ export function TokenLaunchForm() {
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
-                  <FormDescription>
-                    {field.value.length}/32 characters
+                  <FormDescription className="flex items-center justify-between">
+                    <span>Required, 1-32 characters</span>
+                    <span className={field.value.length > 32 ? "text-destructive font-medium" : ""}>{field.value.length}/32</span>
                   </FormDescription>
                   
                   {/* Duplicate name warning */}
@@ -858,20 +875,36 @@ export function TokenLaunchForm() {
             <FormField
               control={form.control}
               name="symbol"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Ticker</FormLabel>
+                  <FormLabel className="flex items-center justify-between">
+                    <span>Ticker</span>
+                    {field.value.length > 0 && (
+                      field.value.length >= 1 && field.value.length <= 10 ? (
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-3 w-3" />
+                          Valid
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-destructive">
+                          <XCircle className="h-3 w-3" />
+                          Too long
+                        </span>
+                      )
+                    )}
+                  </FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="e.g. DMOON" 
-                      className="uppercase font-mono"
+                      className={`uppercase font-mono ${field.value.length > 0 ? (field.value.length <= 10 ? "border-green-500/50 focus-visible:ring-green-500/30" : "border-destructive") : ""}`}
                       {...field}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       data-testid="input-token-symbol"
                     />
                   </FormControl>
-                  <FormDescription>
-                    {field.value.length}/10 characters
+                  <FormDescription className="flex items-center justify-between">
+                    <span>Required, 1-10 characters, uppercase</span>
+                    <span className={field.value.length > 10 ? "text-destructive font-medium" : ""}>{field.value.length}/10</span>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -881,20 +914,29 @@ export function TokenLaunchForm() {
             <FormField
               control={form.control}
               name="description"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Description (optional)</FormLabel>
+                  <FormLabel className="flex items-center justify-between">
+                    <span>Description (optional)</span>
+                    {(field.value || "").length > 500 && (
+                      <span className="flex items-center gap-1 text-xs text-destructive">
+                        <XCircle className="h-3 w-3" />
+                        Too long
+                      </span>
+                    )}
+                  </FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Tell the world about your token..."
-                      className="resize-none"
+                      className={`resize-none ${(field.value || "").length > 500 ? "border-destructive" : ""}`}
                       rows={3}
                       {...field}
                       data-testid="input-token-description"
                     />
                   </FormControl>
-                  <FormDescription>
-                    {(field.value || "").length}/500 characters
+                  <FormDescription className="flex items-center justify-between">
+                    <span>Brief description of your token</span>
+                    <span className={(field.value || "").length > 500 ? "text-destructive font-medium" : ""}>{(field.value || "").length}/500</span>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -1003,11 +1045,37 @@ export function TokenLaunchForm() {
             <FormField
               control={form.control}
               name="initialBuyAmount"
-              render={({ field }) => (
+              render={({ field, fieldState }) => {
+                const numValue = parseFloat(field.value || "0");
+                const isValid = !isNaN(numValue) && numValue >= 0;
+                const hasValue = field.value && field.value !== "0" && field.value !== "";
+                return (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-primary" />
-                    Initial Buy Amount (SOL)
+                  <FormLabel className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-primary" />
+                      Initial Buy Amount (SOL)
+                    </span>
+                    {hasValue && (
+                      isValid ? (
+                        numValue >= 0.1 ? (
+                          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                            <CheckCircle className="h-3 w-3" />
+                            Good amount
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="h-3 w-3" />
+                            Low liquidity
+                          </span>
+                        )
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-destructive">
+                          <XCircle className="h-3 w-3" />
+                          Invalid
+                        </span>
+                      )
+                    )}
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -1017,6 +1085,7 @@ export function TokenLaunchForm() {
                         min="0"
                         placeholder="0.1" 
                         {...field}
+                        className={hasValue && isValid && numValue >= 0.1 ? "border-green-500/50 focus-visible:ring-green-500/30" : ""}
                         data-testid="input-initial-buy"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -1025,7 +1094,7 @@ export function TokenLaunchForm() {
                     </div>
                   </FormControl>
                   <FormDescription>
-                    Amount of SOL to buy at launch (optional)
+                    Amount of SOL to buy at launch (optional, 0.1+ recommended)
                   </FormDescription>
                   <FormMessage />
                   
@@ -1048,13 +1117,22 @@ export function TokenLaunchForm() {
                     </p>
                   </div>
                 </FormItem>
-              )}
+                );
+              }}
             />
 
             <div className="space-y-2">
-              <FormLabel className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-pink-500" />
-                Choose Your Cause
+              <FormLabel className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  Choose Your Cause
+                </span>
+                {selectedCharity && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <CheckCircle className="h-3 w-3" />
+                    Selected
+                  </span>
+                )}
               </FormLabel>
               {selectedCharity ? (
                 <SelectedCharityDisplay 

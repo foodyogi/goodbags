@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles, Mail } from "lucide-react";
+import { Heart, ExternalLink, Building2, Shield, TrendingUp, Info, Utensils, Sparkles, Mail, HelpCircle, FileText, Lock } from "lucide-react";
 import { SiSolana, SiX } from "react-icons/si";
 import { ThemedLogo } from "@/components/themed-logo";
 
@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 md:px-8 py-8">
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3 mb-3">
               <ThemedLogo className="h-16 w-16 rounded-xl object-contain" />
@@ -88,6 +88,44 @@ export function Footer() {
               >
                 <Building2 className="h-3 w-3" />
                 Register Your Charity
+              </Link>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold mb-3">Support</p>
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/help"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-help"
+              >
+                <HelpCircle className="h-3 w-3" />
+                Help Center
+              </Link>
+              <Link
+                href="/faq"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-faq"
+              >
+                <HelpCircle className="h-3 w-3" />
+                FAQ
+              </Link>
+              <Link
+                href="/terms"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-terms"
+              >
+                <FileText className="h-3 w-3" />
+                Terms of Service
+              </Link>
+              <Link
+                href="/privacy"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-footer-privacy"
+              >
+                <Lock className="h-3 w-3" />
+                Privacy Policy
               </Link>
             </div>
           </div>
