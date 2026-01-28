@@ -3737,6 +3737,18 @@ export const VETTED_CHARITIES = [
     countryName: "United States",
   },
   {
+    id: "anima-international",
+    name: "Anima International",
+    wallet: null,
+    twitterHandle: "AnimaIntl",
+    payoutMethod: "twitter" as const,
+    category: "animals",
+    description: "European campaigns for animal welfare reforms including cage-free and ending fur farming",
+    website: "https://animainternational.org",
+    countryCode: "PL",
+    countryName: "Poland",
+  },
+  {
     id: "effective-altruism-foundation",
     name: "Effective Altruism Foundation",
     wallet: null,
