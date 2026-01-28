@@ -1,0 +1,178 @@
+Humanitarian & Relief Charities
+
+Mercy Corps / @MercyCorps
+Action Against Hunger / @ActionAgainstHunger
+Concern Worldwide / @concern
+Trickle Up / @trickleup
+Heifer International / @Heifer
+Operation Warm / @operationwarm
+Toys for Tots / @toysfortots
+Ronald McDonald House Charities / @RonaldMcDonald
+Shriners Hospitals for Children / @Shriners
+Direct Relief / @DirectRelief
+Convoy of Hope / @ConvoyOfHope
+Salvation Army USA / @SalvationArmyUS
+Catholic Relief Services / @CatholicRelief
+Islamic Relief / @IslamicRelief
+Palestine Children's Relief Fund / @ThePCRF
+Comic Relief / @comicrelief
+KSrelief / @KSRelief_EN
+Sport Relief / @sportrelief
+Women's Aid / @womensaid
+Muslim Aid / @Muslim_Aid
+Oxfam America / @OxfamAmerica
+Plan International / @PlanInternational
+World Central Kitchen / @WCKitchen
+Carter Center / @cartercenter
+Share Our Strength / @sharestrength
+AARP Create The Good / @CreateTheGood
+Trócaire / @trocaire
+ActionAid / @ActionAid
+Friends of the Earth / @foe
+CARE / @CARE
+Oxfam GB / @oxfamgb
+Amnesty International / @amnesty
+Human Rights Watch / @hrw
+Red Cross / @RedCross
+International Rescue Committee / @IRCNews
+UNHCR / @Refugees
+Save the Children International / @SaveChildren
+World Food Programme / @WFP
+Médecins Sans Frontières / @MSF
+Relief International / @ReliefIntl
+
+Health & Disease-Specific Charities
+41. American Lung Association / @lungassociation
+42. Leukemia & Lymphoma Society / @LLSusa
+43. Breast Cancer Research Foundation / @bcrfcure
+44. Prostate Cancer Foundation / @PCFnews
+45. Pancreatic Cancer Action Network / @PanCAN
+46. American Liver Foundation / @liverfoundation
+47. National Kidney Foundation / @NKF
+48. National Alliance on Mental Illness / @NAMICommunicate
+49. Depression and Bipolar Support Alliance / @dbsalliance
+50. OCD UK / @OCDUK
+51. Anxiety UK / @AnxietyUK
+52. Movember / @Movember
+53. St. Baldrick's Foundation / @StBaldricks
+54. Keep A Breast Foundation / @keep_a_breast
+55. Alzheimer's Association / @alzassociation
+56. Cystic Fibrosis Foundation / @CysticFibrosis
+57. Lupus Foundation of America / @LupusOrg
+58. Arthritis Foundation / @ArthritisFdn
+59. American Heart Association / @American_Heart
+60. American Diabetes Association / @AmDiabetesAssn
+61. ALS Association / @ALSA
+62. Autism Speaks / @autismspeaks
+63. March of Dimes / @marchofdimes
+64. Make-A-Wish / @MakeAWish
+65. Special Olympics / @specialolympics
+66. The Trevor Project / @TrevorProject
+67. Royal Marsden Cancer Charity / @royalmarsden
+68. Ovacome / @Ovacome
+69. Cancer Research UK / @CR_UK
+70. Macmillan Cancer Support / @macmillancancer
+71. British Heart Foundation / @TheBHF
+72. Prostate Cancer UK / @ProstateCancerUK
+73. Alzheimer's Society / @alzheimerssoc
+74. Age UK / @ageuk
+75. Shelter / @Shelter
+76. Crisis / @crisis_uk
+77. St Mungo's / @mungos
+78. Public Health Solutions / @PublicHealthSol
+79. Mental Health America / @MentalHealthAm
+80. Susan G. Komen / @komen
+Animal Welfare & Conservation Charities
+81. Best Friends Animal Society / @bestfriends
+82. The Humane League / @TheHumaneLeague
+83. Good Food Institute / @GoodFoodInst
+84. World Animal Protection / @MoveTheWorld
+85. RSPCA / @RSPCA_official
+86. Sea Shepherd / @SeaShepherd
+87. Alley Cat Allies / @alleycat
+88. Brother Wolf Animal Rescue / @BrotherWolfAR
+89. Elephant Sanctuary in Tennessee / @TheElephantSanc
+90. Marine Mammal Center / @TMMC
+91. Born Free Foundation / @BornFreeFDN
+92. Four Paws International / @fourpawsint
+93. Brooke / @TheBrooke
+94. International Rhino Foundation / @rhino
+95. Snow Leopard Trust / @SnowLeopards
+96. Wolf Conservation Center / @nywolforg
+97. Bat Conservation International / @batconintl
+98. Save the Manatee Club / @savethemanatees
+99. Big Cat Rescue / @BigCatRescue
+100. Humane Society International / @HSOGlobal
+101. Lily’s Legacy Senior Dog Sanctuary / @LilysLegacySDS
+102. Shrimp Welfare Project / @ShrimpWelfare
+103. Sinergia Animal / @SinergiaAnimal
+104. Wild Animal Initiative / @WildAnimalInit
+105. Panthera / @Panthera
+106. WildAid / @WildAid
+107. Animal Welfare Institute / @AWIonline
+108. International Fund for Animal Welfare / @IFAW
+109. Humane Society of the United States / @HumaneSociety
+110. PetSmart Charities / @PetSmartChars
+Environment & Climate Charities
+111. Sierra Club / @SierraClub
+112. 350.org / @350
+113. Extinction Rebellion / @ExtinctionR
+114. Earthjustice / @Earthjustice
+115. Conservation International / @ConservationOrg
+116. Rainforest Alliance / @RainforestAll
+117. Surfrider Foundation / @surfrider
+118. Oceana / @oceana
+119. The Ocean Cleanup / @TheOceanCleanup
+120. Blue Marine Foundation / @BlueMarineF
+121. Natural Resources Defense Council / @NRDC
+122. Defenders of Wildlife / @Defenders
+123. Animal Legal Defense Fund / @AnimalLegal
+124. Environment America / @EnvAm
+125. Ocean Conservancy / @OurOcean
+126. The Nature Conservancy / @nature_org
+127. Woodland Trust / @WoodlandTrust
+128. National Trust / @nationaltrust
+129. RSPB / @Natures_Voice
+130. Greenpeace / @Greenpeace
+131. WWF / @WWF
+132. Earth Day Network / @EarthDay
+133. Climate Reality Project / @ClimateReality
+134. Arbor Day Foundation / @ArborDayFound
+135. Earth Guardians / @Earth_Guardians
+Education & Youth Charities
+136. Teach For All / @TeachForAll
+137. Pratham USA / @PrathamUSA
+138. Khan Academy / @khanacademy
+139. Girls Who Code / @girlswhocode
+140. Big Brothers Big Sisters / @Bigs
+141. Code.org / @codeorg
+142. Room to Read / @roomtoread
+143. Pencils of Promise / @PencilsOfPromis
+144. DonorsChoose / @DonorsChoose
+145. Liverpool FC Foundation / @LFCFoundation
+146. Sir Bobby Robson Foundation / @SBRFoundation
+147. Teach For America / @TeachForAmerica
+148. Son of a Saint / @SonofaSaintNOLA
+149. Malala Fund / @MalalaFund
+150. UNICEF / @UNICEF
+Other & Community Charities
+151. Innocence Project / @innocenceproject
+152. Farm Aid / @FarmAid
+153. Mind UK / @MindCharity
+154. London's Air Ambulance / @LDNairamb
+155. Child's Play / @CPCharity
+156. Heartfulness Institute / @heartfulness
+157. Rise Above The Disorder / @RiseAboveDisord
+158. To Write Love on Her Arms / @twloha
+159. Minnesota Zoo / @mnzoo
+160. Charity Navigator / @CharityNav
+161. Nonprofit Quarterly / @npquarterly
+162. TechSoup / @TechSoup
+163. Firespring / @Firespring
+164. Amy Neumann / @CharityIdeas
+165. Kivi Leroux Miller / @kivilm
+166. Beth Kanter / @kanter
+167. Dan Pallotta / @danpallotta
+168. Gail Perry / @GailPerrync
+169. Brady Josephson / @bradyjosephson
+170. Amy Sample Ward / @amyrsward
