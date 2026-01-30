@@ -222,6 +222,25 @@ export function SolanaProvider({ children }: SolanaProviderProps) {
   // Users will manually click to connect their wallet
   // AutoConnect causes redirects to wallet download pages (phantom.com, brave wallet, etc.)
 
+  // Detect if we're on mobile - if so, we'll skip WalletModalProvider entirely
+  // to prevent the standard modal from ever appearing (we use our custom modal on mobile)
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  // On mobile, skip WalletModalProvider to prevent standard modal from appearing
+  // Our custom WalletConnectButton handles mobile wallet selection with deep links
+  if (isMobile) {
+    return (
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect={false}>
+          <WalletRouteRestorer>
+            {children}
+          </WalletRouteRestorer>
+        </WalletProvider>
+      </ConnectionProvider>
+    );
+  }
+
+  // On desktop, include WalletModalProvider for the standard modal experience
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect={false}>

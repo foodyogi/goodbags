@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut, RefreshCw, X } from "lucide-react";
+import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -184,9 +183,27 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
+// Safe hook to get wallet modal - returns no-op on mobile where WalletModalProvider doesn't exist
+function useSafeWalletModal(): { setVisible: (visible: boolean) => void } {
+  const isMobile = isMobileBrowser();
+  // On mobile, we don't have WalletModalProvider, so return a no-op
+  // This prevents errors when trying to open the standard modal on mobile
+  if (isMobile) {
+    return { setVisible: () => {} };
+  }
+  
+  // On desktop, try to use the real hook
+  try {
+    const { useWalletModal } = require("@solana/wallet-adapter-react-ui");
+    return useWalletModal();
+  } catch {
+    return { setVisible: () => {} };
+  }
+}
+
 export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData, onBeforeRedirect }: WalletConnectButtonProps) {
   const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { setVisible } = useSafeWalletModal();
   const autoConnectAttemptedRef = useRef(false);
   const [userClickedConnect, setUserClickedConnect] = useState(false);
   const [providerReady, setProviderReady] = useState(hasPhantomProvider());
