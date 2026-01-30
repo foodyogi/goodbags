@@ -45,6 +45,14 @@ The platform uses Replit Auth for user authentication, supporting multiple login
 ### Solana Integration
 The platform integrates with Solana using `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. The Solana network connection is configurable via environment variables, defaulting to Devnet.
 
+**Mobile Wallet Connection** (`client/src/components/wallet-connect-button.tsx`)
+- On mobile browsers, the standard wallet adapter modal is bypassed to prevent redirect issues
+- Custom mobile wallet selection modal shows Phantom and Solflare options with deep links
+- Deep links open wallet apps directly: `phantom://browse/...` and `solflare://browse/...`
+- Form data is preserved in URL parameters during the deep link flow
+- `client/src/polyfills.ts` blocks unwanted redirects to phantom.app on mobile
+- `client/src/lib/solana.tsx` conditionally excludes Phantom adapter on mobile when not installed
+
 ### Data Storage
 Data is stored in a PostgreSQL database managed by Drizzle ORM. Key tables include `launched_tokens`, `donations`, `charities`, `audit_logs`, and `buybacks`.
 

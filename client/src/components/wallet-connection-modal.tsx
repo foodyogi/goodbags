@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
 import {
   Dialog,
   DialogContent,
@@ -146,8 +146,9 @@ export function WalletConnectionModal({
                     Step 1: Connect your Phantom or Solflare wallet
                   </p>
                   <div className="flex justify-center">
-                    <WalletMultiButton 
-                      className="!bg-primary hover:!bg-primary/90 !rounded-md !font-medium"
+                    <WalletConnectButton 
+                      className="bg-primary hover:bg-primary/90 rounded-md font-medium"
+                      data-testid="button-wallet-connect-modal"
                     />
                   </div>
                 </div>

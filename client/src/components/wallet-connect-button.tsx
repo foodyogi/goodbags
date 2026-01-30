@@ -2,13 +2,20 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
-import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut, RefreshCw } from "lucide-react";
+import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut, RefreshCw, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface FormDataForPhantom {
   name?: string;
@@ -175,6 +182,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   const [providerReady, setProviderReady] = useState(hasPhantomProvider());
   const [waitingForProvider, setWaitingForProvider] = useState(false);
   const providerCheckCountRef = useRef(0);
+  const [showMobileWalletModal, setShowMobileWalletModal] = useState(false);
   
   // IMPORTANT: Store deep-link flag in state on mount so it persists even after URL cleanup
   // Only save to sessionStorage if we have definitive proof (URL params)
@@ -307,15 +315,11 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     e.preventDefault();
     e.stopPropagation();
     
-    // On mobile, if we're NOT inside Phantom's browser, always use deep link
-    // This is more reliable than checking providerReady which can be affected by other wallets like Brave
+    // On mobile, if we're NOT inside Phantom's browser, show our custom mobile wallet modal
+    // This prevents the standard wallet adapter modal from causing redirect issues
     if (isMobile && !isInPhantom) {
-      console.log('[WalletConnectButton] Mobile browser detected without Phantom - opening deep link');
-      // Call callback before redirect to allow parent to save form data
-      if (onBeforeRedirect) {
-        onBeforeRedirect();
-      }
-      openInPhantomApp(e, targetRedirectPath, formData);
+      console.log('[WalletConnectButton] Mobile browser detected without Phantom - showing mobile wallet modal');
+      setShowMobileWalletModal(true);
       return;
     }
     
@@ -324,6 +328,54 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     
     // Open the wallet modal (on desktop or inside Phantom browser)
     setVisible(true);
+  };
+  
+  // Handle wallet selection from mobile modal
+  const handleMobileWalletSelect = (wallet: 'phantom' | 'solflare') => {
+    console.log('[WalletConnectButton] Mobile wallet selected:', wallet);
+    
+    // Call callback before redirect to allow parent to save form data
+    if (onBeforeRedirect) {
+      onBeforeRedirect();
+    }
+    
+    // Save deep-link intent to sessionStorage
+    saveDeepLinkIntent();
+    
+    // Build the full URL with form data as URL parameters
+    const url = new URL(window.location.origin);
+    url.pathname = targetRedirectPath || '/';
+    
+    // Add form data as URL params so form is pre-filled in wallet browser
+    if (formData) {
+      if (formData.name) url.searchParams.set('name', formData.name);
+      if (formData.symbol) url.searchParams.set('symbol', formData.symbol);
+      if (formData.description) url.searchParams.set('desc', formData.description);
+      if (formData.imageUrl) url.searchParams.set('img', formData.imageUrl);
+      if (formData.initialBuyAmount) url.searchParams.set('buy', formData.initialBuyAmount);
+      if (formData.charityId) url.searchParams.set('charity', formData.charityId);
+      if (formData.charityName) url.searchParams.set('charityName', formData.charityName);
+      if (formData.charitySource) url.searchParams.set('charitySource', formData.charitySource);
+    }
+    
+    // Mark this as coming from a launch intent
+    url.searchParams.set('launch_ready', '1');
+    
+    const fullUrl = url.toString();
+    
+    let deepLink: string;
+    if (wallet === 'phantom') {
+      // Phantom deep link scheme
+      deepLink = `phantom://browse/${encodeURIComponent(fullUrl)}`;
+    } else {
+      // Solflare deep link scheme
+      deepLink = `solflare://browse/${encodeURIComponent(fullUrl)}`;
+    }
+    
+    console.log('[WalletConnectButton] Opening', wallet, 'with deep link:', deepLink);
+    
+    setShowMobileWalletModal(false);
+    window.location.href = deepLink;
   };
 
   console.log('[WalletConnectButton] State:', { 
@@ -394,28 +446,84 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   }
 
   // Not connected - show connect button
-  // On mobile (not in Phantom): shows "Open in Phantom" to use deep link
-  // On desktop or inside Phantom: shows "Connect Wallet" for modal
-  const showDeepLinkButton = isMobile && !isInPhantom;
+  // On mobile (not in Phantom): shows "Connect Wallet" but opens our custom modal with deep links
+  // On desktop or inside Phantom: shows "Connect Wallet" for standard modal
   
   return (
-    <Button
-      type="button"
-      onClick={handleConnectClick}
-      className={className}
-      data-testid={testId}
-    >
-      {showDeepLinkButton ? (
-        <>
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Open in Phantom
-        </>
-      ) : (
-        <>
-          <Wallet className="h-4 w-4 mr-2" />
-          Connect Wallet
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        type="button"
+        onClick={handleConnectClick}
+        className={className}
+        data-testid={testId}
+      >
+        <Wallet className="h-4 w-4 mr-2" />
+        Connect Wallet
+      </Button>
+      
+      {/* Custom Mobile Wallet Selection Modal */}
+      <Dialog open={showMobileWalletModal} onOpenChange={setShowMobileWalletModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Choose a Wallet
+            </DialogTitle>
+            <DialogDescription>
+              Select your wallet app to connect. This will open the app if installed.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            <button
+              onClick={() => handleMobileWalletSelect('phantom')}
+              className="w-full flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+              data-testid="button-wallet-phantom"
+            >
+              <div className="h-12 w-12 rounded-full bg-[#AB9FF2] flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 128 128" fill="none">
+                  <path d="M64 128C99.3462 128 128 99.3462 128 64C128 28.6538 99.3462 0 64 0C28.6538 0 0 28.6538 0 64C0 99.3462 28.6538 128 64 128Z" fill="#AB9FF2"/>
+                  <path d="M110.584 64.9142H99.1421C99.1421 41.8014 80.1603 23.0566 56.7577 23.0566C34.1291 23.0566 15.6172 40.5988 14.2866 62.3731C12.8581 85.5808 32.4162 105.001 55.9048 105.001H59.5543C81.0652 105.001 99.1421 87.0998 110.584 64.9142Z" fill="url(#paint0_linear_phantom)"/>
+                  <path d="M44.4043 64.2988C44.4043 68.1451 41.3271 71.2676 37.5353 71.2676C33.7436 71.2676 30.6664 68.1451 30.6664 64.2988C30.6664 60.4524 33.7436 57.33 37.5353 57.33C41.3271 57.33 44.4043 60.4524 44.4043 64.2988Z" fill="white"/>
+                  <path d="M67.1043 64.2988C67.1043 68.1451 64.0271 71.2676 60.2353 71.2676C56.4436 71.2676 53.3664 68.1451 53.3664 64.2988C53.3664 60.4524 56.4436 57.33 60.2353 57.33C64.0271 57.33 67.1043 60.4524 67.1043 64.2988Z" fill="white"/>
+                  <defs>
+                    <linearGradient id="paint0_linear_phantom" x1="62.4356" y1="23.0566" x2="62.4356" y2="105.001" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="white"/>
+                      <stop offset="1" stopColor="white" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold text-foreground">Phantom</div>
+                <div className="text-sm text-muted-foreground">Popular Solana wallet</div>
+              </div>
+              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            </button>
+            
+            <button
+              onClick={() => handleMobileWalletSelect('solflare')}
+              className="w-full flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+              data-testid="button-wallet-solflare"
+            >
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 101 88" fill="none">
+                  <path d="M100.48 69.3817L83.8068 86.8015C83.4444 87.1799 83.0058 87.4816 82.5185 87.6878C82.0312 87.894 81.5055 88.0003 80.9743 88H1.93563C1.55849 88 1.18957 87.8926 0.874202 87.6912C0.558829 87.4897 0.310706 87.2029 0.160416 86.8659C0.0101253 86.5289 -0.0359181 86.1566 0.0## -3.80208L25.1161 69.3817C25.4785 69.0033 25.9171 68.7016 26.4044 68.4954C26.8917 68.2892 27.4174 68.1829 27.9486 68.1826H107.084C107.461 68.1826 107.83 68.29 108.146 68.4915C108.461 68.693 108.709 68.9798 108.859 69.3168C109.01 69.6538 109.056 70.0261 109.002 70.3906C108.948 70.7551 108.797 71.0965 108.565 71.3773L108.48 71.4701L100.48 79.4717L100.48 69.3817Z" fill="white"/>
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold text-foreground">Solflare</div>
+                <div className="text-sm text-muted-foreground">Secure Solana wallet</div>
+              </div>
+              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            </button>
+            
+            <p className="text-xs text-center text-muted-foreground pt-2">
+              Don't have a wallet? Download one from the App Store or Play Store.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

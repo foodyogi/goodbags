@@ -2,7 +2,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { VersionedTransaction } from "@solana/web3.js";
@@ -773,7 +772,11 @@ export function TokenLaunchForm() {
             <p className="text-xs text-muted-foreground mb-3">
               Your token details are saved below. Connect your wallet to complete the launch.
             </p>
-            <WalletMultiButton className="!h-9 !text-sm" />
+            <WalletConnectButton 
+              className="h-9 text-sm"
+              redirectPath="/launch"
+              data-testid="button-wallet-connect-form"
+            />
           </div>
         )}
         
@@ -789,8 +792,10 @@ export function TokenLaunchForm() {
                 {publicKey?.toString().slice(0, 4)}...{publicKey?.toString().slice(-4)}
               </p>
             </div>
-            <WalletMultiButton 
-              className="!bg-transparent !p-0 !h-auto !text-xs !text-muted-foreground hover:!text-foreground"
+            <WalletConnectButton 
+              className="bg-transparent p-0 h-auto text-xs text-muted-foreground hover:text-foreground"
+              redirectPath="/launch"
+              data-testid="button-wallet-manage-form"
             />
           </div>
         )}
