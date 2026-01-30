@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
 import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut } from "lucide-react";
 import {
@@ -15,6 +16,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// Context to pass the setVisible function from desktop (with WalletModalProvider) to components
+// On mobile, this will be a no-op since WalletModalProvider is not rendered
+interface WalletModalContextType {
+  setVisible: (visible: boolean) => void;
+}
+const WalletModalContext = createContext<WalletModalContextType>({ setVisible: () => {} });
+
+// Mobile-only provider that provides a no-op setVisible
+// This component never calls useWalletModal, so it's safe to use without WalletModalProvider
+export function MobileWalletModalContextProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <WalletModalContext.Provider value={{ setVisible: () => {} }}>
+      {children}
+    </WalletModalContext.Provider>
+  );
+}
+
+// Desktop-only provider that uses the real useWalletModal hook
+// This component MUST be rendered inside WalletModalProvider
+export function DesktopWalletModalContextProvider({ children }: { children: React.ReactNode }) {
+  const { setVisible } = useWalletModal();
+  return (
+    <WalletModalContext.Provider value={{ setVisible }}>
+      {children}
+    </WalletModalContext.Provider>
+  );
+}
+
+// Hook to get the wallet modal context
+export function useWalletModalContext() {
+  return useContext(WalletModalContext);
+}
 
 interface FormDataForPhantom {
   name?: string;
@@ -183,27 +217,10 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
-// Safe hook to get wallet modal - returns no-op on mobile where WalletModalProvider doesn't exist
-function useSafeWalletModal(): { setVisible: (visible: boolean) => void } {
-  const isMobile = isMobileBrowser();
-  // On mobile, we don't have WalletModalProvider, so return a no-op
-  // This prevents errors when trying to open the standard modal on mobile
-  if (isMobile) {
-    return { setVisible: () => {} };
-  }
-  
-  // On desktop, try to use the real hook
-  try {
-    const { useWalletModal } = require("@solana/wallet-adapter-react-ui");
-    return useWalletModal();
-  } catch {
-    return { setVisible: () => {} };
-  }
-}
-
 export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData, onBeforeRedirect }: WalletConnectButtonProps) {
   const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
-  const { setVisible } = useSafeWalletModal();
+  // Use context instead of hook directly - on mobile this is a no-op, on desktop it's the real modal
+  const { setVisible } = useWalletModalContext();
   const autoConnectAttemptedRef = useRef(false);
   const [userClickedConnect, setUserClickedConnect] = useState(false);
   const [providerReady, setProviderReady] = useState(hasPhantomProvider());

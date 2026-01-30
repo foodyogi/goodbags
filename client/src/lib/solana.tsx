@@ -4,6 +4,7 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { useLocation } from 'wouter';
+import { MobileWalletModalContextProvider, DesktopWalletModalContextProvider } from '@/components/wallet-connect-button';
 
 import '@solana/wallet-adapter-react-ui/styles.css';
 
@@ -228,26 +229,32 @@ export function SolanaProvider({ children }: SolanaProviderProps) {
 
   // On mobile, skip WalletModalProvider to prevent standard modal from appearing
   // Our custom WalletConnectButton handles mobile wallet selection with deep links
+  // MobileWalletModalContextProvider provides a no-op setVisible (never calls useWalletModal)
   if (isMobile) {
     return (
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets} autoConnect={false}>
-          <WalletRouteRestorer>
-            {children}
-          </WalletRouteRestorer>
+          <MobileWalletModalContextProvider>
+            <WalletRouteRestorer>
+              {children}
+            </WalletRouteRestorer>
+          </MobileWalletModalContextProvider>
         </WalletProvider>
       </ConnectionProvider>
     );
   }
 
   // On desktop, include WalletModalProvider for the standard modal experience
+  // DesktopWalletModalContextProvider uses useWalletModal and provides real setVisible via context
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
-          <WalletRouteRestorer>
-            {children}
-          </WalletRouteRestorer>
+          <DesktopWalletModalContextProvider>
+            <WalletRouteRestorer>
+              {children}
+            </WalletRouteRestorer>
+          </DesktopWalletModalContextProvider>
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
