@@ -99,13 +99,15 @@ function clearDeepLinkIntent(): void {
 }
 
 // Check if we're inside Phantom's in-app browser (strict detection)
+// This is used to decide whether to use our custom mobile modal or the standard wallet adapter modal
 function isInsidePhantomBrowser(): boolean {
   if (typeof window === 'undefined') return false;
   
-  // Check provider directly - most reliable indicator
+  // Check specifically for Phantom provider (not just any Solana wallet)
+  // Brave browser has its own Solana wallet which we don't want to detect as "Phantom"
   const hasPhantom = hasPhantomProvider();
   
-  // Check user agent for Phantom
+  // Check user agent for Phantom app specifically
   const userAgent = navigator.userAgent.toLowerCase();
   const isPhantomApp = userAgent.includes('phantom');
   
@@ -119,8 +121,16 @@ function isInsidePhantomBrowser(): boolean {
     isMobile: isMobileBrowser() 
   });
   
-  // Only return true if we have actual evidence of being in Phantom
-  // DO NOT rely solely on sessionStorage - that can persist incorrectly
+  // On mobile, we're ONLY inside Phantom if:
+  // 1. We have the Phantom provider AND we're in the Phantom user agent, OR
+  // 2. We have URL params from a deep link (definitive proof)
+  // This prevents Brave's built-in wallet from triggering "inside Phantom" detection
+  if (isMobileBrowser()) {
+    // On mobile, require either URL params OR (Phantom provider + Phantom user agent)
+    return hasUrlParam || (hasPhantom && isPhantomApp);
+  }
+  
+  // On desktop, having the Phantom provider is sufficient
   return hasPhantom || isPhantomApp || hasUrlParam;
 }
 
@@ -315,9 +325,17 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     e.preventDefault();
     e.stopPropagation();
     
+    // Re-check mobile status at click time (not just render time)
+    // This handles edge cases where browser state changes between render and click
+    const isMobileNow = isMobileBrowser();
+    const isInPhantomNow = isInsidePhantomBrowser();
+    
+    console.log('[WalletConnectButton] handleConnectClick - isMobileNow:', isMobileNow, 'isInPhantomNow:', isInPhantomNow);
+    
     // On mobile, if we're NOT inside Phantom's browser, show our custom mobile wallet modal
     // This prevents the standard wallet adapter modal from causing redirect issues
-    if (isMobile && !isInPhantom) {
+    // We use the click-time values, not render-time values
+    if (isMobileNow && !isInPhantomNow) {
       console.log('[WalletConnectButton] Mobile browser detected without Phantom - showing mobile wallet modal');
       setShowMobileWalletModal(true);
       return;
