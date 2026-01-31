@@ -1326,6 +1326,17 @@ export async function registerRoutes(
           success: false,
           error: error.errors.map(e => e.message).join(", "),
         });
+      } else if (error instanceof BagsApiError) {
+        // Use user-friendly message from BagsApiError
+        const statusCode = error.code === 429 ? 429 : 
+                          (error.code === 401 || error.code === 403) ? 503 :
+                          error.retryable ? 503 : 500;
+        res.status(statusCode).json({
+          success: false,
+          error: error.userMessage,
+          code: error.code,
+          retryable: error.retryable,
+        });
       } else {
         res.status(500).json({
           success: false,
@@ -1469,10 +1480,22 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Config creation error:", error);
-      res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to create config",
-      });
+      if (error instanceof BagsApiError) {
+        const statusCode = error.code === 429 ? 429 : 
+                          (error.code === 401 || error.code === 403) ? 503 :
+                          error.retryable ? 503 : 500;
+        res.status(statusCode).json({
+          success: false,
+          error: error.userMessage,
+          code: error.code,
+          retryable: error.retryable,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to create config",
+        });
+      }
     }
   });
 
@@ -1513,10 +1536,22 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Launch transaction error:", error);
-      res.status(500).json({
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to create launch transaction",
-      });
+      if (error instanceof BagsApiError) {
+        const statusCode = error.code === 429 ? 429 : 
+                          (error.code === 401 || error.code === 403) ? 503 :
+                          error.retryable ? 503 : 500;
+        res.status(statusCode).json({
+          success: false,
+          error: error.userMessage,
+          code: error.code,
+          retryable: error.retryable,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to create launch transaction",
+        });
+      }
     }
   });
   
