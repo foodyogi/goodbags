@@ -32,7 +32,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard, CheckCircle, XCircle, LogIn } from "lucide-react";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -182,6 +183,7 @@ export function TokenLaunchForm() {
   const { connected, publicKey, signTransaction, signAllTransactions, connecting } = useWallet();
   const { connection } = useConnection();
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
@@ -777,7 +779,29 @@ export function TokenLaunchForm() {
         )}
 
         {/* Form pre-filled but wallet not connected (and not currently connecting) */}
-        {prefilledFromUrl && !hasWalletForSigning && !testMode && !connecting && (
+        {prefilledFromUrl && !isAuthenticated && !testMode && (
+          <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="login-needed-status">
+            <div className="flex items-center gap-3 mb-2">
+              <LogIn className="h-4 w-4 text-amber-600" />
+              <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                Login to Launch
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Your token details are saved below. Login to continue with the launch.
+            </p>
+            <Button
+              onClick={() => window.location.href = "/api/login"}
+              className="h-9 text-sm gap-2"
+              data-testid="button-login-form"
+            >
+              <LogIn className="h-4 w-4" />
+              Login to Continue
+            </Button>
+          </div>
+        )}
+        
+        {prefilledFromUrl && isAuthenticated && !hasWalletForSigning && !testMode && !connecting && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="wallet-needed-status">
             <div className="flex items-center gap-3 mb-2">
               <Wallet className="h-4 w-4 text-amber-600" />
@@ -1301,7 +1325,43 @@ export function TokenLaunchForm() {
             </div>
 
             <div ref={launchButtonRef}>
-              {!hasWalletForSigning && !testMode ? (
+              {!isAuthenticated && !testMode ? (
+                <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                  <LogIn className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Login to launch your token
+                  </p>
+                  <Button
+                    onClick={() => {
+                      saveFormDataToStorage({
+                        name: form.getValues('name') || '',
+                        symbol: form.getValues('symbol') || '',
+                        description: form.getValues('description') || '',
+                        imageUrl: form.getValues('imageUrl') || '',
+                        initialBuyAmount: form.getValues('initialBuyAmount') || '0',
+                        charity: selectedCharity ? {
+                          id: selectedCharity.id,
+                          name: selectedCharity.name,
+                          category: selectedCharity.category,
+                          source: selectedCharity.source,
+                          solanaAddress: selectedCharity.solanaAddress,
+                        } : undefined,
+                      });
+                      window.location.href = "/api/login";
+                    }}
+                    className="gap-2"
+                    disabled={authLoading}
+                    data-testid="button-login-launch"
+                  >
+                    {authLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogIn className="h-4 w-4" />
+                    )}
+                    Login to Continue
+                  </Button>
+                </div>
+              ) : !hasWalletForSigning && !testMode ? (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                   <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1320,7 +1380,6 @@ export function TokenLaunchForm() {
                       charitySource: selectedCharity?.source,
                     }}
                     onBeforeRedirect={() => {
-                      // Save form data to localStorage before wallet redirect
                       saveFormDataToStorage({
                         name: form.getValues('name') || '',
                         symbol: form.getValues('symbol') || '',
