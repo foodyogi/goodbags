@@ -46,7 +46,7 @@ export function UserMenu() {
         data-testid="button-login"
       >
         <SiX className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Login with X</span>
+        <span>Login with X</span>
       </Button>
     );
   }

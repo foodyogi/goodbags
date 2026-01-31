@@ -293,6 +293,25 @@ export function TokenLaunchForm() {
     
     setPrefilledFromUrl(true);
     
+    // IMPORTANT: Save the URL-populated form data to localStorage immediately!
+    // This ensures the data persists across OAuth redirects in Phantom's browser
+    // (Phantom browser has different localStorage than the original mobile browser)
+    const formDataToSave = {
+      name: name || '',
+      symbol: symbol || '',
+      description: desc || '',
+      imageUrl: img || '',
+      initialBuyAmount: buy || '0',
+      charity: charityId && charityName && charitySource ? {
+        id: charityId,
+        name: charityName,
+        category: 'general',
+        source: charitySource,
+      } : undefined,
+    };
+    saveFormDataToStorage(formDataToSave);
+    console.log('[TokenLaunchForm] Saved URL params to localStorage for OAuth persistence');
+    
     // Clean up URL params (optional - keeps URL clean)
     const cleanUrl = new URL(window.location.href);
     cleanUrl.search = '';

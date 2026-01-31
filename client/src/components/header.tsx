@@ -1,14 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { UserMenu } from "./user-menu";
 import { ThemeToggle } from "./theme-toggle";
-import { LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy, Sparkles, Rocket } from "lucide-react";
+import { LayoutDashboard, Heart, Menu, X, Award, Shield, TrendingUp, Info, Trophy, Sparkles, Rocket, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ThemedLogo } from "@/components/themed-logo";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  
+  const twitterUsername = (user as any)?.twitterUsername;
 
   const navItems = [
     { href: "/", label: "Launch", icon: Rocket },
@@ -27,8 +31,17 @@ export function Header() {
           <div className="flex flex-col">
             <span className="text-lg font-bold leading-tight">GoodBags</span>
             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <Heart className="h-2.5 w-2.5 text-pink-500" />
-              Launch tokens for good
+              {isAuthenticated && twitterUsername ? (
+                <>
+                  <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />
+                  <span className="text-green-600 dark:text-green-400">@{twitterUsername}</span>
+                </>
+              ) : (
+                <>
+                  <Heart className="h-2.5 w-2.5 text-pink-500" />
+                  Launch tokens for good
+                </>
+              )}
             </span>
           </div>
         </Link>
