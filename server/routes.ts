@@ -22,6 +22,7 @@ import {
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
+import { BagsApiError } from "./bags-sdk";
 import bs58Pkg from "bs58";
 // Handle ESM/CommonJS interop for bs58
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
@@ -1721,6 +1722,28 @@ export async function registerRoutes(
         res.status(400).json({
           success: false,
           error: error.errors.map(e => e.message).join(", "),
+        });
+      } else if (error instanceof BagsApiError) {
+        // Use user-friendly message from BagsApiError
+        // Map error codes to appropriate HTTP status:
+        // - 401/403: 503 (service unavailable - auth/permission issue)
+        // - 429: 429 (rate limited)
+        // - 408/5xx/unknown: 503 (service unavailable - transient)
+        let statusCode: number;
+        if (error.code === 429) {
+          statusCode = 429;
+        } else if (error.code === 401 || error.code === 403) {
+          statusCode = 503;
+        } else if (error.retryable) {
+          statusCode = 503; // Transient errors
+        } else {
+          statusCode = 500;
+        }
+        res.status(statusCode).json({
+          success: false,
+          error: error.userMessage,
+          code: error.code,
+          retryable: error.retryable,
         });
       } else {
         res.status(500).json({
