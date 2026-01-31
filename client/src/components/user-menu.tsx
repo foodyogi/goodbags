@@ -33,11 +33,16 @@ export function UserMenu() {
   }
 
   if (!isAuthenticated) {
+    const handleLogin = () => {
+      const currentPath = window.location.pathname + window.location.search;
+      window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
+    };
+    
     return (
       <Button
         variant="default"
         className="gap-2"
-        onClick={() => window.location.href = "/api/login"}
+        onClick={handleLogin}
         data-testid="button-login"
       >
         <SiX className="h-3.5 w-3.5" />

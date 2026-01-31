@@ -792,7 +792,10 @@ export function TokenLaunchForm() {
               Your token details are saved below. Login with X to continue with the launch.
             </p>
             <Button
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => {
+                const currentPath = window.location.pathname + window.location.search;
+                window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
+              }}
               className="h-9 text-sm gap-2"
               data-testid="button-login-form"
             >
@@ -1348,7 +1351,8 @@ export function TokenLaunchForm() {
                           solanaAddress: selectedCharity.solanaAddress,
                         } : undefined,
                       });
-                      window.location.href = "/api/login";
+                      const currentPath = window.location.pathname + window.location.search;
+                      window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
                     }}
                     className="gap-2"
                     disabled={authLoading}

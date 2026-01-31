@@ -6,6 +6,7 @@ import { LiveImpactStats } from "@/components/live-impact-stats";
 import { TrendingTokens } from "@/components/trending-tokens";
 import { TokenLeaderboard } from "@/components/token-leaderboard";
 import { FeaturesSummary } from "@/components/features-summary";
+import { LoginPromptModal } from "@/components/login-prompt-modal";
 import { useQuery } from "@tanstack/react-query";
 import { type LaunchedToken } from "@shared/schema";
 
@@ -16,6 +17,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <LoginPromptModal autoOpen={true} delayMs={800} />
       <HeroSection />
       
       <LiveImpactStats />
