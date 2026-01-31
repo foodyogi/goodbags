@@ -1,0 +1,136 @@
+We are editing an EXISTING production codebase for goodbags.tech (React 18 + TS + Vite + Express + Drizzle + Postgres). Do NOT rebuild the app. Make minimal, safe edits.
+
+CURRENT STATE (already implemented — do not duplicate)
+- Verified charity database exists (charities table) + charity portal + endorsement approvals + audit logs.
+- Charity verification uses Every.org API (US 501(c)(3)), email verification, wallet signature verification, and X account validation.
+- Token launch uses Bags.fm SDK.
+- Donation payout supports:
+  (a) Direct Solana wallet, OR
+  (b) Bags.fm X Tips (charity claims via verified X account).
+- Current fee split of the fixed Bags “1% royalty stream” is:
+  0.75% charity + 0.25% FYI buyback (total 1.00%).
+- FYI buybacks run via Jupiter approx every 60 minutes, funded by the platform’s fee share.
+
+GOAL OF THIS CHANGE
+Update the default split of the fixed “1% royalty stream” to:
+- 75% charity
+- 15% FYI buyback
+- 10% creator
+(all within the same 1% royalty stream — NOT a new fee)
+
+Meaning the 1% stream is split as:
+- Charity: 0.75% of volume
+- FYI buyback: 0.15% of volume
+- Creator: 0.10% of volume
+Total remains 1.00% of volume.
+
+In BPS terms (10,000 BPS = 100% of the royalty stream):
+- Charity = 7500 BPS
+- FYI buyback = 1500 BPS
+- Creator = 1000 BPS
+Validate sum always equals 10,000 BPS.
+
+Also add an OPTIONAL toggle at launch:
+“Donate creator share too”
+If ON, creator becomes 0 BPS and charity becomes 8500 BPS (buyback stays 1500).
+- Charity = 8500 BPS
+- FYI buyback = 1500 BPS
+- Creator = 0 BPS
+
+KEY CONSTRAINTS
+- Keep all existing charity verification and endorsement approval flows intact.
+- Keep payout methods intact (Direct Wallet + X Tips).
+- No custodial money routing. Royalties go to configured recipients. Impact Boost (if exists) remains direct wallet->charity.
+- Make sure dashboards, stats, and buyback funding math are updated consistently.
+- All changes must be backward compatible with tokens already launched under the old split.
+
+TASK 0 — MANDATORY REVIEW FIRST
+Before writing code, inspect the repo and output a concise “Current State” report with file paths:
+1) Where fee split is defined today (constants/config/env).
+2) Where Bags fee-share configuration is built for token launches.
+3) Where charity payout method (wallet vs X Tips) is chosen and stored.
+4) Where donation totals, leaderboards, token detail stats, and impact dashboards are computed.
+5) Where FYI buyback job lives (scheduler/worker) and how it computes budget from fees.
+6) Which DB columns store fee/split info in launched_tokens/donations/buybacks.
+
+Then propose a small plan listing exact files you will change/add and any DB migrations needed.
+
+IMPLEMENTATION TASKS
+
+A) Update Fee Split Logic Everywhere
+1) Update the canonical fee split constants to the new defaults:
+   - charity_bps_default = 7500
+   - buyback_bps_default = 1500
+   - creator_bps_default = 1000
+2) Add “donate creator share too” option (per-token config):
+   - if donateCreatorShare true:
+     charity_bps = 8500
+     buyback_bps = 1500
+     creator_bps = 0
+
+B) Update Bags Token Launch Fee Share Config
+In the Bags SDK integration that creates the fee-share recipients:
+- Always include:
+  - charity recipient: either verified Solana wallet OR the X Tips recipient mechanism used today (keep existing logic)
+  - FYI buyback wallet (existing env/config)
+  - creator wallet (connected wallet) IF creator_bps > 0
+- Ensure BPS totals are exactly 10,000.
+- Validate charity recipient exists and is verified per your existing charity DB rules.
+- Persist the exact per-token split configuration in DB for later receipts/stats.
+
+C) Database Changes (only if necessary)
+If your launched_tokens table does not already store per-token split:
+- Add columns:
+  - charity_bps INT NOT NULL
+  - buyback_bps INT NOT NULL
+  - creator_bps INT NOT NULL
+  - donate_creator_share BOOLEAN NOT NULL DEFAULT false
+- For existing tokens, backfill:
+  - charity_bps=7500 and buyback_bps=2500 and creator_bps=0 OR preserve old data if stored elsewhere.
+(Important: do NOT break history; old tokens keep old split values.)
+
+D) Update UI Copy + Receipts
+Wherever you show the fee table, “How it works,” token launch summary, FAQs, etc:
+- Replace “0.25% platform ops” with:
+  “0.15% FYI buyback” and “0.10% creator”
+- Update the fee table and any “Total platform fee 1.00%” messaging to clarify:
+  “The 1% royalty stream is split between charity, FYI buybacks, and creator.”
+- Add the toggle UI in the launch wizard with clear explanation:
+  “Donate my creator share too (10% → charity).”
+
+E) Update Dashboards & Metrics
+Ensure all affected screens and API endpoints are consistent:
+- Token detail pages should show the correct split and the chosen charity payout method.
+- Leaderboards by donations must continue to count ONLY the charity portion (not buyback or creator).
+- Buyback tracker should reflect reduced funding (15% of the 1% stream rather than 25%).
+- Any aggregate donation totals should remain correct historically (respect per-token split stored in DB).
+
+F) FYI Buyback Job Updates
+In the Jupiter buyback scheduler/job:
+- Update any budget calculation that assumes 0.25% funding.
+- It should use the actual buyback share for each token OR (if you only use a buyback wallet inflow model) ensure the wallet funding is consistent and you don’t double-count.
+- Confirm buybacks still run ~hourly, but with smaller budget.
+
+G) Backward Compatibility
+- Existing launched tokens must keep their original split (0.75/0.25/0.00) and display it accurately.
+- New tokens default to 0.75/0.15/0.10.
+- All computations should use per-token split values, not global constants, wherever possible.
+
+TEST / QA CHECKLIST (must provide at end)
+1) Launch a new token:
+   - Must select a verified charity
+   - Default split stored as 7500/1500/1000
+   - Bags launch recipients include charity + buyback + creator
+2) Launch with toggle ON:
+   - Split stored as 8500/1500/0
+   - Bags recipients exclude creator (or include with 0 if SDK requires)
+3) Existing tokens still show old split (7500/2500/0)
+4) Charity donations stats unchanged except new tokens now allocate 15% less to buyback and 10% to creator
+5) Buyback job still runs and records buys properly
+6) No regressions in charity endorsement dashboard, audit logs, verification flow, or X Tips payout path.
+
+OUTPUT REQUIRED
+1) Current State report with file paths (before coding)
+2) Plan with exact file modifications + migrations
+3) Implement changes
+4) QA checklist results / how to test locally
