@@ -185,7 +185,9 @@ async function withRetry<T>(
       console.error(`Bags SDK ${operationName} attempt ${attempt}/${maxRetries} failed:`, {
         code: bagsError.code,
         message: bagsError.message,
-        retryable: bagsError.retryable
+        userMessage: bagsError.userMessage,
+        retryable: bagsError.retryable,
+        originalError: (bagsError.originalError as Error)?.message || 'N/A'
       });
       
       // Don't retry non-retryable errors

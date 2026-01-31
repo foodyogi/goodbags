@@ -86,6 +86,8 @@ export async function setupAuth(app: Express) {
   // Twitter OAuth 2.0 login endpoint
   app.get("/api/login", (req, res) => {
     const returnTo = req.query.returnTo as string;
+    console.log(`[Twitter Auth] Login initiated, returnTo: ${returnTo || '/'}`);
+    
     if (returnTo && req.session) {
       (req.session as any).returnTo = returnTo;
     }
@@ -101,12 +103,13 @@ export async function setupAuth(app: Express) {
     // Save session before redirect
     req.session.save((err) => {
       if (err) {
-        console.error("Session save error:", err);
+        console.error("[Twitter Auth] Session save error:", err);
         return res.status(500).send("Session error");
       }
 
       const baseUrl = getBaseUrl(req);
       const callbackUrl = `${baseUrl}/api/auth/twitter/callback`;
+      console.log(`[Twitter Auth] Redirecting to Twitter, callback URL: ${callbackUrl}`);
       
       const params = new URLSearchParams({
         response_type: "code",
@@ -126,17 +129,20 @@ export async function setupAuth(app: Express) {
   app.get("/api/auth/twitter/callback", async (req, res) => {
     try {
       const { code, state, error, error_description } = req.query;
+      console.log(`[Twitter Auth] Callback received, has code: ${!!code}, state: ${state?.toString().substring(0, 8)}...`);
 
       if (error) {
-        console.error("Twitter OAuth error:", error, error_description);
+        console.error("[Twitter Auth] OAuth error:", error, error_description);
         return res.redirect(`/?error=${encodeURIComponent(error as string)}`);
       }
 
       const savedState = (req.session as any).oauthState;
       const codeVerifier = (req.session as any).codeVerifier;
+      const returnTo = (req.session as any).returnTo;
+      console.log(`[Twitter Auth] Session data - has savedState: ${!!savedState}, has codeVerifier: ${!!codeVerifier}, returnTo: ${returnTo || '/'}`);
 
       if (!code || state !== savedState) {
-        console.error("Invalid OAuth state or missing code");
+        console.error(`[Twitter Auth] State mismatch - received: ${state}, saved: ${savedState}`);
         return res.redirect("/?error=invalid_state");
       }
 

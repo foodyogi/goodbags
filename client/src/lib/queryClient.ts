@@ -3,6 +3,25 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // Try to parse JSON error response for user-friendly message
+    try {
+      const json = JSON.parse(text);
+      // Check for our API's error format { success: false, error: "message" }
+      if (json.error && typeof json.error === 'string') {
+        throw new Error(json.error);
+      }
+      // Check for JSON-RPC error format
+      if (json.error?.message) {
+        throw new Error(json.error.message);
+      }
+    } catch (e) {
+      // If not valid JSON or no error field, fall back to status text
+      if (e instanceof Error && !e.message.startsWith('{')) {
+        throw e;
+      }
+    }
+    
     throw new Error(`${res.status}: ${text}`);
   }
 }
