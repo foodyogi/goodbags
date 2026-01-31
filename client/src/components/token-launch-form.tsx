@@ -69,6 +69,7 @@ interface StoredFormData {
   description: string;
   imageUrl: string;
   initialBuyAmount: string;
+  donateCreatorPercent?: number; // 0, 25, 50, 75, or 100
   charity?: {
     id: string;
     name: string;
@@ -270,12 +271,21 @@ export function TokenLaunchForm() {
     const desc = params.get('desc');
     const img = params.get('img');
     const buy = params.get('buy');
+    const donate = params.get('donate');
     
     if (name) form.setValue('name', name);
     if (symbol) form.setValue('symbol', symbol);
     if (desc) form.setValue('description', desc);
     if (img) form.setValue('imageUrl', img);
     if (buy) form.setValue('initialBuyAmount', buy);
+    
+    // Populate donation percentage if passed
+    if (donate) {
+      const donatePercent = parseInt(donate, 10);
+      if ([0, 25, 50, 75, 100].includes(donatePercent)) {
+        setDonateCreatorPercent(donatePercent);
+      }
+    }
     
     // Populate charity if passed
     const charityId = params.get('charity');
@@ -296,12 +306,14 @@ export function TokenLaunchForm() {
     // IMPORTANT: Save the URL-populated form data to localStorage immediately!
     // This ensures the data persists across OAuth redirects in Phantom's browser
     // (Phantom browser has different localStorage than the original mobile browser)
+    const donatePercentValue = donate ? parseInt(donate, 10) : 0;
     const formDataToSave = {
       name: name || '',
       symbol: symbol || '',
       description: desc || '',
       imageUrl: img || '',
       initialBuyAmount: buy || '0',
+      donateCreatorPercent: [0, 25, 50, 75, 100].includes(donatePercentValue) ? donatePercentValue : 0,
       charity: charityId && charityName && charitySource ? {
         id: charityId,
         name: charityName,
@@ -338,6 +350,11 @@ export function TokenLaunchForm() {
     if (storedData.imageUrl) form.setValue('imageUrl', storedData.imageUrl);
     if (storedData.initialBuyAmount) form.setValue('initialBuyAmount', storedData.initialBuyAmount);
     
+    // Restore donation percentage
+    if (storedData.donateCreatorPercent !== undefined && [0, 25, 50, 75, 100].includes(storedData.donateCreatorPercent)) {
+      setDonateCreatorPercent(storedData.donateCreatorPercent);
+    }
+    
     // Restore charity selection
     if (storedData.charity) {
       setSelectedCharity({
@@ -350,7 +367,7 @@ export function TokenLaunchForm() {
     }
     
     // Check if any data was actually restored
-    const hasData = storedData.name || storedData.symbol || storedData.charity;
+    const hasData = storedData.name || storedData.symbol || storedData.charity || storedData.donateCreatorPercent;
     if (hasData) {
       setPrefilledFromUrl(true);
       console.log('[TokenLaunchForm] Form restored from localStorage');
@@ -1362,6 +1379,7 @@ export function TokenLaunchForm() {
                         description: form.getValues('description') || '',
                         imageUrl: form.getValues('imageUrl') || '',
                         initialBuyAmount: form.getValues('initialBuyAmount') || '0',
+                        donateCreatorPercent,
                         charity: selectedCharity ? {
                           id: selectedCharity.id,
                           name: selectedCharity.name,
@@ -1402,6 +1420,7 @@ export function TokenLaunchForm() {
                       charityId: selectedCharity?.id,
                       charityName: selectedCharity?.name,
                       charitySource: selectedCharity?.source,
+                      donateCreatorPercent,
                     }}
                     onBeforeRedirect={() => {
                       saveFormDataToStorage({
@@ -1410,6 +1429,7 @@ export function TokenLaunchForm() {
                         description: form.getValues('description') || '',
                         imageUrl: form.getValues('imageUrl') || '',
                         initialBuyAmount: form.getValues('initialBuyAmount') || '0',
+                        donateCreatorPercent,
                         charity: selectedCharity ? {
                           id: selectedCharity.id,
                           name: selectedCharity.name,

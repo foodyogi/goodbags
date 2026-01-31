@@ -59,6 +59,7 @@ interface FormDataForPhantom {
   charityId?: string;
   charityName?: string;
   charitySource?: string;
+  donateCreatorPercent?: number; // 0, 25, 50, 75, or 100
 }
 
 interface WalletConnectButtonProps {
@@ -195,6 +196,7 @@ function openInPhantomApp(e: React.MouseEvent, redirectPath?: string, formData?:
     if (formData.charityId) url.searchParams.set('charity', formData.charityId);
     if (formData.charityName) url.searchParams.set('charityName', formData.charityName);
     if (formData.charitySource) url.searchParams.set('charitySource', formData.charitySource);
+    if (formData.donateCreatorPercent !== undefined) url.searchParams.set('donate', formData.donateCreatorPercent.toString());
   }
   
   // Mark this as coming from a launch intent
@@ -408,6 +410,7 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
       if (formData.charityId) url.searchParams.set('charity', formData.charityId);
       if (formData.charityName) url.searchParams.set('charityName', formData.charityName);
       if (formData.charitySource) url.searchParams.set('charitySource', formData.charitySource);
+      if (formData.donateCreatorPercent !== undefined) url.searchParams.set('donate', formData.donateCreatorPercent.toString());
     }
     
     // Mark this as coming from a launch intent
