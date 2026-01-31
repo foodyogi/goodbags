@@ -51,13 +51,19 @@ export function UserMenu() {
     );
   }
 
-  const initials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || "U";
+  // For Twitter OAuth, use Twitter display name and username
+  const twitterDisplayName = (user as any)?.twitterDisplayName;
+  const twitterUsername = (user as any)?.twitterUsername;
+  
+  const initials = twitterDisplayName 
+    ? twitterDisplayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.firstName && user?.lastName 
+      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+      : user?.email?.[0]?.toUpperCase() || "U";
 
-  const displayName = user?.firstName && user?.lastName
+  const displayName = twitterDisplayName || (user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
-    : user?.email || "User";
+    : user?.email || "User");
 
   const shortWallet = walletData?.walletAddress 
     ? `${walletData.walletAddress.slice(0, 4)}...${walletData.walletAddress.slice(-4)}`
@@ -80,11 +86,15 @@ export function UserMenu() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{displayName}</p>
-              {user?.email && (
+              {twitterUsername ? (
+                <p className="text-xs leading-none text-muted-foreground">
+                  @{twitterUsername}
+                </p>
+              ) : user?.email ? (
                 <p className="text-xs leading-none text-muted-foreground">
                   {user.email}
                 </p>
-              )}
+              ) : null}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

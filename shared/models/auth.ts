@@ -21,6 +21,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  // Twitter/X OAuth fields
+  twitterId: varchar("twitter_id").unique(),
+  twitterUsername: varchar("twitter_username"),
+  twitterDisplayName: varchar("twitter_display_name"),
   // Solana wallet for token launches (connected via backend)
   walletAddress: varchar("wallet_address"),
   walletConnectedAt: timestamp("wallet_connected_at"),
