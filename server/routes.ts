@@ -9,8 +9,6 @@ import {
   CHARITY_FEE_BPS,
   BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
-  CHARITY_FEE_BPS_WITH_DONATION,
-  CREATOR_FEE_BPS_WITH_DONATION,
   LEGACY_CHARITY_BPS,
   LEGACY_BUYBACK_BPS,
   LEGACY_CREATOR_BPS,
@@ -155,7 +153,10 @@ const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
   charitySource: z.enum(["change", "local"]).default("change"),
   charitySolanaAddress: z.string().nullable().optional(), // For Change API charities - can be null if using Twitter
   isTest: z.boolean().optional().default(false), // Test mode flag
-  donateCreatorShare: z.boolean().optional().default(false), // If true, creator's 10% share goes to charity
+  // Creator can donate 0%, 25%, 50%, 75%, or 100% of their 20% share to charity
+  donateCreatorPercent: z.number().min(0).max(100).optional().default(0),
+  // Legacy: keep for backward compat during transition, will be removed
+  donateCreatorShare: z.boolean().optional(),
 });
 
 // Import Change API for server-side verification
@@ -1615,14 +1616,21 @@ export async function registerRoutes(
         };
       }
       
-      // Calculate fees based on donateCreatorShare toggle
+      // Calculate fees based on creator donation percentage
       const initialBuy = parseFloat(validated.initialBuyAmount) || 0;
-      const donateCreatorShare = validated.donateCreatorShare ?? false;
       
-      // Determine BPS split for this token
-      const charityBps = donateCreatorShare ? CHARITY_FEE_BPS_WITH_DONATION : CHARITY_FEE_BPS;
-      const buybackBps = BUYBACK_FEE_BPS; // Always 1500 BPS (15%)
-      const creatorBps = donateCreatorShare ? CREATOR_FEE_BPS_WITH_DONATION : CREATOR_FEE_BPS;
+      // Support both new donateCreatorPercent (0-100) and legacy donateCreatorShare (boolean)
+      let donateCreatorPercent = validated.donateCreatorPercent ?? 0;
+      if (validated.donateCreatorShare === true && donateCreatorPercent === 0) {
+        donateCreatorPercent = 100; // Legacy toggle was ON = 100% donation
+      }
+      
+      // Calculate BPS split: creator can donate 0-100% of their 20% (2000 BPS) share
+      // donated_creator_bps = round(CREATOR_FEE_BPS * donate_pct / 100)
+      const donatedCreatorBps = Math.round(CREATOR_FEE_BPS * donateCreatorPercent / 100);
+      const charityBps = CHARITY_FEE_BPS + donatedCreatorBps;
+      const buybackBps = BUYBACK_FEE_BPS; // Always 500 BPS (5%)
+      const creatorBps = CREATOR_FEE_BPS - donatedCreatorBps;
       
       // Calculate actual fee amounts based on BPS (for the 1% royalty stream)
       const charityDonation = (initialBuy * (charityBps / 10000) / 100).toFixed(9);
@@ -1660,7 +1668,7 @@ export async function registerRoutes(
         charityBps,
         buybackBps,
         creatorBps,
-        donateCreatorShare,
+        donateCreatorShare: donateCreatorPercent > 0, // Legacy boolean field (true if any % donated)
       });
 
       // Log the launch with fee split info
@@ -1676,7 +1684,7 @@ export async function registerRoutes(
           charitySource: charityInfo.source,
           initialBuy,
           isTest: isTestLaunch,
-          feeSplit: { charityBps, buybackBps, creatorBps, donateCreatorShare },
+          feeSplit: { charityBps, buybackBps, creatorBps, donateCreatorPercent },
         }),
       });
       

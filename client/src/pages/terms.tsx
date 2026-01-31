@@ -158,8 +158,8 @@ export default function TermsPage() {
               <ul className="list-disc list-inside text-muted-foreground space-y-2 mb-4">
                 <li>A 1% trading royalty is applied to all token trades</li>
                 <li>0.75% goes directly to the token's designated charity</li>
-                <li>0.15% is used for FYI token buybacks to support the platform</li>
-                <li>0.10% goes to the token creator (can be donated to charity at launch)</li>
+                <li>0.05% is used for FYI token buybacks to support the platform</li>
+                <li>0.20% goes to the token creator (can donate some/all to charity at launch)</li>
                 <li>Additional blockchain transaction fees (gas) apply and are paid to the Solana network</li>
                 <li>Fee structures may be updated with notice to users</li>
               </ul>

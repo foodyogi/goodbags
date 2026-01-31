@@ -55,8 +55,8 @@ const coreFeatures = [
     description: "The lowest fee structure in the space. Just 1% per trade, with 75% going directly to your chosen charity.",
     details: [
       "0.75% goes directly to charity",
-      "0.15% funds automatic FYI token buybacks",
-      "0.10% to token creator (can be donated to charity)",
+      "0.05% funds automatic FYI token buybacks",
+      "0.20% to token creator (can donate some/all to charity)",
       "All transactions verifiable on blockchain"
     ],
     color: "bg-green-500",

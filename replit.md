@@ -5,10 +5,10 @@ GoodBags is a Solana-based memecoin launcher platform that enables users to crea
 
 The platform charges a 1% fee with a 3-way split:
 - **0.75% to charity** - Majority of fees go directly to verified charities
-- **0.15% to FYI buyback** - Supports the ecosystem through automated token buybacks
-- **0.10% to token creator** - Optional: creators can donate their share to charity at launch
+- **0.05% to FYI buyback** - Supports the ecosystem through automated token buybacks
+- **0.20% to token creator** - Creators can donate 0%, 25%, 50%, 75%, or 100% to charity
 
-When creators enable "Donate My Creator Share", the charity receives 0.85% instead of 0.75%. Each token stores its fee split in the database (charity_bps, buyback_bps, creator_bps) for historical accuracy.
+Creators choose their donation amount from presets at launch. Each token stores its fee split in the database (charity_bps, buyback_bps, creator_bps) for historical accuracy.
 
 GoodBags aims to provide a secure and transparent way to leverage memecoins for social impact, offering public dashboards for impact tracking and detailed explanations of its mechanisms.
 

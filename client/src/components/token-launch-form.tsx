@@ -44,7 +44,7 @@ import {
   CHARITY_FEE_BPS,
   BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
-  CHARITY_FEE_BPS_WITH_DONATION,
+  CREATOR_DONATION_PRESETS,
 } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
@@ -190,8 +190,8 @@ export function TokenLaunchForm() {
   // Test Mode - allows testing the full flow without real transactions
   const [testMode, setTestMode] = useState(false);
   
-  // Donate Creator Share - if true, creator's 10% share goes to charity (85% instead of 75%)
-  const [donateCreatorShare, setDonateCreatorShare] = useState(false);
+  // Creator donation percent - can donate 0%, 25%, 50%, 75%, or 100% of their 20% share
+  const [donateCreatorPercent, setDonateCreatorPercent] = useState<number>(0);
   
   // Token name duplicate detection
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
@@ -425,7 +425,7 @@ export function TokenLaunchForm() {
           mintAddress: mockMintAddress,
           transactionSignature: mockTxSignature,
           isTest: true,
-          donateCreatorShare,
+          donateCreatorPercent,
         });
         const launchResult = await launchResponse.json();
         
@@ -533,7 +533,7 @@ export function TokenLaunchForm() {
         creatorWallet,
         mintAddress: tokenMint,
         transactionSignature: transactionSignature || `mock_tx_${Date.now()}`,
-        donateCreatorShare,
+        donateCreatorPercent,
       });
       
       return await recordResponse.json() as LaunchResult;
@@ -737,7 +737,7 @@ export function TokenLaunchForm() {
           Launch New Token
         </CardTitle>
         <CardDescription>
-          Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {BUYBACK_FEE_PERCENTAGE}% buyback + {CREATOR_FEE_PERCENTAGE}% creator
+          Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {BUYBACK_FEE_PERCENTAGE}% buyback + {CREATOR_FEE_PERCENTAGE}% to you
         </CardDescription>
         {bagsStatus?.configured === false && (
           <div className="mt-2 rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400">
@@ -1174,16 +1174,16 @@ export function TokenLaunchForm() {
             <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Charity Donation</span>
-                <span className="font-medium">{donateCreatorShare ? "0.85" : CHARITY_FEE_PERCENTAGE}% of trades</span>
+                <span className="font-medium">{(CHARITY_FEE_PERCENTAGE + (CREATOR_FEE_PERCENTAGE * donateCreatorPercent / 100)).toFixed(2)}% of trades</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">FYI Buyback</span>
                 <span className="font-medium">{BUYBACK_FEE_PERCENTAGE}% of trades</span>
               </div>
-              {!donateCreatorShare && (
+              {donateCreatorPercent < 100 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Creator Share</span>
-                  <span className="font-medium">{CREATOR_FEE_PERCENTAGE}% of trades</span>
+                  <span className="font-medium">{(CREATOR_FEE_PERCENTAGE * (100 - donateCreatorPercent) / 100).toFixed(2)}% of trades</span>
                 </div>
               )}
               <div className="pt-2 border-t border-muted">
@@ -1228,39 +1228,45 @@ export function TokenLaunchForm() {
               </div>
             </div>
 
-            {/* Donate Creator Share Toggle */}
+            {/* Donate Creator Share Selector */}
             <div className="rounded-lg border border-pink-500/30 bg-pink-500/5 p-4" data-testid="section-donate-creator-share">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-pink-500" />
-                  <div>
-                    <p className="text-sm font-medium">Donate My Creator Share</p>
-                    <p className="text-xs text-muted-foreground">
-                      Give your 10% share to charity
-                    </p>
-                  </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-4 w-4 text-pink-500" />
+                <div>
+                  <p className="text-sm font-medium">Donate My Creator Share</p>
+                  <p className="text-xs text-muted-foreground">
+                    Give some or all of your 20% share to charity
+                  </p>
                 </div>
-                <Switch
-                  checked={donateCreatorShare}
-                  onCheckedChange={setDonateCreatorShare}
-                  data-testid="switch-donate-creator-share"
-                />
               </div>
-              <div className="mt-3 pt-3 border-t border-pink-500/20">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <p className="text-muted-foreground mb-1">Default Split:</p>
-                    <p>75% Charity · 15% Buyback · 10% You</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground mb-1">With Donation:</p>
-                    <p className={donateCreatorShare ? "text-pink-600 dark:text-pink-400 font-medium" : ""}>
-                      85% Charity · 15% Buyback · 0% You
-                    </p>
-                  </div>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {CREATOR_DONATION_PRESETS.map((preset) => (
+                  <Button
+                    key={preset}
+                    type="button"
+                    size="sm"
+                    variant={donateCreatorPercent === preset ? "default" : "outline"}
+                    className={donateCreatorPercent === preset ? "bg-pink-500 hover:bg-pink-600 border-pink-500" : ""}
+                    onClick={() => setDonateCreatorPercent(preset)}
+                    data-testid={`btn-donate-${preset}`}
+                  >
+                    {preset}%
+                  </Button>
+                ))}
+              </div>
+              <div className="pt-3 border-t border-pink-500/20 text-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-muted-foreground">Default Split:</span>
+                  <span>75% Charity · 5% Buyback · 20% You</span>
                 </div>
-                {donateCreatorShare && (
-                  <p className="text-xs text-pink-600 dark:text-pink-400 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Your Split:</span>
+                  <span className={donateCreatorPercent > 0 ? "text-pink-600 dark:text-pink-400 font-medium" : ""}>
+                    {Math.round(75 + (20 * donateCreatorPercent / 100))}% Charity · 5% Buyback · {Math.round(20 - (20 * donateCreatorPercent / 100))}% You
+                  </span>
+                </div>
+                {donateCreatorPercent === 100 && (
+                  <p className="text-pink-600 dark:text-pink-400 mt-2">
                     Maximum impact! 100% of fees support good causes.
                   </p>
                 )}

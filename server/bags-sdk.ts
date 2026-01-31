@@ -8,8 +8,6 @@ import {
   CHARITY_FEE_BPS, 
   BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
-  CHARITY_FEE_BPS_WITH_DONATION,
-  CREATOR_FEE_BPS_WITH_DONATION,
   PARTNER_WALLET,
   TOTAL_FEE_BPS
 } from "@shared/schema";
@@ -293,7 +291,10 @@ export interface FeeShareConfigParams {
   charityWallet?: string;        // Direct wallet payout (optional)
   charityTwitterHandle?: string; // X account for Bags.fm claim system (optional)
   payoutMethod: "wallet" | "twitter";
-  donateCreatorShare?: boolean;  // If true, creator share goes to charity (default: false)
+  // Creator can donate 0-100% of their 20% share to charity (presets: 0, 25, 50, 75, 100)
+  donateCreatorPercent?: number;
+  // Legacy field for backward compat (true = 100% donation)
+  donateCreatorShare?: boolean;
 }
 
 export interface FeeShareResult {
@@ -309,11 +310,19 @@ export async function createFeeShareConfig(
 ): Promise<FeeShareResult> {
   const sdk = getBagsSDK();
   
-  // Calculate BPS split based on donateCreatorShare toggle
-  const donateCreatorShare = params.donateCreatorShare ?? false;
-  const charityBps = donateCreatorShare ? CHARITY_FEE_BPS_WITH_DONATION : CHARITY_FEE_BPS;
-  const buybackBps = BUYBACK_FEE_BPS; // Always 1500 BPS (15%)
-  const creatorBps = donateCreatorShare ? CREATOR_FEE_BPS_WITH_DONATION : CREATOR_FEE_BPS;
+  // Calculate BPS split based on creator donation percentage
+  // Support both new donateCreatorPercent (0-100) and legacy donateCreatorShare (boolean)
+  let donateCreatorPercent = params.donateCreatorPercent ?? 0;
+  if (params.donateCreatorShare === true && donateCreatorPercent === 0) {
+    donateCreatorPercent = 100; // Legacy toggle was ON = 100% donation
+  }
+  
+  // Calculate BPS split: creator can donate 0-100% of their 20% (2000 BPS) share
+  // donated_creator_bps = round(CREATOR_FEE_BPS * donate_pct / 100)
+  const donatedCreatorBps = Math.round(CREATOR_FEE_BPS * donateCreatorPercent / 100);
+  const charityBps = CHARITY_FEE_BPS + donatedCreatorBps;
+  const buybackBps = BUYBACK_FEE_BPS; // Always 500 BPS (5%)
+  const creatorBps = CREATOR_FEE_BPS - donatedCreatorBps;
   
   // Validate BPS sum equals 10000
   const totalBps = charityBps + buybackBps + creatorBps;
@@ -321,7 +330,7 @@ export async function createFeeShareConfig(
     throw new Error(`Invalid fee split: ${charityBps} + ${buybackBps} + ${creatorBps} = ${totalBps}, expected ${TOTAL_FEE_BPS}`);
   }
   
-  console.log(`Bags SDK: Fee split - charity=${charityBps}, buyback=${buybackBps}, creator=${creatorBps}, donateCreatorShare=${donateCreatorShare}`);
+  console.log(`Bags SDK: Fee split - charity=${charityBps}, buyback=${buybackBps}, creator=${creatorBps}, donateCreatorPercent=${donateCreatorPercent}`);
   
   // Validate required public keys
   const tokenMintPubkey = validatePublicKey(params.tokenMint, "token mint");

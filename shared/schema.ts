@@ -247,11 +247,11 @@ export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
 // Fee constants - 1% total fee (royalty stream from Bags.fm)
-// NEW Split: 0.75% charity + 0.15% FYI buyback + 0.10% creator = 1% total
-// With "Donate creator share" toggle ON: 0.85% charity + 0.15% buyback + 0% creator
+// NEW Split: 0.75% charity + 0.05% FYI buyback + 0.20% creator = 1% total
+// Creator can donate 0%, 25%, 50%, 75%, or 100% of their 20% share to charity
 export const CHARITY_FEE_PERCENTAGE = 0.75; // 0.75% to charity (default)
-export const BUYBACK_FEE_PERCENTAGE = 0.15; // 0.15% to FYI buyback
-export const CREATOR_FEE_PERCENTAGE = 0.10; // 0.10% to token creator
+export const BUYBACK_FEE_PERCENTAGE = 0.05; // 0.05% to FYI buyback
+export const CREATOR_FEE_PERCENTAGE = 0.20; // 0.20% to token creator
 export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1%
 
 // Legacy constant for backward compatibility in some UI components
@@ -264,20 +264,20 @@ export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as 
 
 // Fee distribution in basis points (must total 10000 BPS = 100% of the 1% royalty stream)
 // This represents the split of collected fees, not the fee rate
-// NEW DEFAULTS: Charity: 75%, Buyback: 15%, Creator: 10%
+// DEFAULT: Charity: 75%, Buyback: 5%, Creator: 20%
 export const CHARITY_FEE_BPS = 7500; // 75% of fees go to charity
-export const BUYBACK_FEE_BPS = 1500; // 15% of fees go to FYI buyback
-export const CREATOR_FEE_BPS = 1000; // 10% of fees go to creator
+export const BUYBACK_FEE_BPS = 500; // 5% of fees go to FYI buyback
+export const CREATOR_FEE_BPS = 2000; // 20% of fees go to creator
 export const TOTAL_FEE_BPS = 10000; // Must equal 10000 (100%)
 
-// With "Donate creator share" toggle ON:
-export const CHARITY_FEE_BPS_WITH_DONATION = 8500; // 85% of fees go to charity
-export const CREATOR_FEE_BPS_WITH_DONATION = 0; // Creator donates their share
+// Creator donation presets (as percentages of creator share)
+export const CREATOR_DONATION_PRESETS = [0, 25, 50, 75, 100] as const;
+export type CreatorDonationPercent = typeof CREATOR_DONATION_PRESETS[number];
 
-// Legacy constant for backward compatibility (old tokens used 25% platform fee)
+// Legacy constant for backward compatibility (old tokens used different splits)
 export const PLATFORM_FEE_BPS = 2500; // DEPRECATED: Old platform fee, kept for backward compat
 export const LEGACY_CHARITY_BPS = 7500; // Old tokens: 75% charity
-export const LEGACY_BUYBACK_BPS = 2500; // Old tokens: 25% buyback
+export const LEGACY_BUYBACK_BPS = 2500; // Old tokens: 25% buyback (pre-creator split)
 export const LEGACY_CREATOR_BPS = 0; // Old tokens: 0% creator
 
 // Partner referral wallet for earning Bags.fm credits

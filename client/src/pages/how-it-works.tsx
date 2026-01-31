@@ -151,7 +151,7 @@ export default function HowItWorksPage() {
                       <p className="text-sm text-muted-foreground">Platform fee auto-buys FYI every hour</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.15%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.05%</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -164,7 +164,7 @@ export default function HowItWorksPage() {
                       <p className="text-sm text-muted-foreground">Optional: can donate to charity at launch</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">0.10%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">0.20%</Badge>
                 </div>
 
                 <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
