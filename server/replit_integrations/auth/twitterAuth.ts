@@ -51,16 +51,14 @@ export function getSession() {
 }
 
 function getBaseUrl(req: any): string {
-  // Use REPLIT_DOMAINS for production, otherwise construct from request
-  const replitDomains = process.env.REPLIT_DOMAINS;
-  if (replitDomains) {
-    const primaryDomain = replitDomains.split(",")[0];
-    return `https://${primaryDomain}`;
-  }
-  
-  // For development or custom domains
-  const protocol = req.protocol || "https";
+  // Always use the request host header - this correctly handles:
+  // 1. Custom domains (goodbags.tech)
+  // 2. Replit dev domains
+  // 3. Local development
   const host = req.get("host") || req.hostname;
+  // In production/Replit, always use HTTPS
+  const isSecure = req.secure || req.get("x-forwarded-proto") === "https" || process.env.NODE_ENV === "production";
+  const protocol = isSecure ? "https" : "http";
   return `${protocol}://${host}`;
 }
 
