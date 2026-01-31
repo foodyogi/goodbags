@@ -309,23 +309,37 @@ export interface TokenInfoResult {
 export async function createTokenInfoAndMetadata(params: TokenLaunchParams): Promise<TokenInfoResult> {
   const sdk = getBagsSDK();
   
-  console.log(`Bags SDK: Calling createTokenInfoAndMetadata for ${params.name} (${params.symbol})`);
+  const requestParams = {
+    name: params.name,
+    symbol: params.symbol.toUpperCase().replace("$", ""),
+    description: params.description || "",
+    imageUrl: params.imageUrl || "",
+    twitter: params.twitterUrl || "",
+    website: params.websiteUrl || "",
+  };
   
-  const result = await withRetry(
-    () => sdk.tokenLaunch.createTokenInfoAndMetadata({
-      name: params.name,
-      symbol: params.symbol.toUpperCase().replace("$", ""),
-      description: params.description || "",
-      imageUrl: params.imageUrl || "",
-      twitter: params.twitterUrl || "",
-      website: params.websiteUrl || "",
-    }),
-    "createTokenInfoAndMetadata",
-    3, // max retries
-    2000 // 2 second base delay
-  );
+  console.log(`[Bags SDK] createTokenInfoAndMetadata request:`, JSON.stringify(requestParams, null, 2));
+  console.log(`[Bags SDK] API Key configured: ${!!BAGS_API_KEY}, Length: ${BAGS_API_KEY?.length || 0}`);
+  
+  try {
+    const result = await withRetry(
+      () => sdk.tokenLaunch.createTokenInfoAndMetadata(requestParams),
+      "createTokenInfoAndMetadata",
+      3, // max retries
+      2000 // 2 second base delay
+    );
+    
+    console.log(`[Bags SDK] createTokenInfoAndMetadata SUCCESS`);
+    return processTokenInfoResult(result);
+  } catch (error) {
+    console.error(`[Bags SDK] createTokenInfoAndMetadata FAILED:`, error);
+    console.error(`[Bags SDK] Error details:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2).slice(0, 2000));
+    throw error;
+  }
+}
 
-  console.log(`Bags SDK: createTokenInfoAndMetadata returned`);
+function processTokenInfoResult(result: any): TokenInfoResult {
+  console.log(`[Bags SDK] Processing tokenInfoResult...`);
   
   // Normalize tokenMint to base58 string - SDK may return PublicKey object, buffer, Keypair, or string
   let tokenMintString: string;
