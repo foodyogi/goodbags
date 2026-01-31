@@ -35,17 +35,28 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
-  const isProduction = process.env.NODE_ENV === "production";
+  
+  // Always use secure cookies in production (Replit/custom domains use HTTPS)
+  const isProduction = process.env.NODE_ENV === "production" || 
+                       !!process.env.REPLIT_DOMAINS || 
+                       !!process.env.REPL_ID;
+  
+  console.log(`[Session] Initializing session - isProduction: ${isProduction}`);
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force save on each request for cross-redirect persistence
+    saveUninitialized: true, // Create session before OAuth redirect
+    rolling: true, // Extend session on each request
+    name: "goodbags.sid", // Custom session name
+    proxy: true, // Trust first proxy (Replit's load balancer)
     cookie: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "lax" : "lax",
+      secure: isProduction, // Always secure on Replit/production
+      sameSite: "lax", // Lax allows OAuth redirects
       maxAge: sessionTtl,
+      path: "/",
     },
   });
 }
@@ -234,6 +245,26 @@ export async function setupAuth(app: Express) {
       req.session.destroy(() => {
         res.redirect("/");
       });
+    });
+  });
+
+  // Debug endpoint to check session state (useful for troubleshooting)
+  app.get("/api/auth/debug", (req, res) => {
+    const sessionId = req.sessionID;
+    const hasSession = !!req.session;
+    const isAuth = req.isAuthenticated();
+    const user = req.user;
+    const cookies = req.headers.cookie || "none";
+    
+    console.log(`[Auth Debug] sessionId: ${sessionId?.substring(0, 8)}..., hasSession: ${hasSession}, isAuth: ${isAuth}, user: ${user ? (user as any).username : 'none'}`);
+    console.log(`[Auth Debug] Cookies received: ${cookies.substring(0, 100)}...`);
+    
+    res.json({
+      hasSession,
+      isAuthenticated: isAuth,
+      sessionId: sessionId ? `${sessionId.substring(0, 8)}...` : null,
+      user: user ? { id: (user as any).id, username: (user as any).username } : null,
+      hasCookies: cookies !== "none",
     });
   });
 }
