@@ -43,7 +43,7 @@ export function LoginPromptModal({ autoOpen = true, delayMs = 500 }: LoginPrompt
   }, [autoOpen, isLoading, isAuthenticated, hasShownThisSession, delayMs]);
 
   const handleLogin = () => {
-    const currentPath = window.location.pathname + window.location.search;
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
     window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
   };
 

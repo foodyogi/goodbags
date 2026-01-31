@@ -793,7 +793,7 @@ export function TokenLaunchForm() {
             </p>
             <Button
               onClick={() => {
-                const currentPath = window.location.pathname + window.location.search;
+                const currentPath = window.location.pathname + window.location.search + (window.location.hash || '#launch-form');
                 window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
               }}
               className="h-9 text-sm gap-2"
@@ -1351,7 +1351,7 @@ export function TokenLaunchForm() {
                           solanaAddress: selectedCharity.solanaAddress,
                         } : undefined,
                       });
-                      const currentPath = window.location.pathname + window.location.search;
+                      const currentPath = window.location.pathname + window.location.search + (window.location.hash || '#launch-form');
                       window.location.href = `/api/login?returnTo=${encodeURIComponent(currentPath)}`;
                     }}
                     className="gap-2"
