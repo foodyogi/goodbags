@@ -122,10 +122,26 @@ function parseBagsApiError(error: unknown): BagsApiError {
         false // Auth errors are not retryable
       );
     case 403:
+      // Enhanced logging for 403 errors to help diagnose the source
+      console.error(`[Bags SDK] 403 Forbidden Error Details:`);
+      console.error(`  Original message: ${errorMessage}`);
+      console.error(`  API message: ${apiMessage || 'none'}`);
+      console.error(`  Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`  Full error:`, JSON.stringify(error, null, 2).slice(0, 1000));
+      
+      // Check if this is an RPC error vs Bags.fm API error
+      const isRpcError = errorMessage.includes('rpc') || errorMessage.includes('RPC') || 
+                         errorMessage.includes('solana') || errorMessage.includes('Solana') ||
+                         errorMessage.includes('jsonrpc');
+      
+      const userMsg = isRpcError 
+        ? "Solana network connection was rejected. The RPC endpoint may be rate-limited. Please try again in a moment."
+        : "Token launch service access denied. This may indicate an API key issue. Please verify your BAGS_API_KEY is correct and try again.";
+      
       return new BagsApiError(
         code,
         `Bags.fm API access forbidden: ${apiMessage || errorMessage}`,
-        "Token launch service access denied. This may indicate an API key issue or account restriction. Please try again later or contact support if the issue persists.",
+        userMsg,
         error,
         false // 403 is not retryable - indicates permission/auth issue
       );

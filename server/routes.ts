@@ -1198,11 +1198,34 @@ export async function registerRoutes(
 
   // === TOKEN ENDPOINTS ===
 
-  // Check if Bags SDK is configured
+  // Check if Bags SDK is configured and test RPC connection
   app.get("/api/bags/status", async (req, res) => {
-    res.json({
+    const status: {
+      configured: boolean;
+      rpcConnected?: boolean;
+      rpcError?: string;
+      rpcUrl?: string;
+    } = {
       configured: bagsSDK.isConfigured(),
-    });
+    };
+    
+    // Optionally test RPC connection if ?test=true is passed
+    if (req.query.test === 'true') {
+      try {
+        const connection = bagsSDK.getConnection();
+        // Test RPC by getting the latest blockhash (lightweight operation)
+        const blockHeight = await connection.getBlockHeight();
+        status.rpcConnected = true;
+        status.rpcUrl = process.env.SOLANA_RPC_URL ? 'custom' : 'default (mainnet-beta)';
+        console.log(`[Bags Status] RPC check passed, block height: ${blockHeight}`);
+      } catch (rpcError) {
+        status.rpcConnected = false;
+        status.rpcError = rpcError instanceof Error ? rpcError.message : String(rpcError);
+        console.error(`[Bags Status] RPC check failed:`, status.rpcError);
+      }
+    }
+    
+    res.json(status);
   });
 
   // Step 1: Create token metadata on Bags.fm
