@@ -20,12 +20,21 @@ import {
   AlertCircle,
   Clock3,
   Globe,
-  MessageCircle
+  MessageCircle,
+  User
 } from "lucide-react";
 import { SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { useState } from "react";
-import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE, TOKEN_APPROVAL_STATUS } from "@shared/schema";
+import { 
+  CHARITY_FEE_PERCENTAGE, 
+  BUYBACK_FEE_PERCENTAGE,
+  CREATOR_FEE_PERCENTAGE,
+  CHARITY_FEE_BPS,
+  BUYBACK_FEE_BPS,
+  CREATOR_FEE_BPS,
+  TOKEN_APPROVAL_STATUS 
+} from "@shared/schema";
 import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
@@ -48,6 +57,10 @@ interface TokenImpactData {
     charityWebsite?: string | null;
     charityTwitter?: string | null;
     charityFacebook?: string | null;
+    charityBps?: number | null;
+    buybackBps?: number | null;
+    creatorBps?: number | null;
+    donateCreatorShare?: boolean | null;
   };
   impact: {
     totalDonated: string;
@@ -351,33 +364,51 @@ export default function TokenDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
+                {/* Show per-token split if available, otherwise use defaults */}
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Heart className="h-4 w-4 text-pink-500" />
                     <span className="text-sm">To Charity</span>
+                    {token.donateCreatorShare && (
+                      <Badge variant="secondary" className="text-xs">+Creator Share</Badge>
+                    )}
                   </div>
                   <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
-                    {CHARITY_FEE_PERCENTAGE}%
+                    {token.charityBps ? (token.charityBps / 100).toFixed(2) : CHARITY_FEE_PERCENTAGE}%
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">Platform (FYI Buyback)</span>
+                    <span className="text-sm">FYI Buyback</span>
                   </div>
                   <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                    {PLATFORM_FEE_PERCENTAGE}%
+                    {token.buybackBps ? (token.buybackBps / 100).toFixed(2) : BUYBACK_FEE_PERCENTAGE}%
                   </Badge>
                 </div>
+                {/* Show creator share if not donated */}
+                {!token.donateCreatorShare && (
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Token Creator</span>
+                    </div>
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      {token.creatorBps ? (token.creatorBps / 100).toFixed(2) : CREATOR_FEE_PERCENTAGE}%
+                    </Badge>
+                  </div>
+                )}
                 <div className="pt-3 border-t">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total Fee</span>
                     <Badge variant="outline" className="font-bold">
-                      {CHARITY_FEE_PERCENTAGE + PLATFORM_FEE_PERCENTAGE}%
+                      1%
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Low 1% total fee keeps trading volume high
+                    {token.donateCreatorShare 
+                      ? "Creator donated their share - 100% of fees support good causes!" 
+                      : "Low 1% total fee keeps trading volume high"}
                   </p>
                 </div>
               </div>

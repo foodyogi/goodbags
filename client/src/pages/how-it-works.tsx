@@ -12,7 +12,8 @@ import {
   Lock,
   Eye,
   FileCheck,
-  ArrowRight
+  ArrowRight,
+  User
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
 
@@ -134,10 +135,10 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">Your Chosen Charity</p>
-                      <p className="text-sm text-muted-foreground">Most of the trading royalty goes to verified charities</p>
+                      <p className="text-sm text-muted-foreground">Majority of trading royalty goes to verified charities</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75% direct</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75%</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -150,7 +151,20 @@ export default function HowItWorksPage() {
                       <p className="text-sm text-muted-foreground">Platform fee auto-buys FYI every hour</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.25%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.15%</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 dark:bg-green-600">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Token Creator</p>
+                      <p className="text-sm text-muted-foreground">Optional: can donate to charity at launch</p>
+                    </div>
+                  </div>
+                  <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">0.10%</Badge>
                 </div>
 
                 <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">

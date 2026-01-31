@@ -3,7 +3,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   CHARITY_FEE_PERCENTAGE, 
-  PLATFORM_FEE_PERCENTAGE,
+  BUYBACK_FEE_PERCENTAGE,
+  CREATOR_FEE_PERCENTAGE,
+  PLATFORM_FEE_PERCENTAGE, // Legacy: for backward compat
+  CHARITY_FEE_BPS,
+  BUYBACK_FEE_BPS,
+  CREATOR_FEE_BPS,
+  CHARITY_FEE_BPS_WITH_DONATION,
+  CREATOR_FEE_BPS_WITH_DONATION,
+  LEGACY_CHARITY_BPS,
+  LEGACY_BUYBACK_BPS,
+  LEGACY_CREATOR_BPS,
   tokenLaunchFormSchema,
   charityApplicationSchema,
   CHARITY_STATUS,
@@ -145,6 +155,7 @@ const tokenLaunchRequestSchema = tokenLaunchFormSchema.extend({
   charitySource: z.enum(["change", "local"]).default("change"),
   charitySolanaAddress: z.string().nullable().optional(), // For Change API charities - can be null if using Twitter
   isTest: z.boolean().optional().default(false), // Test mode flag
+  donateCreatorShare: z.boolean().optional().default(false), // If true, creator's 10% share goes to charity
 });
 
 // Import Change API for server-side verification
@@ -1326,7 +1337,7 @@ export async function registerRoutes(
   // Rate limited: 10 requests per minute
   app.post("/api/tokens/config", rateLimitMiddleware(10), async (req, res) => {
     try {
-      const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress } = req.body;
+      const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress, donateCreatorShare } = req.body;
       
       if (!tokenMint || !creatorWallet || !charityId) {
         return res.status(400).json({
@@ -1442,6 +1453,7 @@ export async function registerRoutes(
         charityWallet,
         charityTwitterHandle,
         payoutMethod,
+        donateCreatorShare: donateCreatorShare ?? false,
       });
 
       res.json({
@@ -1449,6 +1461,9 @@ export async function registerRoutes(
         mock: false,
         configKey: config.configKey,
         transactions: config.transactions,
+        charityBps: config.charityBps,
+        buybackBps: config.buybackBps,
+        creatorBps: config.creatorBps,
       });
     } catch (error) {
       console.error("Config creation error:", error);
@@ -1600,15 +1615,23 @@ export async function registerRoutes(
         };
       }
       
-      // Calculate fees
+      // Calculate fees based on donateCreatorShare toggle
       const initialBuy = parseFloat(validated.initialBuyAmount) || 0;
-      const charityDonation = (initialBuy * CHARITY_FEE_PERCENTAGE / 100).toFixed(9);
-      const platformFee = (initialBuy * PLATFORM_FEE_PERCENTAGE / 100).toFixed(9);
+      const donateCreatorShare = validated.donateCreatorShare ?? false;
+      
+      // Determine BPS split for this token
+      const charityBps = donateCreatorShare ? CHARITY_FEE_BPS_WITH_DONATION : CHARITY_FEE_BPS;
+      const buybackBps = BUYBACK_FEE_BPS; // Always 1500 BPS (15%)
+      const creatorBps = donateCreatorShare ? CREATOR_FEE_BPS_WITH_DONATION : CREATOR_FEE_BPS;
+      
+      // Calculate actual fee amounts based on BPS (for the 1% royalty stream)
+      const charityDonation = (initialBuy * (charityBps / 10000) / 100).toFixed(9);
+      const platformFee = (initialBuy * (buybackBps / 10000) / 100).toFixed(9);
       
       // Check if this is a test mode launch
       const isTestLaunch = validated.isTest === true;
       
-      // Create the token record with charity approval tracking
+      // Create the token record with charity approval tracking and fee split
       const token = await storage.createLaunchedToken({
         name: validated.name,
         symbol: validated.symbol,
@@ -1633,9 +1656,14 @@ export async function registerRoutes(
         transactionSignature: transactionSignature || `tx${randomUUID().replace(/-/g, "")}`,
         // Test mode flag
         isTest: isTestLaunch,
+        // Per-token fee split (new fields)
+        charityBps,
+        buybackBps,
+        creatorBps,
+        donateCreatorShare,
       });
 
-      // Log the launch
+      // Log the launch with fee split info
       await storage.createAuditLog({
         action: isTestLaunch ? "TEST_TOKEN_LAUNCHED" : "TOKEN_LAUNCHED",
         entityType: "token",
@@ -1648,6 +1676,7 @@ export async function registerRoutes(
           charitySource: charityInfo.source,
           initialBuy,
           isTest: isTestLaunch,
+          feeSplit: { charityBps, buybackBps, creatorBps, donateCreatorShare },
         }),
       });
       

@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { Heart, Coins, TrendingUp, ArrowRight, Plus } from "lucide-react";
+import { Heart, Coins, TrendingUp, User, Plus } from "lucide-react";
 import { 
   CHARITY_FEE_PERCENTAGE, 
-  PLATFORM_FEE_PERCENTAGE,
+  BUYBACK_FEE_PERCENTAGE,
+  CREATOR_FEE_PERCENTAGE,
   TOTAL_FEE_PERCENTAGE
 } from "@shared/schema";
 
@@ -52,9 +53,11 @@ export function FeeTransparency() {
         <Card className="max-w-2xl mx-auto p-6">
           <div className="mb-6 p-4 rounded-lg bg-pink-500/5 border border-pink-500/20">
             <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
-              <span className="font-semibold text-pink-600 dark:text-pink-400">{CHARITY_FEE_PERCENTAGE}% to charity</span>
+              <span className="font-semibold text-pink-600 dark:text-pink-400">{CHARITY_FEE_PERCENTAGE}% charity</span>
               <Plus className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{PLATFORM_FEE_PERCENTAGE}% platform</span>
+              <span className="font-semibold">{BUYBACK_FEE_PERCENTAGE}% buyback</span>
+              <Plus className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold">{CREATOR_FEE_PERCENTAGE}% creator</span>
               <span className="text-muted-foreground">=</span>
               <span className="font-bold">{TOTAL_FEE_PERCENTAGE}% total per trade</span>
             </div>
@@ -64,18 +67,26 @@ export function FeeTransparency() {
             <FeeRow
               percentage={`${CHARITY_FEE_PERCENTAGE}%`}
               recipient="to Your Chosen Charity"
-              description="The full trading royalty goes directly to verified charities you choose"
+              description="Majority of trading fees go directly to verified charities you choose"
               icon={Heart}
               color="bg-pink-500 dark:bg-pink-600"
               testId="fee-row-charity"
             />
             <FeeRow
-              percentage={`+${PLATFORM_FEE_PERCENTAGE}%`}
+              percentage={`${BUYBACK_FEE_PERCENTAGE}%`}
               recipient="to FYI Buyback"
-              description="Additional platform fee auto-buys FYI tokens, supporting the ecosystem"
+              description="Automatically buys FYI tokens, supporting the ecosystem"
               icon={TrendingUp}
               color="bg-secondary"
-              testId="fee-row-platform"
+              testId="fee-row-buyback"
+            />
+            <FeeRow
+              percentage={`${CREATOR_FEE_PERCENTAGE}%`}
+              recipient="to Token Creator"
+              description="Reward for launching a charity-focused token (can be donated to charity)"
+              icon={User}
+              color="bg-blue-500 dark:bg-blue-600"
+              testId="fee-row-creator"
             />
           </div>
 

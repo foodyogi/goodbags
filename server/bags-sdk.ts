@@ -6,9 +6,12 @@ const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import { 
   PLATFORM_WALLET, 
   CHARITY_FEE_BPS, 
-  PLATFORM_FEE_BPS, 
+  BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
-  PARTNER_WALLET
+  CHARITY_FEE_BPS_WITH_DONATION,
+  CREATOR_FEE_BPS_WITH_DONATION,
+  PARTNER_WALLET,
+  TOTAL_FEE_BPS
 } from "@shared/schema";
 
 const BAGS_API_KEY = process.env.BAGS_API_KEY;
@@ -290,12 +293,35 @@ export interface FeeShareConfigParams {
   charityWallet?: string;        // Direct wallet payout (optional)
   charityTwitterHandle?: string; // X account for Bags.fm claim system (optional)
   payoutMethod: "wallet" | "twitter";
+  donateCreatorShare?: boolean;  // If true, creator share goes to charity (default: false)
+}
+
+export interface FeeShareResult {
+  configKey: string;
+  transactions: string[];
+  charityBps: number;
+  buybackBps: number;
+  creatorBps: number;
 }
 
 export async function createFeeShareConfig(
   params: FeeShareConfigParams
-): Promise<{ configKey: string; transactions: string[] }> {
+): Promise<FeeShareResult> {
   const sdk = getBagsSDK();
+  
+  // Calculate BPS split based on donateCreatorShare toggle
+  const donateCreatorShare = params.donateCreatorShare ?? false;
+  const charityBps = donateCreatorShare ? CHARITY_FEE_BPS_WITH_DONATION : CHARITY_FEE_BPS;
+  const buybackBps = BUYBACK_FEE_BPS; // Always 1500 BPS (15%)
+  const creatorBps = donateCreatorShare ? CREATOR_FEE_BPS_WITH_DONATION : CREATOR_FEE_BPS;
+  
+  // Validate BPS sum equals 10000
+  const totalBps = charityBps + buybackBps + creatorBps;
+  if (totalBps !== TOTAL_FEE_BPS) {
+    throw new Error(`Invalid fee split: ${charityBps} + ${buybackBps} + ${creatorBps} = ${totalBps}, expected ${TOTAL_FEE_BPS}`);
+  }
+  
+  console.log(`Bags SDK: Fee split - charity=${charityBps}, buyback=${buybackBps}, creator=${creatorBps}, donateCreatorShare=${donateCreatorShare}`);
   
   // Validate required public keys
   const tokenMintPubkey = validatePublicKey(params.tokenMint, "token mint");
@@ -320,7 +346,15 @@ export async function createFeeShareConfig(
     }
   }
   
-  let feeClaimers: any[];
+  // Build fee claimers array - only include recipients with BPS > 0
+  let feeClaimers: any[] = [];
+  
+  // Helper to add claimer if BPS > 0
+  const addClaimer = (user: PublicKey, bps: number) => {
+    if (bps > 0) {
+      feeClaimers.push({ user, userBps: bps });
+    }
+  };
   
   if (params.payoutMethod === "twitter" && params.charityTwitterHandle) {
     // Sanitize twitter handle: remove @ prefix and trim whitespace
@@ -346,20 +380,18 @@ export async function createFeeShareConfig(
       throw new Error(`Failed to resolve X handle @${sanitizedHandle} to wallet. The charity may need to register with Bags.fm first. Error: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Now use the resolved wallet in the fee claimers
-    feeClaimers = [
-      { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
-      { user: charityWalletFromTwitter, userBps: CHARITY_FEE_BPS },
-      { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
-    ];
+    // Build fee claimers - only add creator if they have BPS allocation
+    addClaimer(creatorPubkey, creatorBps);
+    addClaimer(charityWalletFromTwitter, charityBps);
+    addClaimer(platformPubkey, buybackBps);
   } else if (params.charityWallet) {
     // Direct wallet payout
     const charityPubkey = validatePublicKey(params.charityWallet, "charity wallet");
-    feeClaimers = [
-      { user: creatorPubkey, userBps: CREATOR_FEE_BPS },
-      { user: charityPubkey, userBps: CHARITY_FEE_BPS },
-      { user: platformPubkey, userBps: PLATFORM_FEE_BPS },
-    ];
+    
+    // Build fee claimers - only add creator if they have BPS allocation
+    addClaimer(creatorPubkey, creatorBps);
+    addClaimer(charityPubkey, charityBps);
+    addClaimer(platformPubkey, buybackBps);
   } else {
     throw new Error("Either charityWallet or charityTwitterHandle is required");
   }
@@ -425,6 +457,9 @@ export async function createFeeShareConfig(
   return {
     configKey,
     transactions: serializedTxs,
+    charityBps,
+    buybackBps,
+    creatorBps,
   };
 }
 

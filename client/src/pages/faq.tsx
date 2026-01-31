@@ -53,7 +53,7 @@ const faqCategories = [
     questions: [
       {
         question: "What fees does GoodBags charge?",
-        answer: "GoodBags applies a 1% trading royalty on all token trades. Of this 1%: 0.75% goes directly to your chosen charity, and 0.25% goes to FYI token buybacks to support platform sustainability. This is one of the lowest fee structures in the memecoin space."
+        answer: "GoodBags applies a 1% trading royalty on all token trades. Of this 1%: 0.75% goes directly to your chosen charity, 0.15% goes to FYI token buybacks, and 0.10% goes to the token creator. Creators can optionally donate their share to charity at launch, increasing the charity portion to 0.85%. This is one of the lowest and most transparent fee structures in the memecoin space."
       },
       {
         question: "How do charities receive donations?",
@@ -145,7 +145,7 @@ const faqCategories = [
     questions: [
       {
         question: "What is the FYI token?",
-        answer: "FYI is the GoodBags platform token. A portion of platform fees (0.25% of trades) automatically buys FYI tokens, creating constant buy pressure and supporting platform sustainability."
+        answer: "FYI is the GoodBags platform token. A portion of trading fees (0.15% of trades) automatically buys FYI tokens, creating constant buy pressure and supporting platform sustainability."
       },
       {
         question: "How does the buyback work?",

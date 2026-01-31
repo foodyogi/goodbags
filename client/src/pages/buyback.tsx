@@ -88,7 +88,7 @@ export default function BuybackPage() {
             FYI Token Buyback Dashboard
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            0.25% of all trading fees on GoodBags automatically buy FYI tokens. 
+            0.15% of all trading fees on GoodBags automatically buy FYI tokens. 
             This creates constant buy pressure and supports the ecosystem. 
             Every transaction is publicly verifiable.
           </p>
@@ -102,7 +102,7 @@ export default function BuybackPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
               <Coins className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">0.25% Platform Fee</span>
+              <span className="text-sm font-medium">0.15% Buyback Fee</span>
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">

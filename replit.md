@@ -1,7 +1,16 @@
 # GoodBags - Solana Memecoin Launcher for Social Impact
 
 ## Overview
-GoodBags is a Solana-based memecoin launcher platform that enables users to create and launch memecoins with built-in charity donations. The platform integrates with Bags.fm and features a comprehensive system for verifying charities, managing donations, and ensuring transparency. Key capabilities include launching tokens tied to over 75 verified charities, an X Account Payout System for charities to claim donations, and an anti-rug pull token approval system where charities endorse tokens launched in their name. The platform charges a 1% fee, split between charity donations (0.75%) and platform operations (0.25%) which fuels an automated token buyback system for FYI tokens. GoodBags aims to provide a secure and transparent way to leverage memecoins for social impact, offering public dashboards for impact tracking and detailed explanations of its mechanisms.
+GoodBags is a Solana-based memecoin launcher platform that enables users to create and launch memecoins with built-in charity donations. The platform integrates with Bags.fm and features a comprehensive system for verifying charities, managing donations, and ensuring transparency. Key capabilities include launching tokens tied to over 75 verified charities, an X Account Payout System for charities to claim donations, and an anti-rug pull token approval system where charities endorse tokens launched in their name. 
+
+The platform charges a 1% fee with a 3-way split:
+- **0.75% to charity** - Majority of fees go directly to verified charities
+- **0.15% to FYI buyback** - Supports the ecosystem through automated token buybacks
+- **0.10% to token creator** - Optional: creators can donate their share to charity at launch
+
+When creators enable "Donate My Creator Share", the charity receives 0.85% instead of 0.75%. Each token stores its fee split in the database (charity_bps, buyback_bps, creator_bps) for historical accuracy.
+
+GoodBags aims to provide a secure and transparent way to leverage memecoins for social impact, offering public dashboards for impact tracking and detailed explanations of its mechanisms.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

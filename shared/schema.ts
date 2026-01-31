@@ -141,6 +141,12 @@ export const launchedTokens = pgTable("launched_tokens", {
   lastDonationAt: timestamp("last_donation_at"),
   // Test mode flag - marks tokens created in test mode (not real on-chain tokens)
   isTest: boolean("is_test").default(false),
+  // Per-token fee split configuration (stored at launch time for historical accuracy)
+  // BPS values represent split of the 1% royalty stream (10000 BPS = 100% of the 1%)
+  charityBps: integer("charity_bps").notNull().default(7500), // Default: 75% to charity
+  buybackBps: integer("buyback_bps").notNull().default(1500), // Default: 15% to FYI buyback
+  creatorBps: integer("creator_bps").notNull().default(1000), // Default: 10% to creator
+  donateCreatorShare: boolean("donate_creator_share").notNull().default(false), // If true, creator share goes to charity
 });
 
 // Donation tracking table - blockchain verified
@@ -240,25 +246,39 @@ export type Buyback = typeof buybacks.$inferSelect;
 export type TokenLaunchForm = z.infer<typeof tokenLaunchFormSchema>;
 export type CharityApplication = z.infer<typeof charityApplicationSchema>;
 
-// Fee constants - 1% total fee
-// Split: 0.75% to charity + 0.25% platform fee for FYI buyback = 1% total
-export const CHARITY_FEE_PERCENTAGE = 0.75; // 0.75% to charity
-export const PLATFORM_FEE_PERCENTAGE = 0.25; // 0.25% platform fee for FYI buyback
+// Fee constants - 1% total fee (royalty stream from Bags.fm)
+// NEW Split: 0.75% charity + 0.15% FYI buyback + 0.10% creator = 1% total
+// With "Donate creator share" toggle ON: 0.85% charity + 0.15% buyback + 0% creator
+export const CHARITY_FEE_PERCENTAGE = 0.75; // 0.75% to charity (default)
+export const BUYBACK_FEE_PERCENTAGE = 0.15; // 0.15% to FYI buyback
+export const CREATOR_FEE_PERCENTAGE = 0.10; // 0.10% to token creator
 export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1%
-export const CREATOR_FEE_PERCENTAGE = 0; // Creators do not receive trading fees
 
-// Platform wallet for collecting platform fees (must be set in environment or use a default devnet address)
+// Legacy constant for backward compatibility in some UI components
+export const PLATFORM_FEE_PERCENTAGE = 0.25; // DEPRECATED: Old platform fee, kept for backward compat
+
+// Platform wallet for collecting platform fees (FYI buyback)
 // In production, set PLATFORM_WALLET_ADDRESS environment variable
 // For devnet/testing, using a valid test wallet address
 export const PLATFORM_WALLET = "So1iMpaCTFee1111111111111111111111111111111" as const;
 
-// Fee distribution in basis points (must total 10000 BPS = 100%)
+// Fee distribution in basis points (must total 10000 BPS = 100% of the 1% royalty stream)
 // This represents the split of collected fees, not the fee rate
-// Charity: 75% of fees, Platform: 25% of fees
+// NEW DEFAULTS: Charity: 75%, Buyback: 15%, Creator: 10%
 export const CHARITY_FEE_BPS = 7500; // 75% of fees go to charity
-export const PLATFORM_FEE_BPS = 2500; // 25% of fees go to platform
+export const BUYBACK_FEE_BPS = 1500; // 15% of fees go to FYI buyback
+export const CREATOR_FEE_BPS = 1000; // 10% of fees go to creator
 export const TOTAL_FEE_BPS = 10000; // Must equal 10000 (100%)
-export const CREATOR_FEE_BPS = 0; // Creator receives 0% of fees
+
+// With "Donate creator share" toggle ON:
+export const CHARITY_FEE_BPS_WITH_DONATION = 8500; // 85% of fees go to charity
+export const CREATOR_FEE_BPS_WITH_DONATION = 0; // Creator donates their share
+
+// Legacy constant for backward compatibility (old tokens used 25% platform fee)
+export const PLATFORM_FEE_BPS = 2500; // DEPRECATED: Old platform fee, kept for backward compat
+export const LEGACY_CHARITY_BPS = 7500; // Old tokens: 75% charity
+export const LEGACY_BUYBACK_BPS = 2500; // Old tokens: 25% buyback
+export const LEGACY_CREATOR_BPS = 0; // Old tokens: 0% creator
 
 // Partner referral wallet for earning Bags.fm credits
 // PARTNER_WALLET is used in SDK's createBagsFeeShareConfig as the partner PublicKey

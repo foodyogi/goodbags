@@ -37,7 +37,15 @@ import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CHARITY_FEE_PERCENTAGE, PLATFORM_FEE_PERCENTAGE } from "@shared/schema";
+import { 
+  CHARITY_FEE_PERCENTAGE, 
+  BUYBACK_FEE_PERCENTAGE, 
+  CREATOR_FEE_PERCENTAGE,
+  CHARITY_FEE_BPS,
+  BUYBACK_FEE_BPS,
+  CREATOR_FEE_BPS,
+  CHARITY_FEE_BPS_WITH_DONATION,
+} from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -181,6 +189,9 @@ export function TokenLaunchForm() {
   
   // Test Mode - allows testing the full flow without real transactions
   const [testMode, setTestMode] = useState(false);
+  
+  // Donate Creator Share - if true, creator's 10% share goes to charity (85% instead of 75%)
+  const [donateCreatorShare, setDonateCreatorShare] = useState(false);
   
   // Token name duplicate detection
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
@@ -414,6 +425,7 @@ export function TokenLaunchForm() {
           mintAddress: mockMintAddress,
           transactionSignature: mockTxSignature,
           isTest: true,
+          donateCreatorShare,
         });
         const launchResult = await launchResponse.json();
         
@@ -515,9 +527,13 @@ export function TokenLaunchForm() {
       setLaunchStep("recording");
       const recordResponse = await apiRequest("POST", "/api/tokens/launch", {
         ...data,
+        charityId: selectedCharity.id,
+        charitySource: selectedCharity.source,
+        charitySolanaAddress: selectedCharity.solanaAddress,
         creatorWallet,
         mintAddress: tokenMint,
         transactionSignature: transactionSignature || `mock_tx_${Date.now()}`,
+        donateCreatorShare,
       });
       
       return await recordResponse.json() as LaunchResult;
@@ -721,7 +737,7 @@ export function TokenLaunchForm() {
           Launch New Token
         </CardTitle>
         <CardDescription>
-          Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {PLATFORM_FEE_PERCENTAGE}% platform fee
+          Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {BUYBACK_FEE_PERCENTAGE}% buyback + {CREATOR_FEE_PERCENTAGE}% creator
         </CardDescription>
         {bagsStatus?.configured === false && (
           <div className="mt-2 rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400">
@@ -1158,12 +1174,18 @@ export function TokenLaunchForm() {
             <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Charity Donation</span>
-                <span className="font-medium">{CHARITY_FEE_PERCENTAGE}% of trades</span>
+                <span className="font-medium">{donateCreatorShare ? "0.85" : CHARITY_FEE_PERCENTAGE}% of trades</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Platform Fee</span>
-                <span className="font-medium">{PLATFORM_FEE_PERCENTAGE}% of trades</span>
+                <span className="text-muted-foreground">FYI Buyback</span>
+                <span className="font-medium">{BUYBACK_FEE_PERCENTAGE}% of trades</span>
               </div>
+              {!donateCreatorShare && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Creator Share</span>
+                  <span className="font-medium">{CREATOR_FEE_PERCENTAGE}% of trades</span>
+                </div>
+              )}
               <div className="pt-2 border-t border-muted">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">How donations work:</span>{" "}
@@ -1203,6 +1225,45 @@ export function TokenLaunchForm() {
                 <p className="text-xs text-green-600 dark:text-green-500">
                   GoodBags protects charities from misrepresentation
                 </p>
+              </div>
+            </div>
+
+            {/* Donate Creator Share Toggle */}
+            <div className="rounded-lg border border-pink-500/30 bg-pink-500/5 p-4" data-testid="section-donate-creator-share">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  <div>
+                    <p className="text-sm font-medium">Donate My Creator Share</p>
+                    <p className="text-xs text-muted-foreground">
+                      Give your 10% share to charity
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={donateCreatorShare}
+                  onCheckedChange={setDonateCreatorShare}
+                  data-testid="switch-donate-creator-share"
+                />
+              </div>
+              <div className="mt-3 pt-3 border-t border-pink-500/20">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Default Split:</p>
+                    <p>75% Charity · 15% Buyback · 10% You</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">With Donation:</p>
+                    <p className={donateCreatorShare ? "text-pink-600 dark:text-pink-400 font-medium" : ""}>
+                      85% Charity · 15% Buyback · 0% You
+                    </p>
+                  </div>
+                </div>
+                {donateCreatorShare && (
+                  <p className="text-xs text-pink-600 dark:text-pink-400 mt-2">
+                    Maximum impact! 100% of fees support good causes.
+                  </p>
+                )}
               </div>
             </div>
 

@@ -1,0 +1,64 @@
+UPDATE REQUEST (do not redo prior work; only adjust the split model)
+
+We are updating the fee split plan for new tokens launched on goodbags.tech.
+
+PREVIOUS PLAN (replace it)
+- 75% charity / 15% FYI buyback / 10% creator
+- optional toggle “donate creator share too” => 85/15/0
+
+NEW PLAN (MIDDLE GROUND)
+We want the built-in Bags “1% royalty stream” to be split as:
+
+DEFAULT SPLIT (for new tokens)
+- 75% charity
+- 5% FYI buyback
+- 20% creator
+
+In basis points (BPS where total = 10,000):
+- charity_bps = 7500
+- buyback_bps = 500
+- creator_bps = 2000
+
+Add a creator donation control (replace the old simple toggle):
+- “Donate some/all of my creator share to the selected charity”
+- This only affects the creator portion (the 20% share).
+- Buyback share stays fixed at 5% (500 BPS) always.
+- Charity receives the donated portion of the creator share.
+
+Donation control UI/behavior:
+- Use presets: 0%, 25%, 50%, 75%, 100% (of the creator share)
+- Store donate_pct (0–1) OR donate_creator_bps (0–2000)
+- Compute final BPS:
+  donated_creator_bps = round(creator_bps_default * donate_pct)
+  final_creator_bps = creator_bps_default - donated_creator_bps
+  final_charity_bps = charity_bps_default + donated_creator_bps
+  final_buyback_bps = buyback_bps_default
+- Validate sum == 10,000 ALWAYS.
+
+KEY REQUIREMENTS
+- Existing tokens remain on their historical split values (backward compatible).
+- New tokens use this new plan by default.
+- Update the Bags fee-share recipients creation accordingly:
+  - charity recipient wallet (existing verified charity wallet / X Tips method)
+  - FYI buyback wallet
+  - creator wallet only if final_creator_bps > 0
+- Update all UI copy, receipts, dashboards, and buyback calculations to reflect:
+  - buyback funding is now 5% of the 1% royalty stream (not 15% or 25%)
+  - creator share is 20% before donation control
+
+DO NOT re-implement charity verification, endorsement, or Every.org.
+Only update places impacted by the split plan:
+- split constants/config
+- launch wizard UI/control
+- DB storage for per-token split (if you already added it in prior work, reuse it)
+- receipt display
+- dashboards/leaderboards calculations
+- buyback job budget math
+
+OUTPUT REQUIRED
+1) List the exact files/locations where you changed the split plan.
+2) Confirm BPS calculations with examples:
+   - donate 0% => 7500/500/2000
+   - donate 50% => 8500/500/1000
+   - donate 100% => 9500/500/0
+3) Provide a quick QA checklist for this change.

@@ -386,7 +386,7 @@ export default function FoodYogaInternational() {
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>Token creators can select FYI to receive <strong>0.75%</strong> of all trading royalties</span>
+                      <span>Token creators can select FYI to receive up to <strong>0.85%</strong> of all trading royalties (with optional creator share donation)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
