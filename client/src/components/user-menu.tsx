@@ -9,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogIn, LogOut, Wallet, User, Loader2 } from "lucide-react";
+import { LogOut, Wallet, User, Loader2 } from "lucide-react";
+import { SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { WalletConnectionModal } from "./wallet-connection-modal";
@@ -39,8 +40,8 @@ export function UserMenu() {
         onClick={() => window.location.href = "/api/login"}
         data-testid="button-login"
       >
-        <LogIn className="h-4 w-4" />
-        <span className="hidden sm:inline">Login</span>
+        <SiX className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Login with X</span>
       </Button>
     );
   }
