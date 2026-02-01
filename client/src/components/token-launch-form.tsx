@@ -57,6 +57,46 @@ import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
 import { useUpload } from "@/hooks/use-upload";
 
+// Helper to parse and format error messages for user-friendly display
+// Detects Solana RPC errors vs other errors and provides appropriate guidance
+function formatLaunchError(error: Error): string {
+  const message = error.message || String(error);
+  
+  // Check for JSON-RPC format (Solana RPC errors)
+  // These come in format: {"jsonrpc":"2.0","error":{"code":403,"message":"Access forbidden"},"id":"..."}
+  const jsonRpcMatch = message.match(/\{"jsonrpc".*?"error".*?"code":\s*(\d+).*?"message":"([^"]+)"/);
+  if (jsonRpcMatch) {
+    const code = parseInt(jsonRpcMatch[1], 10);
+    const rpcMessage = jsonRpcMatch[2];
+    
+    if (code === 403 || rpcMessage.toLowerCase().includes('forbidden')) {
+      return "Solana network connection was rejected (rate limited). The public RPC endpoint has usage limits. Please try again in a minute, or contact support if this persists.";
+    }
+    if (code === 429 || rpcMessage.toLowerCase().includes('rate')) {
+      return "Too many requests to Solana network. Please wait a moment and try again.";
+    }
+    return `Solana network error: ${rpcMessage}. Please try again.`;
+  }
+  
+  // Check for standalone 403 mention
+  if (message.includes('403') && (message.includes('forbidden') || message.includes('Forbidden'))) {
+    return "Network connection was rejected. This is usually temporary - please try again in a minute.";
+  }
+  
+  // Check for timeout errors
+  if (message.toLowerCase().includes('timeout') || message.includes('ETIMEDOUT')) {
+    return "Request timed out. The Solana network may be congested. Please try again.";
+  }
+  
+  // Check for user rejection
+  if (message.toLowerCase().includes('user rejected') || message.toLowerCase().includes('cancelled')) {
+    return "Transaction was cancelled. You can try again when ready.";
+  }
+  
+  // Return original message if no special formatting needed
+  return message;
+}
+
 // Helper to get URL params (works in Phantom browser)
 function getUrlParams(): URLSearchParams {
   if (typeof window === 'undefined') return new URLSearchParams();
@@ -598,9 +638,10 @@ export function TokenLaunchForm() {
     },
     onError: (error: Error) => {
       setLaunchStep("idle");
+      const friendlyMessage = formatLaunchError(error);
       toast({
         title: "Launch Failed",
-        description: error.message,
+        description: friendlyMessage,
         variant: "destructive",
       });
     },
