@@ -5,7 +5,6 @@ import {
   CHARITY_FEE_PERCENTAGE, 
   BUYBACK_FEE_PERCENTAGE,
   CREATOR_FEE_PERCENTAGE,
-  PLATFORM_FEE_PERCENTAGE, // Legacy: for backward compat
   CHARITY_FEE_BPS,
   BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
@@ -1952,6 +1951,12 @@ export async function registerRoutes(
         charity = await storage.getDefaultCharity();
       }
       
+      // Use per-token stored BPS values for historical accuracy
+      // Convert BPS to percentage (divide by 10000 to get fraction of 1% royalty)
+      const tokenCharityPct = (token.charityBps ?? CHARITY_FEE_BPS) / 100;
+      const tokenBuybackPct = (token.buybackBps ?? BUYBACK_FEE_BPS) / 100;
+      const tokenCreatorPct = (token.creatorBps ?? CREATOR_FEE_BPS) / 100;
+      
       res.json({
         token: {
           id: token.id,
@@ -1971,6 +1976,10 @@ export async function registerRoutes(
           charityWebsite: token.charityWebsite,
           charityTwitter: token.charityTwitter,
           charityFacebook: token.charityFacebook,
+          // Per-token fee split (stored at launch time)
+          charityBps: token.charityBps,
+          buybackBps: token.buybackBps,
+          creatorBps: token.creatorBps,
         },
         impact: impact || {
           totalDonated: "0",
@@ -1983,8 +1992,10 @@ export async function registerRoutes(
           wallet: charity.walletAddress,
           category: charity.category,
           status: charity.status,
-          feePercentage: CHARITY_FEE_PERCENTAGE,
-          platformFeePercentage: PLATFORM_FEE_PERCENTAGE,
+          // Per-token fee percentages (as % of total trade volume)
+          feePercentage: tokenCharityPct / 100, // Convert from "75" to "0.75"
+          buybackFeePercentage: tokenBuybackPct / 100,
+          creatorFeePercentage: tokenCreatorPct / 100,
         } : null,
       });
     } catch (error) {

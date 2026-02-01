@@ -143,10 +143,11 @@ export const launchedTokens = pgTable("launched_tokens", {
   isTest: boolean("is_test").default(false),
   // Per-token fee split configuration (stored at launch time for historical accuracy)
   // BPS values represent split of the 1% royalty stream (10000 BPS = 100% of the 1%)
-  charityBps: integer("charity_bps").notNull().default(7500), // Default: 75% to charity
-  buybackBps: integer("buyback_bps").notNull().default(1500), // Default: 15% to FYI buyback
-  creatorBps: integer("creator_bps").notNull().default(1000), // Default: 10% to creator
-  donateCreatorShare: boolean("donate_creator_share").notNull().default(false), // If true, creator share goes to charity
+  // Defaults match current fee model: 75% charity, 5% buyback, 20% creator
+  charityBps: integer("charity_bps").notNull().default(7500), // Default: 75% to charity (7500 BPS)
+  buybackBps: integer("buyback_bps").notNull().default(500),  // Default: 5% to FYI buyback (500 BPS)
+  creatorBps: integer("creator_bps").notNull().default(2000), // Default: 20% to creator (2000 BPS)
+  donateCreatorShare: boolean("donate_creator_share").notNull().default(false), // Legacy: if true, creator donated 100%
 });
 
 // Donation tracking table - blockchain verified
@@ -254,8 +255,10 @@ export const BUYBACK_FEE_PERCENTAGE = 0.05; // 0.05% to FYI buyback
 export const CREATOR_FEE_PERCENTAGE = 0.20; // 0.20% to token creator
 export const TOTAL_FEE_PERCENTAGE = 1; // Total: 1%
 
-// Legacy constant for backward compatibility in some UI components
-export const PLATFORM_FEE_PERCENTAGE = 0.25; // DEPRECATED: Old platform fee, kept for backward compat
+// DEPRECATED: Legacy constant kept for backward compatibility only
+// New code should use BUYBACK_FEE_PERCENTAGE (0.05%) instead
+// TODO: Remove once all references are updated
+export const PLATFORM_FEE_PERCENTAGE = BUYBACK_FEE_PERCENTAGE;
 
 // Platform wallet for collecting platform fees (FYI buyback)
 // In production, set PLATFORM_WALLET_ADDRESS environment variable

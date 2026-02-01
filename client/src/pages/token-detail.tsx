@@ -79,7 +79,8 @@ interface TokenImpactData {
     category: string;
     status: string;
     feePercentage: number;
-    platformFeePercentage: number;
+    buybackFeePercentage: number;
+    creatorFeePercentage: number;
   } | null;
 }
 

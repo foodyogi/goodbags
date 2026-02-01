@@ -537,6 +537,18 @@ export interface FeeShareResult {
   creatorBps: number;
 }
 
+/**
+ * Creates the fee share configuration for a token launch on Bags.
+ * 
+ * IMPORTANT: Fee share config is created in Bags and is enforced on-chain per token at launch.
+ * The BPS split values are stored in the token's on-chain program account and cannot be
+ * modified after launch. This ensures permanent, trustless fee distribution.
+ * 
+ * Fee split model (1% total royalty stream = 10000 BPS):
+ * - Charity: 7500 BPS base (75%) + donated creator share
+ * - Buyback: 500 BPS fixed (5%)
+ * - Creator: 2000 BPS base (20%) - donated amount
+ */
 export async function createFeeShareConfig(
   params: FeeShareConfigParams
 ): Promise<FeeShareResult> {

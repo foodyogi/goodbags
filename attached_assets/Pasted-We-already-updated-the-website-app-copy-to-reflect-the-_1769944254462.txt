@@ -1,0 +1,59 @@
+We already updated the website/app copy to reflect the fee split model below. Now you must VERIFY and ENFORCE that the actual on-chain configuration and backend logic matches it.
+
+CURRENTLY CLAIMED MODEL (must be true in code):
+The fixed “1% royalty stream” is split as:
+- Charity: 0.75% (7500 BPS)
+- FYI Buyback: 0.05% (500 BPS)
+- Creator: 0.20% (2000 BPS)
+
+Creator donation tiers (donating % of the 0.20% creator share):
+- 0% donate => charity 7500, buyback 500, creator 2000
+- 25% donate => charity 8000, buyback 500, creator 1500
+- 50% donate => charity 8500, buyback 500, creator 1000
+- 75% donate => charity 9000, buyback 500, creator 500
+- 100% donate => charity 9500, buyback 500, creator 0
+Totals must ALWAYS equal 10,000 BPS.
+This choice must be locked at launch (i.e., encoded into the Bags fee-share config used for the token).
+
+MANDATORY STEP 1 — AUDIT THE IMPLEMENTATION
+Before changing anything, find and report (with exact file paths and code references):
+1) Where the Bags recipients / fee-share config is constructed for token launch.
+2) Where the donation tier (0/25/50/75/100) is captured in the launch UI and passed to backend.
+3) Where per-token split values are stored in DB (launched_tokens or equivalent).
+4) Where token detail pages and dashboards read and display the split.
+5) Where the FYI buyback job computes its budget/assumptions and whether it still assumes 0.25% or 0.15% anywhere.
+6) Any place that still uses hard-coded values inconsistent with 7500/500/2000.
+
+MANDATORY STEP 2 — MAKE THE CLAIM TRUE (CODE CHANGES)
+Implement or fix the following so the system matches the model:
+
+A) Token Launch (On-chain config via Bags)
+- Ensure the actual Bags fee-share recipients are created with the exact BPS computed from the selected donation tier.
+- Recipients must include:
+  1) Charity recipient: existing payout method logic (direct Solana wallet OR X claim) — do not break it.
+  2) FYI buyback wallet: use existing env/config wallet.
+  3) Creator wallet: connected wallet only if creator_bps > 0.
+- Validate sum==10000 BPS and fail the launch with a clear error if not.
+
+B) Persist per-token split
+- Store per-token: charity_bps, buyback_bps, creator_bps, donate_tier (0/25/50/75/100) or donate_pct.
+- If DB columns don’t exist, add a Drizzle migration.
+- For existing tokens launched under older split rules, preserve their historical values and display correctly (backward compatible).
+- All UI displays must read from per-token stored values, not global constants.
+
+C) Dashboards + stats
+- Donation totals count ONLY charity_bps portion.
+- Buyback displays and any “expected buyback” calculations must reflect buyback_bps = 500 for new tokens.
+- If the buyback engine uses actual wallet inflows, ensure dashboard labels don’t misrepresent the source; keep consistent with the 0.05% share and show actual buys from the buyback wallet.
+
+D) Truthfulness of “stored on-chain”
+- Confirm whether the donation tier/split is truly stored in the on-chain fee-share config used by Bags.
+- If YES: keep copy as-is.
+- If NO: update the in-app copy to be precise (e.g., “configured at launch and enforced on-chain” vs “stored on-chain”) — but only if necessary.
+
+OUTPUT REQUIRED
+1) An “Audit Report” with file paths + what you found.
+2) A “Fix Plan” with exact files to change.
+3) Implement the fixes.
+4) Provide 5 test cases demonstrating that each tier produces the correct BPS in the Bags config and is stored/displayed correctly.
+5) Confirm buyback job and dashboards now align with 0.05% buyback share.

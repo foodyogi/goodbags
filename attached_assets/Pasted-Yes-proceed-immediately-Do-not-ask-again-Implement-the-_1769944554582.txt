@@ -1,0 +1,53 @@
+Yes — proceed immediately. Do not ask again.
+
+Implement the Fix Plan with these requirements:
+
+1) Fix DB schema defaults (critical)
+File: shared/schema.ts
+- Update defaults to match the current split model:
+  - buybackBps default MUST be 500 (not 1500)
+  - creatorBps default MUST be 2000 (not 1000)
+  - charityBps default stays 7500
+- Ensure the schema + migrations are aligned. If Drizzle migrations are used:
+  - create a migration that ALTERs the default values for these columns in Postgres
+  - do NOT change existing rows’ values automatically
+
+2) Data safety / backward compatibility
+- Do NOT modify existing launched_tokens rows (historical tokens keep their stored bps).
+- Only fix the column defaults for new rows inserted without explicit BPS.
+
+3) Remove/clean deprecated percent constant
+File: shared/schema.ts (line ~258)
+- If PLATFORM_FEE_PERCENTAGE = 0.25 is truly unused:
+  - remove it
+- If anything still imports it:
+  - replace with a clearer, correct model:
+    - ROYALTY_STREAM_PERCENT = 0.01  // 1%
+    - DEFAULT_CHARITY_BPS = 7500
+    - DEFAULT_BUYBACK_BPS = 500
+    - DEFAULT_CREATOR_BPS = 2000
+  - update any import references accordingly
+- Goal: eliminate any misleading 0.25 constant that could reintroduce the old model.
+
+4) Verification tests (must be run)
+Create a small set of automated tests OR a script (whichever best matches current repo) that verifies end-to-end BPS math and persistence for all 5 tiers:
+- 0% => 7500/500/2000
+- 25% => 8000/500/1500
+- 50% => 8500/500/1000
+- 75% => 9000/500/500
+- 100% => 9500/500/0
+Tests must assert:
+- sum == 10000
+- bags-sdk recipients include correct wallets and omit creator if 0
+- stored DB values match expected per tier
+
+5) “Stored on-chain” truth check
+- Add a short developer note in code comments (bags-sdk.ts) stating:
+  “Fee share config is created in Bags and is enforced on-chain per token at launch.”
+- No marketing copy edits required unless you find the claim is inaccurate.
+
+OUTPUT REQUIRED
+- Show the exact diff or code snippets for the schema default fix.
+- Show the migration file name and its SQL (or the Drizzle migration content).
+- Show test output / how to run it locally.
+- Provide a short checklist of what you manually verified in the UI (one tier is fine if tests cover the rest).
