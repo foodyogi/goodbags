@@ -163,8 +163,8 @@ export function EndorsementCelebration({
                         {charityName} doesn't have an email on file. You can reach out to them directly on X to request approval.
                       </p>
                       
-                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
+                      <div className="bg-muted/50 rounded-lg p-3 space-y-2 overflow-hidden">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-medium text-muted-foreground">Message template:</span>
                           <Button
                             variant="ghost"
@@ -186,7 +186,7 @@ export function EndorsementCelebration({
                             )}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed" data-testid="text-message-template">
+                        <p className="text-xs text-muted-foreground leading-relaxed break-all" data-testid="text-message-template">
                           {messageTemplate}
                         </p>
                       </div>
