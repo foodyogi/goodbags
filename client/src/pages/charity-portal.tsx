@@ -83,7 +83,7 @@ export default function CharityPortal() {
         title: "Token Endorsed",
         description: "You have officially endorsed this token. It will now display your approval badge.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/charity-portal/token"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/charity-portal/token", tokenMint, charityId] });
       navigate(`/tokens/${tokenMint}`);
     },
     onError: (error: Error) => {
@@ -108,7 +108,7 @@ export default function CharityPortal() {
         title: "Token Denied",
         description: "You have denied this token. It will be marked as not endorsed.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/charity-portal/token"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/charity-portal/token", tokenMint, charityId] });
       navigate(`/tokens/${tokenMint}`);
     },
     onError: (error: Error) => {
