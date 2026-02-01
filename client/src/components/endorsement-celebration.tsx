@@ -8,13 +8,19 @@ interface EndorsementCelebrationProps {
   charityName?: string | null;
   note?: string | null;
   tokenId: string;
+  charityNotifiedAt?: string | null;
+  hasCharityEmail?: boolean;
+  charityTwitter?: string | null;
 }
 
 export function EndorsementCelebration({ 
   status, 
   charityName, 
   note,
-  tokenId 
+  tokenId,
+  charityNotifiedAt,
+  hasCharityEmail,
+  charityTwitter
 }: EndorsementCelebrationProps) {
   if (status === TOKEN_APPROVAL_STATUS.APPROVED) {
     return (
@@ -103,6 +109,12 @@ export function EndorsementCelebration({
   }
   
   if (status === TOKEN_APPROVAL_STATUS.PENDING) {
+    const wasNotified = !!charityNotifiedAt;
+    const twitterHandle = charityTwitter?.replace("@", "");
+    const twitterUrl = twitterHandle 
+      ? (charityTwitter?.startsWith("http") ? charityTwitter : `https://x.com/${twitterHandle}`)
+      : null;
+    
     return (
       <Card className="border-yellow-500/30" data-testid="card-endorsement-pending">
         <CardContent className="p-4">
@@ -111,16 +123,42 @@ export function EndorsementCelebration({
               <Clock3 className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-yellow-600" data-testid="text-pending-title">Pending Review</h3>
                 <Badge variant="outline" className="border-yellow-500/30 text-yellow-600" data-testid="badge-awaiting-charity">
                   <Shield className="h-3 w-3 mr-1" />
                   Awaiting Charity
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
-                {charityName} has been notified about this token and will review it soon.
-              </p>
+              
+              {wasNotified ? (
+                <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
+                  {charityName} has been notified via email and will review this token soon.
+                </p>
+              ) : hasCharityEmail === false && twitterUrl ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
+                    {charityName} doesn't have an email on file. You can reach out to them directly on X to request approval.
+                  </p>
+                  <a 
+                    href={twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors"
+                    data-testid="link-charity-twitter"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    Contact @{twitterHandle} on X
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
+                  {charityName} will be notified about this token and will review it soon.
+                </p>
+              )}
+              
               <p className="text-xs text-muted-foreground mt-2" data-testid="text-pending-approval-note">
                 Once approved, this token will be marked as "Official" and gain community trust.
               </p>

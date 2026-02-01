@@ -58,6 +58,8 @@ interface TokenImpactData {
     charityWebsite?: string | null;
     charityTwitter?: string | null;
     charityFacebook?: string | null;
+    charityNotifiedAt?: string | null;
+    hasCharityEmail?: boolean;
     charityBps?: number | null;
     buybackBps?: number | null;
     creatorBps?: number | null;
@@ -288,6 +290,9 @@ export default function TokenDetailPage() {
           charityName={token.charityName}
           note={token.charityApprovalNote}
           tokenId={token.id}
+          charityNotifiedAt={token.charityNotifiedAt}
+          hasCharityEmail={token.hasCharityEmail}
+          charityTwitter={token.charityTwitter}
         />
 
         {token.charityApprovalStatus && (

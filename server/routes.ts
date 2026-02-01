@@ -2149,6 +2149,9 @@ export async function registerRoutes(
           charityWebsite: token.charityWebsite,
           charityTwitter: token.charityTwitter,
           charityFacebook: token.charityFacebook,
+          // Notification tracking
+          charityNotifiedAt: token.charityNotifiedAt,
+          hasCharityEmail: !!token.charityEmail,
           // Per-token fee split (stored at launch time)
           charityBps: token.charityBps,
           buybackBps: token.buybackBps,
