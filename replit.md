@@ -60,7 +60,14 @@ The platform uses Replit Auth for user authentication, supporting multiple login
 - `shared/schema.ts` - User and session database schemas
 
 ### Solana Integration
-The platform integrates with Solana using `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. The Solana network connection is configurable via environment variables, defaulting to Devnet.
+The platform integrates with Solana using `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. The Solana network connection is configurable via environment variables.
+
+**RPC Configuration**
+- Backend uses `SOLANA_RPC_URL` (secret) for server-side Solana operations
+- Frontend uses `VITE_SOLANA_RPC_URL` (env var) for client-side wallet operations
+- Default: Public mainnet RPC (`api.mainnet-beta.solana.com`) which has strict rate limits
+- Recommended: Use a dedicated RPC provider (Helius, QuickNode, Alchemy) for production to avoid 403 rate limit errors
+- Error handling: The `formatLaunchError` helper in token-launch-form.tsx detects RPC errors and provides user-friendly messages
 
 **Mobile Wallet Connection** (`client/src/components/wallet-connect-button.tsx`)
 - On mobile browsers, the standard wallet adapter modal is bypassed to prevent redirect issues
