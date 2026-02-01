@@ -35,115 +35,185 @@ export interface BagsApiDiagnostic {
   timestamp: string;
 }
 
-export async function testBagsApiConnection(): Promise<BagsApiDiagnostic> {
-  const timestamp = new Date().toISOString();
-  // Use the CORRECT endpoint that the SDK uses (with FormData)
-  const url = `${BAGS_API_BASE_URL}/token-launch/create-token-info`;
-  const method = "POST";
-  
-  // Build FormData to match SDK behavior exactly
-  const FormData = (await import("form-data")).default;
-  const formData = new FormData();
-  formData.append("name", "DiagnosticTest");
-  formData.append("symbol", "DIAG");
-  formData.append("description", "API diagnostic test");
-  formData.append("imageUrl", "https://example.com/test.png");
-  
-  const headers: Record<string, string> = {
-    ...formData.getHeaders(),
+interface EndpointDiagnostic {
+  endpoint: string;
+  method: string;
+  status?: number;
+  statusText?: string;
+  success: boolean;
+  errorMessage?: string;
+  responseData?: unknown;
+}
+
+export interface BagsFullDiagnostic extends BagsApiDiagnostic {
+  endpoints: EndpointDiagnostic[];
+}
+
+async function testSingleEndpoint(
+  endpoint: string, 
+  method: "GET" | "POST", 
+  data?: unknown,
+  isFormData = false
+): Promise<EndpointDiagnostic> {
+  const url = `${BAGS_API_BASE_URL}${endpoint}`;
+  let headers: Record<string, string> = {
     "x-api-key": BAGS_API_KEY || "NOT_CONFIGURED",
   };
   
-  const testPayload = {
-    name: "DiagnosticTest",
-    symbol: "DIAG",
-    description: "API diagnostic test",
-    imageUrl: "https://example.com/test.png",
-  };
+  let requestData = data;
   
-  const diagnostic: BagsApiDiagnostic = {
-    success: false,
-    requestUrl: url,
-    requestMethod: method,
-    requestHeaders: {
-      ...headers,
-      "x-api-key": headers["x-api-key"] ? `${headers["x-api-key"].slice(0, 8)}...${headers["x-api-key"].slice(-4)} (length: ${headers["x-api-key"].length})` : "NOT_CONFIGURED",
-    },
-    requestBody: testPayload,
-    axiosVersion: axios.VERSION || "unknown",
-    timestamp,
-  };
+  if (isFormData && data) {
+    const FormData = (await import("form-data")).default;
+    const formData = new FormData();
+    const obj = data as Record<string, string>;
+    for (const [key, value] of Object.entries(obj)) {
+      formData.append(key, value);
+    }
+    headers = { ...headers, ...formData.getHeaders() };
+    requestData = formData;
+  } else if (data) {
+    headers["Content-Type"] = "application/json";
+  }
   
-  console.log(`\n========== BAGS API DIAGNOSTIC TEST ==========`);
-  console.log(`Timestamp: ${timestamp}`);
-  console.log(`URL: ${url}`);
-  console.log(`Method: ${method}`);
-  console.log(`Axios Version: ${diagnostic.axiosVersion}`);
-  console.log(`API Key: ${diagnostic.requestHeaders["x-api-key"]}`);
-  console.log(`Content-Type: ${headers["content-type"]}`);
-  console.log(`Request Body (as FormData):`, JSON.stringify(testPayload, null, 2));
+  console.log(`\n--- Testing ${method} ${endpoint} ---`);
   
   try {
     const response = await axios({
       method,
       url,
       headers,
-      data: formData,
+      data: requestData,
       timeout: 30000,
-      validateStatus: () => true, // Accept all status codes for diagnostic
+      validateStatus: () => true,
     });
     
-    diagnostic.responseStatus = response.status;
-    diagnostic.responseStatusText = response.statusText;
-    diagnostic.responseHeaders = response.headers as Record<string, string>;
-    diagnostic.responseData = response.data;
-    diagnostic.success = response.status >= 200 && response.status < 300;
-    
-    console.log(`\n--- Response ---`);
-    console.log(`Status: ${response.status} ${response.statusText}`);
-    console.log(`Headers:`, JSON.stringify(response.headers, null, 2));
-    console.log(`Body:`, JSON.stringify(response.data, null, 2).slice(0, 2000));
-    
-    if (response.status === 403) {
-      console.log(`\n!!! 403 FORBIDDEN DETECTED !!!`);
-      console.log(`This indicates an authentication/authorization issue.`);
-      console.log(`Possible causes:`);
-      console.log(`  1. Invalid API key`);
-      console.log(`  2. API key not activated or expired`);
-      console.log(`  3. IP whitelist restrictions`);
-      console.log(`  4. API endpoint has changed`);
-      console.log(`  5. Request format not accepted`);
+    const success = response.status >= 200 && response.status < 300;
+    console.log(`  Status: ${response.status} ${response.statusText} (${success ? 'OK' : 'FAILED'})`);
+    if (!success) {
+      console.log(`  Response:`, JSON.stringify(response.data, null, 2).slice(0, 500));
     }
     
+    return {
+      endpoint,
+      method,
+      status: response.status,
+      statusText: response.statusText,
+      success,
+      responseData: response.data,
+    };
   } catch (error: any) {
-    diagnostic.errorMessage = error.message;
-    diagnostic.errorCode = error.code;
-    
-    console.log(`\n--- Error ---`);
-    console.log(`Message: ${error.message}`);
-    console.log(`Code: ${error.code}`);
-    
-    if (error.response) {
-      diagnostic.responseStatus = error.response.status;
-      diagnostic.responseStatusText = error.response.statusText;
-      diagnostic.responseHeaders = error.response.headers;
-      diagnostic.responseData = error.response.data;
-      
-      console.log(`Response Status: ${error.response.status}`);
-      console.log(`Response Data:`, JSON.stringify(error.response.data, null, 2).slice(0, 2000));
-    }
-    
-    if (error.request) {
-      console.log(`Request was made but no response received`);
-      console.log(`Request config:`, JSON.stringify({
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers,
-      }, null, 2));
+    console.log(`  Error: ${error.message}`);
+    return {
+      endpoint,
+      method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      success: false,
+      errorMessage: error.message,
+      responseData: error.response?.data,
+    };
+  }
+}
+
+export async function testBagsApiConnection(): Promise<BagsFullDiagnostic> {
+  const timestamp = new Date().toISOString();
+  const endpoints: EndpointDiagnostic[] = [];
+  
+  console.log(`\n========== BAGS API FULL DIAGNOSTIC ==========`);
+  console.log(`Timestamp: ${timestamp}`);
+  console.log(`Axios Version: ${axios.VERSION || "unknown"}`);
+  console.log(`API Key: ${BAGS_API_KEY ? `${BAGS_API_KEY.slice(0, 8)}...${BAGS_API_KEY.slice(-4)} (length: ${BAGS_API_KEY.length})` : "NOT_CONFIGURED"}`);
+  
+  // Test 1: Token info creation (FormData) - this is the first step in launch flow
+  const tokenInfoResult = await testSingleEndpoint(
+    "/token-launch/create-token-info",
+    "POST",
+    {
+      name: "DiagnosticTest",
+      symbol: "DIAG",
+      description: "API diagnostic test",
+      imageUrl: "https://example.com/test.png",
+    },
+    true // use FormData
+  );
+  endpoints.push(tokenInfoResult);
+  
+  // Test 2: Fee share config (JSON) - this is the second step
+  // This endpoint requires proper wallet addresses and format
+  // Using a minimal test payload to check if endpoint is accessible
+  const feeShareResult = await testSingleEndpoint(
+    "/fee-share/config",
+    "POST",
+    {
+      payer: "11111111111111111111111111111111", // System program (placeholder)
+      tokenMint: "11111111111111111111111111111111",
+      feeClaimers: [
+        { user: "11111111111111111111111111111111", percent: 100 }
+      ],
+    },
+    false // use JSON
+  );
+  endpoints.push(feeShareResult);
+  
+  // Test 3: Launch transaction (JSON) - requires valid tokenMint from step 1
+  // Extract tokenMint from step 1 if available
+  let tokenMint = "11111111111111111111111111111111";
+  if (tokenInfoResult.success && tokenInfoResult.responseData) {
+    const data = tokenInfoResult.responseData as any;
+    if (data.response?.tokenMint) {
+      tokenMint = data.response.tokenMint;
     }
   }
   
+  const launchTxResult = await testSingleEndpoint(
+    "/token-launch/create-launch-transaction",
+    "POST",
+    {
+      ipfs: "https://example.com/metadata.json",
+      tokenMint: tokenMint,
+      wallet: "11111111111111111111111111111111",
+      initialBuyLamports: 10000000, // 0.01 SOL
+      configKey: "11111111111111111111111111111111",
+    },
+    false // use JSON
+  );
+  endpoints.push(launchTxResult);
+  
+  console.log(`\n========== DIAGNOSTIC SUMMARY ==========`);
+  for (const ep of endpoints) {
+    const statusIcon = ep.success ? "OK" : (ep.status === 403 ? "403 FORBIDDEN" : `FAILED (${ep.status})`);
+    console.log(`  ${ep.method} ${ep.endpoint}: ${statusIcon}`);
+  }
+  
+  // Check if any endpoint returned 403
+  const has403 = endpoints.some(ep => ep.status === 403);
+  if (has403) {
+    console.log(`\n!!! 403 FORBIDDEN DETECTED !!!`);
+    console.log(`One or more endpoints returned 403 Access Forbidden.`);
+    console.log(`This may indicate:`);
+    console.log(`  1. API key lacks permission for certain endpoints`);
+    console.log(`  2. API key needs different tier/access level`);
+    console.log(`  3. IP restrictions on specific endpoints`);
+  }
+  
   console.log(`\n========== END DIAGNOSTIC ==========\n`);
+  
+  // Return diagnostic matching original interface plus new endpoint details
+  const diagnostic: BagsFullDiagnostic = {
+    success: tokenInfoResult.success,
+    requestUrl: `${BAGS_API_BASE_URL}/token-launch/create-token-info`,
+    requestMethod: "POST",
+    requestHeaders: {
+      "x-api-key": BAGS_API_KEY ? `${BAGS_API_KEY.slice(0, 8)}...${BAGS_API_KEY.slice(-4)} (length: ${BAGS_API_KEY.length})` : "NOT_CONFIGURED",
+    },
+    requestBody: { name: "DiagnosticTest", symbol: "DIAG" },
+    responseStatus: tokenInfoResult.status,
+    responseStatusText: tokenInfoResult.statusText,
+    responseData: tokenInfoResult.responseData,
+    axiosVersion: axios.VERSION || "unknown",
+    timestamp,
+    endpoints,
+  };
   
   return diagnostic;
 }
