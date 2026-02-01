@@ -36,16 +36,17 @@ export function HeroSection() {
             </div>
             
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-              Purpose-Driven
+              Launch Your Coin,
               <br />
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Coins
+                Make a Social Impact
               </span>
             </h1>
             
             <p className="text-lg text-muted-foreground max-w-lg">
-              Launch Solana tokens with built-in charitable giving. 1% of every trade is automatically 
-              routed on-chain — transparent, verifiable, and stored at launch.
+              Create and launch your own Solana memecoins with built-in charity donations. 
+              Support verified charities like Juliana's Animal Sanctuary with every trade — 
+              transparent, verifiable, and stored on-chain.
             </p>
             
             <div className="flex flex-wrap gap-4">
