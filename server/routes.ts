@@ -346,6 +346,45 @@ export async function registerRoutes(
     }
   });
 
+  // Update user profile (display name)
+  app.patch("/api/user/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+      
+      const { displayName } = req.body;
+      
+      // Validate display name (optional, max 50 chars)
+      if (displayName !== undefined && displayName !== null) {
+        if (typeof displayName !== 'string') {
+          return res.status(400).json({ error: "Display name must be a string" });
+        }
+        if (displayName.length > 50) {
+          return res.status(400).json({ error: "Display name must be 50 characters or less" });
+        }
+      }
+      
+      const updatedUser = await db.update(users)
+        .set({ 
+          displayName: displayName?.trim() || null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      if (updatedUser.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ success: true, user: updatedUser[0] });
+    } catch (error) {
+      console.error("Update profile error:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // === CONFIG ENDPOINTS ===
   
   // Get featured project config (token mint loaded from env var)

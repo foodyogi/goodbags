@@ -1,0 +1,848 @@
+{
+  "id": "fbe0a2a5-edfe-4dac-b3b6-d3fd74da57b9",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.audit_logs": {
+      "name": "audit_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_wallet": {
+          "name": "actor_wallet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_ip": {
+          "name": "actor_ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.buybacks": {
+      "name": "buybacks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sol_amount": {
+          "name": "sol_amount",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fyi_amount": {
+          "name": "fyi_amount",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_signature": {
+          "name": "transaction_signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "executed_at": {
+          "name": "executed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "buybacks_transaction_signature_unique": {
+          "name": "buybacks_transaction_signature_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "transaction_signature"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.charities": {
+      "name": "charities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'other'"
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "twitter_handle": {
+          "name": "twitter_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "x_handle_verified": {
+          "name": "x_handle_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "payout_method": {
+          "name": "payout_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'wallet'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "is_featured": {
+          "name": "is_featured",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_verification_token": {
+          "name": "email_verification_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_verified_at": {
+          "name": "email_verified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_verification_nonce": {
+          "name": "wallet_verification_nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_verified_at": {
+          "name": "wallet_verified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_contacted_at": {
+          "name": "last_contacted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_number": {
+          "name": "registration_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitter_wallet": {
+          "name": "submitter_wallet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_id": {
+          "name": "every_org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_slug": {
+          "name": "every_org_slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_verified": {
+          "name": "every_org_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "every_org_verified_at": {
+          "name": "every_org_verified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_name": {
+          "name": "every_org_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_description": {
+          "name": "every_org_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_website": {
+          "name": "every_org_website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_logo_url": {
+          "name": "every_org_logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "every_org_is_disbursable": {
+          "name": "every_org_is_disbursable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "change_id": {
+          "name": "change_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_name": {
+          "name": "country_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.donations": {
+      "name": "donations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_mint": {
+          "name": "token_mint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "charity_wallet": {
+          "name": "charity_wallet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_signature": {
+          "name": "transaction_signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "donated_at": {
+          "name": "donated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "donations_transaction_signature_unique": {
+          "name": "donations_transaction_signature_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "transaction_signature"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.launched_tokens": {
+      "name": "launched_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mint_address": {
+          "name": "mint_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creator_wallet": {
+          "name": "creator_wallet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "charity_id": {
+          "name": "charity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_approval_status": {
+          "name": "charity_approval_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "charity_approval_note": {
+          "name": "charity_approval_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_notified_at": {
+          "name": "charity_notified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_responded_at": {
+          "name": "charity_responded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_name": {
+          "name": "charity_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_email": {
+          "name": "charity_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_website": {
+          "name": "charity_website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_twitter": {
+          "name": "charity_twitter",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charity_facebook": {
+          "name": "charity_facebook",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "initial_buy_amount": {
+          "name": "initial_buy_amount",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "charity_donated": {
+          "name": "charity_donated",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "platform_fee_collected": {
+          "name": "platform_fee_collected",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "trading_volume": {
+          "name": "trading_volume",
+          "type": "numeric(18, 9)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "transaction_signature": {
+          "name": "transaction_signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "launched_at": {
+          "name": "launched_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "donation_count": {
+          "name": "donation_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "last_donation_at": {
+          "name": "last_donation_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_test": {
+          "name": "is_test",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "charity_bps": {
+          "name": "charity_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 7500
+        },
+        "buyback_bps": {
+          "name": "buyback_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 500
+        },
+        "creator_bps": {
+          "name": "creator_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 2000
+        },
+        "donate_creator_share": {
+          "name": "donate_creator_share",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "donate_creator_percent": {
+          "name": "donate_creator_percent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anomaly_acknowledged_at": {
+          "name": "anomaly_acknowledged_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anomaly_notes": {
+          "name": "anomaly_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "launched_tokens_mint_address_unique": {
+          "name": "launched_tokens_mint_address_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "mint_address"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "sid": {
+          "name": "sid",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sess": {
+          "name": "sess",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expire": {
+          "name": "expire",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "IDX_session_expire": {
+          "name": "IDX_session_expire",
+          "columns": [
+            {
+              "expression": "expire",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_image_url": {
+          "name": "profile_image_url",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "twitter_id": {
+          "name": "twitter_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "twitter_username": {
+          "name": "twitter_username",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "twitter_display_name": {
+          "name": "twitter_display_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_connected_at": {
+          "name": "wallet_connected_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_twitter_id_unique": {
+          "name": "users_twitter_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "twitter_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

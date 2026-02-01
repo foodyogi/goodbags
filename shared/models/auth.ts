@@ -21,6 +21,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  // Custom display name set by user (takes priority over other names)
+  displayName: varchar("display_name"),
   // Twitter/X OAuth fields
   twitterId: varchar("twitter_id").unique(),
   twitterUsername: varchar("twitter_username"),
