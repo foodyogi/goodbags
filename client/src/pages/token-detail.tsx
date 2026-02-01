@@ -293,6 +293,9 @@ export default function TokenDetailPage() {
           charityNotifiedAt={token.charityNotifiedAt}
           hasCharityEmail={token.hasCharityEmail}
           charityTwitter={token.charityTwitter}
+          tokenName={token.name}
+          tokenSymbol={token.symbol}
+          tokenMintAddress={token.mintAddress}
         />
 
         {token.charityApprovalStatus && (

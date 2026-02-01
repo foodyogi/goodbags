@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BadgeCheck, Sparkles, Shield, AlertCircle, Clock3, Trophy, Star } from "lucide-react";
+import { BadgeCheck, Sparkles, Shield, AlertCircle, Clock3, Trophy, Star, Copy, Check } from "lucide-react";
 import { TOKEN_APPROVAL_STATUS } from "@shared/schema";
 
 interface EndorsementCelebrationProps {
@@ -11,6 +13,9 @@ interface EndorsementCelebrationProps {
   charityNotifiedAt?: string | null;
   hasCharityEmail?: boolean;
   charityTwitter?: string | null;
+  tokenName?: string;
+  tokenSymbol?: string;
+  tokenMintAddress?: string;
 }
 
 export function EndorsementCelebration({ 
@@ -20,8 +25,12 @@ export function EndorsementCelebration({
   tokenId,
   charityNotifiedAt,
   hasCharityEmail,
-  charityTwitter
+  charityTwitter,
+  tokenName,
+  tokenSymbol,
+  tokenMintAddress
 }: EndorsementCelebrationProps) {
+  const [copied, setCopied] = useState(false);
   if (status === TOKEN_APPROVAL_STATUS.APPROVED) {
     return (
       <Card className="overflow-hidden border-green-500/30" data-testid="card-endorsement-celebration">
@@ -136,23 +145,65 @@ export function EndorsementCelebration({
                   {charityName} has been notified via email and will review this token soon.
                 </p>
               ) : hasCharityEmail === false && twitterUrl ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
-                    {charityName} doesn't have an email on file. You can reach out to them directly on X to request approval.
-                  </p>
-                  <a 
-                    href={twitterUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors"
-                    data-testid="link-charity-twitter"
-                  >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                    </svg>
-                    Contact @{twitterHandle} on X
-                  </a>
-                </div>
+                (() => {
+                  const tokenUrl = tokenMintAddress ? `https://goodbags.tech/tokens/${tokenMintAddress}` : "";
+                  const messageTemplate = `Hi @${twitterHandle}! A token called $${tokenSymbol || "TOKEN"} (${tokenName || "Token"}) was just launched on @GoodBags_Tech in support of your organization. It includes automatic donation royalties from trading. Would you like to officially endorse it? Details: ${tokenUrl}`;
+                  
+                  const handleCopy = () => {
+                    navigator.clipboard.writeText(messageTemplate);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  };
+                  
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
+                        {charityName} doesn't have an email on file. You can reach out to them directly on X to request approval.
+                      </p>
+                      
+                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">Message template:</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopy}
+                            className="h-7 px-2 text-xs"
+                            data-testid="button-copy-message"
+                          >
+                            {copied ? (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed" data-testid="text-message-template">
+                          {messageTemplate}
+                        </p>
+                      </div>
+                      
+                      <a 
+                        href={twitterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-500 hover:text-blue-400 transition-colors"
+                        data-testid="link-charity-twitter"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                        Open @{twitterHandle} on X
+                      </a>
+                    </div>
+                  );
+                })()
               ) : (
                 <p className="text-sm text-muted-foreground" data-testid="text-pending-message">
                   {charityName} will be notified about this token and will review it soon.
