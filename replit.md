@@ -3,12 +3,20 @@
 ## Overview
 GoodBags is a Solana-based memecoin launcher platform that enables users to create and launch memecoins with built-in charity donations. The platform integrates with Bags.fm and features a comprehensive system for verifying charities, managing donations, and ensuring transparency. Key capabilities include launching tokens tied to over 75 verified charities, an X Account Payout System for charities to claim donations, and an anti-rug pull token approval system where charities endorse tokens launched in their name. 
 
-The platform charges a 1% fee with a 3-way split:
-- **0.75% to charity** - Majority of fees go directly to verified charities
+Each token has a built-in 1% royalty stream from trading volume, split three ways:
+- **0.75% to charity** - Majority of royalties go directly to verified charities
 - **0.05% to FYI buyback** - Supports the ecosystem through automated token buybacks
 - **0.20% to token creator** - Creators can donate 0%, 25%, 50%, 75%, or 100% to charity
 
-Creators choose their donation amount from presets at launch. Each token stores its fee split in the database (charity_bps, buyback_bps, creator_bps) for historical accuracy.
+Creators choose their donation tier (0%, 25%, 50%, 75%, or 100%) at launch. Each token stores its fee split in the database (charity_bps, buyback_bps, creator_bps) for historical accuracy.
+
+**Fee Split Module** (`shared/feeSplit.ts`)
+All fee calculations use the shared feeSplit module as the single source of truth to prevent drift:
+- `BASE_CHARITY_BPS = 7500`, `BASE_BUYBACK_BPS = 500`, `BASE_CREATOR_BPS = 2000`
+- `computeFeeSplit(tier)` - Compute BPS values for a donation tier
+- `deriveTierFromBps(charity, buyback, creator)` - Derive tier from stored BPS
+- `isBpsAnomaly(...)` - Check if BPS sum != 10000
+- `getTierLabel(tier)` - Display label for tier
 
 GoodBags aims to provide a secure and transparent way to leverage memecoins for social impact, offering public dashboards for impact tracking and detailed explanations of its mechanisms.
 
