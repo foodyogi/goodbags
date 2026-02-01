@@ -32,6 +32,15 @@ Security features include wallet validation, server-side charity wallet lookups,
 ### Charity Search & Token Approval
 A unified charity search system combines local verified charities with the Change API database. An anti-rug pull token approval system requires charities to approve or deny tokens launched in their name. Email notifications are sent to charities upon token launch, with fallbacks for charities without email.
 
+### Charity Approval Portal
+A dedicated portal at `/charity-portal` allows charity representatives to review and approve/deny tokens launched in their name. The portal requires X/Twitter OAuth verification to prove identity - the user's X handle must match the charity's registered X handle. Features include:
+- Token details display (name, symbol, creator, donation percentages)
+- Identity verification via X handle matching
+- Terms of Collaboration acceptance before approval
+- Optional public endorsement message or denial reason
+- Audit logging of all approval/denial decisions
+API endpoints: `/api/charity-portal/token` (GET), `/api/charity-portal/approve` (POST), `/api/charity-portal/deny` (POST).
+
 ### Token Features
 Token image uploads are supported via Replit Object Storage to Google Cloud Storage. An automated FYI Buyback System uses 0.25% of platform fees to buy FYI tokens via Jupiter. A "Test Mode" allows simulated token launches that are marked as `isTest=true` and do not trigger charity notifications or donation records.
 
