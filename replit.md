@@ -46,6 +46,12 @@ The platform uses Replit Auth for user authentication, supporting multiple login
 - Endpoints: `GET /api/user/wallet`, `POST /api/user/wallet/connect`, `POST /api/user/wallet/disconnect`
 - Backend wallet is for identity/tracking purposes
 
+**Custom Display Name** (`client/src/components/profile-settings-modal.tsx`)
+- Users can set a custom display name via "Edit Profile" in the user menu
+- Display priority: custom name → @twitterUsername → twitterDisplayName → firstName+lastName → email
+- Endpoint: `PATCH /api/user/profile` with `{ displayName: string | null }`
+- Max 50 characters, leave empty to show X handle
+
 **Token Launch Flow**
 - Unauthenticated users see "Login with X" prompt
 - Authenticated users without wallet adapter connected see wallet connect prompt
