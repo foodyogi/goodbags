@@ -5,12 +5,14 @@ import bs58Pkg from "bs58";
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import { 
   PLATFORM_WALLET, 
-  CHARITY_FEE_BPS, 
-  BUYBACK_FEE_BPS,
-  CREATOR_FEE_BPS,
   PARTNER_WALLET,
-  TOTAL_FEE_BPS
 } from "@shared/schema";
+import {
+  computeFeeSplit,
+  TOTAL_FEE_BPS,
+  DONATION_TIERS,
+  type DonationTier,
+} from "@shared/feeSplit";
 
 const BAGS_API_KEY = process.env.BAGS_API_KEY;
 
@@ -561,12 +563,13 @@ export async function createFeeShareConfig(
     donateCreatorPercent = 100; // Legacy toggle was ON = 100% donation
   }
   
-  // Calculate BPS split: creator can donate 0-100% of their 20% (2000 BPS) share
-  // donated_creator_bps = round(CREATOR_FEE_BPS * donate_pct / 100)
-  const donatedCreatorBps = Math.round(CREATOR_FEE_BPS * donateCreatorPercent / 100);
-  const charityBps = CHARITY_FEE_BPS + donatedCreatorBps;
-  const buybackBps = BUYBACK_FEE_BPS; // Always 500 BPS (5%)
-  const creatorBps = CREATOR_FEE_BPS - donatedCreatorBps;
+  // Use shared computeFeeSplit function for single source of truth
+  // Snap to valid tier to ensure we use only supported values
+  const validTier = DONATION_TIERS.includes(donateCreatorPercent as DonationTier)
+    ? (donateCreatorPercent as DonationTier)
+    : 0;
+  const feeSplit = computeFeeSplit(validTier);
+  const { charityBps, buybackBps, creatorBps, donatedCreatorBps } = feeSplit;
   
   // Validate BPS sum equals 10000
   const totalBps = charityBps + buybackBps + creatorBps;

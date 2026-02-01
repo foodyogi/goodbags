@@ -55,6 +55,7 @@ export interface IStorage {
   getLaunchedTokenByMint(mintAddress: string): Promise<LaunchedToken | undefined>;
   getTokensByCreator(creatorWallet: string): Promise<LaunchedToken[]>;
   updateTokenStats(mintAddress: string, volume: string, donated: string): Promise<LaunchedToken | undefined>;
+  updateLaunchedToken(id: string, updates: Partial<LaunchedToken>): Promise<LaunchedToken | undefined>;
   
   // Donation methods
   createDonation(donation: InsertDonation): Promise<Donation>;
@@ -391,6 +392,15 @@ export class DatabaseStorage implements IStorage {
       .update(launchedTokens)
       .set(updateData)
       .where(eq(launchedTokens.mintAddress, mintAddress))
+      .returning();
+    return updated || undefined;
+  }
+
+  async updateLaunchedToken(id: string, updates: Partial<LaunchedToken>): Promise<LaunchedToken | undefined> {
+    const [updated] = await db
+      .update(launchedTokens)
+      .set(updates)
+      .where(eq(launchedTokens.id, id))
       .returning();
     return updated || undefined;
   }

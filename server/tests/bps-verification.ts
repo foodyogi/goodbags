@@ -1,7 +1,7 @@
 /**
  * BPS Fee Split Verification Tests
  * 
- * Tests that the fee split logic matches the claimed model:
+ * Tests that the shared fee split logic matches the claimed model:
  * - 1% total royalty stream = 10000 BPS
  * - Default: Charity 7500 (75%), Buyback 500 (5%), Creator 2000 (20%)
  * - Creator can donate 0%, 25%, 50%, 75%, or 100% of their 20% share to charity
@@ -11,18 +11,21 @@
  */
 
 import { 
-  CHARITY_FEE_BPS, 
-  BUYBACK_FEE_BPS, 
-  CREATOR_FEE_BPS,
+  computeFeeSplit,
+  deriveTierFromBps,
+  isBpsAnomaly,
+  getTierLabel,
+  bpsToPercent,
+  BASE_CHARITY_BPS,
+  BASE_BUYBACK_BPS,
+  BASE_CREATOR_BPS,
   TOTAL_FEE_BPS,
-  CHARITY_FEE_PERCENTAGE,
-  BUYBACK_FEE_PERCENTAGE,
-  CREATOR_FEE_PERCENTAGE,
-  TOTAL_FEE_PERCENTAGE
-} from "../../shared/schema";
+  DONATION_TIERS,
+  type DonationTier,
+} from "../../shared/feeSplit";
 
 interface TierTestCase {
-  donatePercent: number;
+  donatePercent: DonationTier;
   expectedCharity: number;
   expectedBuyback: number;
   expectedCreator: number;
@@ -36,40 +39,31 @@ const testCases: TierTestCase[] = [
   { donatePercent: 100, expectedCharity: 9500, expectedBuyback: 500, expectedCreator: 0 },
 ];
 
-function calculateBpsSplit(donateCreatorPercent: number): { charityBps: number; buybackBps: number; creatorBps: number } {
-  const donatedCreatorBps = Math.round(CREATOR_FEE_BPS * donateCreatorPercent / 100);
-  const charityBps = CHARITY_FEE_BPS + donatedCreatorBps;
-  const buybackBps = BUYBACK_FEE_BPS;
-  const creatorBps = CREATOR_FEE_BPS - donatedCreatorBps;
-  
-  return { charityBps, buybackBps, creatorBps };
-}
-
 function runTests(): void {
   console.log("=".repeat(60));
-  console.log("BPS FEE SPLIT VERIFICATION TESTS");
+  console.log("BPS FEE SPLIT VERIFICATION TESTS (using shared/feeSplit.ts)");
   console.log("=".repeat(60));
   console.log("");
   
-  console.log("Verifying base constants:");
-  console.log(`  CHARITY_FEE_BPS:  ${CHARITY_FEE_BPS} (expected: 7500)`);
-  console.log(`  BUYBACK_FEE_BPS:  ${BUYBACK_FEE_BPS} (expected: 500)`);
-  console.log(`  CREATOR_FEE_BPS:  ${CREATOR_FEE_BPS} (expected: 2000)`);
-  console.log(`  TOTAL_FEE_BPS:    ${TOTAL_FEE_BPS} (expected: 10000)`);
+  console.log("Verifying base constants from shared module:");
+  console.log(`  BASE_CHARITY_BPS:  ${BASE_CHARITY_BPS} (expected: 7500)`);
+  console.log(`  BASE_BUYBACK_BPS:  ${BASE_BUYBACK_BPS} (expected: 500)`);
+  console.log(`  BASE_CREATOR_BPS:  ${BASE_CREATOR_BPS} (expected: 2000)`);
+  console.log(`  TOTAL_FEE_BPS:     ${TOTAL_FEE_BPS} (expected: 10000)`);
   console.log("");
   
   let allPassed = true;
   
-  if (CHARITY_FEE_BPS !== 7500) {
-    console.log("❌ FAIL: CHARITY_FEE_BPS should be 7500");
+  if (BASE_CHARITY_BPS !== 7500) {
+    console.log("❌ FAIL: BASE_CHARITY_BPS should be 7500");
     allPassed = false;
   }
-  if (BUYBACK_FEE_BPS !== 500) {
-    console.log("❌ FAIL: BUYBACK_FEE_BPS should be 500");
+  if (BASE_BUYBACK_BPS !== 500) {
+    console.log("❌ FAIL: BASE_BUYBACK_BPS should be 500");
     allPassed = false;
   }
-  if (CREATOR_FEE_BPS !== 2000) {
-    console.log("❌ FAIL: CREATOR_FEE_BPS should be 2000");
+  if (BASE_CREATOR_BPS !== 2000) {
+    console.log("❌ FAIL: BASE_CREATOR_BPS should be 2000");
     allPassed = false;
   }
   if (TOTAL_FEE_BPS !== 10000) {
@@ -77,7 +71,7 @@ function runTests(): void {
     allPassed = false;
   }
   
-  const baseSum = CHARITY_FEE_BPS + BUYBACK_FEE_BPS + CREATOR_FEE_BPS;
+  const baseSum = BASE_CHARITY_BPS + BASE_BUYBACK_BPS + BASE_CREATOR_BPS;
   if (baseSum !== TOTAL_FEE_BPS) {
     console.log(`❌ FAIL: Base sum ${baseSum} !== TOTAL_FEE_BPS ${TOTAL_FEE_BPS}`);
     allPassed = false;
@@ -87,107 +81,169 @@ function runTests(): void {
   
   console.log("");
   console.log("-".repeat(60));
-  console.log("Testing all 5 donation tiers:");
+  console.log("Testing computeFeeSplit() for all 5 donation tiers:");
   console.log("-".repeat(60));
   console.log("");
   
   for (const testCase of testCases) {
     const { donatePercent, expectedCharity, expectedBuyback, expectedCreator } = testCase;
-    const result = calculateBpsSplit(donatePercent);
+    const result = computeFeeSplit(donatePercent);
     
     const charityMatch = result.charityBps === expectedCharity;
     const buybackMatch = result.buybackBps === expectedBuyback;
     const creatorMatch = result.creatorBps === expectedCreator;
-    const sumCorrect = result.charityBps + result.buybackBps + result.creatorBps === TOTAL_FEE_BPS;
-    
-    const allMatch = charityMatch && buybackMatch && creatorMatch && sumCorrect;
+    const sum = result.charityBps + result.buybackBps + result.creatorBps;
+    const sumMatch = sum === TOTAL_FEE_BPS;
     
     console.log(`Tier: ${donatePercent}% donation`);
     console.log(`  Expected: charity=${expectedCharity}, buyback=${expectedBuyback}, creator=${expectedCreator}`);
     console.log(`  Actual:   charity=${result.charityBps}, buyback=${result.buybackBps}, creator=${result.creatorBps}`);
-    console.log(`  Sum:      ${result.charityBps + result.buybackBps + result.creatorBps} (expected: 10000)`);
+    console.log(`  Sum:      ${sum} (expected: ${TOTAL_FEE_BPS})`);
     
-    if (allMatch) {
+    if (charityMatch && buybackMatch && creatorMatch && sumMatch) {
       console.log(`  ✅ PASS`);
     } else {
       console.log(`  ❌ FAIL`);
-      if (!charityMatch) console.log(`     - Charity mismatch: ${result.charityBps} !== ${expectedCharity}`);
-      if (!buybackMatch) console.log(`     - Buyback mismatch: ${result.buybackBps} !== ${expectedBuyback}`);
-      if (!creatorMatch) console.log(`     - Creator mismatch: ${result.creatorBps} !== ${expectedCreator}`);
-      if (!sumCorrect) console.log(`     - Sum incorrect: ${result.charityBps + result.buybackBps + result.creatorBps} !== 10000`);
       allPassed = false;
     }
     console.log("");
   }
   
   console.log("-".repeat(60));
-  console.log("Testing creator exclusion when BPS = 0:");
+  console.log("Testing deriveTierFromBps() round-trip:");
   console.log("-".repeat(60));
   console.log("");
-  
-  const tier100 = calculateBpsSplit(100);
-  if (tier100.creatorBps === 0) {
-    console.log("✅ PASS: At 100% donation, creatorBps = 0 (creator should be excluded from recipients)");
-  } else {
-    console.log(`❌ FAIL: At 100% donation, creatorBps = ${tier100.creatorBps} (should be 0)`);
-    allPassed = false;
-  }
-  
-  console.log("");
-  console.log("-".repeat(60));
-  console.log("Testing fee percentages match BPS:");
-  console.log("-".repeat(60));
-  console.log("");
-  
-  const charityPctBps = Math.round(CHARITY_FEE_PERCENTAGE / TOTAL_FEE_PERCENTAGE * 10000);
-  const buybackPctBps = Math.round(BUYBACK_FEE_PERCENTAGE / TOTAL_FEE_PERCENTAGE * 10000);
-  const creatorPctBps = Math.round(CREATOR_FEE_PERCENTAGE / TOTAL_FEE_PERCENTAGE * 10000);
-  
-  console.log(`  CHARITY_FEE_PERCENTAGE (${CHARITY_FEE_PERCENTAGE}%) → ${charityPctBps} BPS (expected: ${CHARITY_FEE_BPS})`);
-  console.log(`  BUYBACK_FEE_PERCENTAGE (${BUYBACK_FEE_PERCENTAGE}%) → ${buybackPctBps} BPS (expected: ${BUYBACK_FEE_BPS})`);
-  console.log(`  CREATOR_FEE_PERCENTAGE (${CREATOR_FEE_PERCENTAGE}%) → ${creatorPctBps} BPS (expected: ${CREATOR_FEE_BPS})`);
-  
-  if (charityPctBps === CHARITY_FEE_BPS && buybackPctBps === BUYBACK_FEE_BPS && creatorPctBps === CREATOR_FEE_BPS) {
-    console.log("  ✅ PASS: Percentages match BPS values");
-  } else {
-    console.log("  ❌ FAIL: Percentages do not match BPS values");
-    allPassed = false;
-  }
-  
-  console.log("");
-  console.log("-".repeat(60));
-  console.log("Testing fee claimers logic (creator exclusion):");
-  console.log("-".repeat(60));
-  console.log("");
-  
-  function buildFeeClaimers(charityBps: number, buybackBps: number, creatorBps: number): { recipient: string; bps: number }[] {
-    const claimers: { recipient: string; bps: number }[] = [];
-    if (creatorBps > 0) claimers.push({ recipient: 'creator', bps: creatorBps });
-    if (charityBps > 0) claimers.push({ recipient: 'charity', bps: charityBps });
-    if (buybackBps > 0) claimers.push({ recipient: 'buyback', bps: buybackBps });
-    return claimers;
-  }
   
   for (const testCase of testCases) {
-    const { donatePercent, expectedCharity, expectedBuyback, expectedCreator } = testCase;
-    const claimers = buildFeeClaimers(expectedCharity, expectedBuyback, expectedCreator);
-    const hasCreator = claimers.some(c => c.recipient === 'creator');
-    const expectedHasCreator = expectedCreator > 0;
+    const result = computeFeeSplit(testCase.donatePercent);
+    const derivedTier = deriveTierFromBps(result.charityBps, result.buybackBps, result.creatorBps);
     
-    console.log(`  Tier ${donatePercent}%: ${claimers.length} recipients (${claimers.map(c => c.recipient).join(', ')})`);
-    
-    if (hasCreator !== expectedHasCreator) {
-      console.log(`    ❌ FAIL: Creator inclusion mismatch`);
-      allPassed = false;
-    } else if (donatePercent === 100 && hasCreator) {
-      console.log(`    ❌ FAIL: Creator should be excluded at 100% donation`);
-      allPassed = false;
+    if (derivedTier === testCase.donatePercent) {
+      console.log(`  Tier ${testCase.donatePercent}%: deriveTierFromBps(${result.charityBps}, ${result.buybackBps}, ${result.creatorBps}) = ${derivedTier}% ✅`);
     } else {
-      console.log(`    ✅ PASS`);
+      console.log(`  Tier ${testCase.donatePercent}%: deriveTierFromBps returned ${derivedTier}, expected ${testCase.donatePercent} ❌`);
+      allPassed = false;
     }
   }
-  
   console.log("");
+  
+  console.log("-".repeat(60));
+  console.log("Testing deriveTierFromBps() with invalid BPS (should return null):");
+  console.log("-".repeat(60));
+  console.log("");
+  
+  const invalidCases = [
+    { charity: 7600, buyback: 500, creator: 1900 }, // Non-standard split
+    { charity: 8000, buyback: 600, creator: 1400 }, // Wrong buyback
+    { charity: 8000, buyback: 500, creator: 1000 }, // Sum != 10000
+  ];
+  
+  for (const inv of invalidCases) {
+    const tier = deriveTierFromBps(inv.charity, inv.buyback, inv.creator);
+    const sum = inv.charity + inv.buyback + inv.creator;
+    if (tier === null) {
+      console.log(`  (${inv.charity}, ${inv.buyback}, ${inv.creator}) sum=${sum} -> null ✅`);
+    } else {
+      console.log(`  (${inv.charity}, ${inv.buyback}, ${inv.creator}) sum=${sum} -> ${tier}, expected null ❌`);
+      allPassed = false;
+    }
+  }
+  console.log("");
+  
+  console.log("-".repeat(60));
+  console.log("Testing isBpsAnomaly():");
+  console.log("-".repeat(60));
+  console.log("");
+  
+  const anomalyCases = [
+    { charity: 7500, buyback: 500, creator: 2000, expectAnomaly: false },
+    { charity: 8500, buyback: 500, creator: 1000, expectAnomaly: false },
+    { charity: 7500, buyback: 500, creator: 1900, expectAnomaly: true },
+    { charity: null, buyback: null, creator: null, expectAnomaly: true },
+  ];
+  
+  for (const tc of anomalyCases) {
+    const isAnomaly = isBpsAnomaly(tc.charity, tc.buyback, tc.creator);
+    const label = isAnomaly ? "ANOMALY" : "OK";
+    const expected = tc.expectAnomaly ? "ANOMALY" : "OK";
+    if (isAnomaly === tc.expectAnomaly) {
+      console.log(`  (${tc.charity}, ${tc.buyback}, ${tc.creator}) -> ${label} ✅`);
+    } else {
+      console.log(`  (${tc.charity}, ${tc.buyback}, ${tc.creator}) -> ${label}, expected ${expected} ❌`);
+      allPassed = false;
+    }
+  }
+  console.log("");
+  
+  console.log("-".repeat(60));
+  console.log("Testing getTierLabel():");
+  console.log("-".repeat(60));
+  console.log("");
+  
+  const labelCases: { tier: DonationTier | null; expected: string }[] = [
+    { tier: 0, expected: "Keep All" },
+    { tier: 25, expected: "25% to Charity" },
+    { tier: 50, expected: "50% to Charity" },
+    { tier: 75, expected: "75% to Charity" },
+    { tier: 100, expected: "Give All" },
+    { tier: null, expected: "Custom" },
+  ];
+  
+  for (const lc of labelCases) {
+    const label = getTierLabel(lc.tier);
+    if (label === lc.expected) {
+      console.log(`  getTierLabel(${lc.tier}) = "${label}" ✅`);
+    } else {
+      console.log(`  getTierLabel(${lc.tier}) = "${label}", expected "${lc.expected}" ❌`);
+      allPassed = false;
+    }
+  }
+  console.log("");
+  
+  console.log("-".repeat(60));
+  console.log("Testing bpsToPercent():");
+  console.log("-".repeat(60));
+  console.log("");
+  
+  const percentCases = [
+    { bps: 7500, expected: "75.00" },
+    { bps: 500, expected: "5.00" },
+    { bps: 2000, expected: "20.00" },
+    { bps: 9500, expected: "95.00" },
+  ];
+  
+  for (const pc of percentCases) {
+    const pct = bpsToPercent(pc.bps);
+    if (pct === pc.expected) {
+      console.log(`  bpsToPercent(${pc.bps}) = "${pct}" ✅`);
+    } else {
+      console.log(`  bpsToPercent(${pc.bps}) = "${pct}", expected "${pc.expected}" ❌`);
+      allPassed = false;
+    }
+  }
+  console.log("");
+  
+  console.log("-".repeat(60));
+  console.log("Testing fee claimers logic (creator excluded at 100%):");
+  console.log("-".repeat(60));
+  console.log("");
+  
+  for (const tier of DONATION_TIERS) {
+    const split = computeFeeSplit(tier);
+    const recipients = [];
+    if (split.creatorBps > 0) recipients.push("creator");
+    recipients.push("charity", "buyback");
+    
+    const expectedCount = tier === 100 ? 2 : 3;
+    if (recipients.length === expectedCount) {
+      console.log(`  Tier ${tier}%: ${recipients.length} recipients (${recipients.join(", ")}) ✅`);
+    } else {
+      console.log(`  Tier ${tier}%: ${recipients.length} recipients, expected ${expectedCount} ❌`);
+      allPassed = false;
+    }
+  }
+  console.log("");
+  
   console.log("=".repeat(60));
   if (allPassed) {
     console.log("✅ ALL TESTS PASSED");

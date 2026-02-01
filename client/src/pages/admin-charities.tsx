@@ -18,7 +18,9 @@ import {
   ExternalLink,
   AlertCircle,
   Globe,
-  Twitter
+  Twitter,
+  AlertTriangle,
+  Coins
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +29,26 @@ import { type Charity, CHARITY_STATUS } from "@shared/schema";
 interface PendingCharitiesResponse {
   pending: Charity[];
   awaitingApproval: Charity[];
+}
+
+interface AnomalyToken {
+  id: string;
+  name: string;
+  symbol: string;
+  mintAddress: string;
+  charityBps: number | null;
+  buybackBps: number | null;
+  creatorBps: number | null;
+  bpsSum: number;
+  launchedAt: string;
+  isTest: boolean;
+  anomalyAcknowledgedAt: string | null;
+  anomalyNotes: string | null;
+}
+
+interface AnomalyTokensResponse {
+  anomalies: AnomalyToken[];
+  count: number;
 }
 
 export default function AdminCharities() {
@@ -53,6 +75,26 @@ export default function AdminCharities() {
       return res.json();
     },
     enabled: adminSecret.length > 0,
+  });
+
+  const { data: anomalyData, refetch: refetchAnomalies } = useQuery<AnomalyTokensResponse>({
+    queryKey: ["/api/admin/tokens/anomalies"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/tokens/anomalies", {
+        headers: {
+          "x-admin-secret": adminSecret,
+        },
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          setIsAuthorized(false);
+          throw new Error("Unauthorized");
+        }
+        throw new Error("Failed to fetch token anomalies");
+      }
+      return res.json();
+    },
+    enabled: isAuthorized && adminSecret.length > 0,
   });
 
   const approveMutation = useMutation({
@@ -197,6 +239,12 @@ export default function AdminCharities() {
           <TabsTrigger value="pending" data-testid="tab-pending">
             Pending Verification ({data?.pending?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="anomalies" data-testid="tab-anomalies">
+            <span className="flex items-center gap-1">
+              {(anomalyData?.count || 0) > 0 && <AlertTriangle className="h-3 w-3 text-yellow-500" />}
+              Fee Anomalies ({anomalyData?.count || 0})
+            </span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="awaiting">
@@ -267,6 +315,82 @@ export default function AdminCharities() {
                         isDenying={denyMutation.isPending}
                         getStatusBadge={getStatusBadge}
                       />
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="anomalies">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                Fee Split Anomalies
+              </CardTitle>
+              <CardDescription>
+                Tokens where the fee split BPS values don't sum to 10000 (1%). This may indicate a bug or legacy data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!anomalyData?.anomalies?.length ? (
+                <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
+                  <CheckCircle2 className="h-8 w-8 text-green-500" />
+                  <p>No anomalies detected - all tokens have valid fee splits</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {anomalyData.anomalies.map((token) => (
+                      <div 
+                        key={token.id} 
+                        className="rounded-lg border p-4 space-y-3"
+                        data-testid={`anomaly-token-${token.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Coins className="h-5 w-5 text-muted-foreground" />
+                              <h3 className="font-semibold">{token.name}</h3>
+                              <Badge variant="secondary">{token.symbol}</Badge>
+                              {token.isTest && <Badge className="bg-purple-500/20 text-purple-600">TEST</Badge>}
+                            </div>
+                            
+                            <div className="mt-2 grid grid-cols-4 gap-2 text-sm">
+                              <div className="p-2 rounded bg-muted/50">
+                                <div className="text-muted-foreground text-xs">Charity</div>
+                                <div className="font-mono">{token.charityBps ?? "null"}</div>
+                              </div>
+                              <div className="p-2 rounded bg-muted/50">
+                                <div className="text-muted-foreground text-xs">Buyback</div>
+                                <div className="font-mono">{token.buybackBps ?? "null"}</div>
+                              </div>
+                              <div className="p-2 rounded bg-muted/50">
+                                <div className="text-muted-foreground text-xs">Creator</div>
+                                <div className="font-mono">{token.creatorBps ?? "null"}</div>
+                              </div>
+                              <div className="p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
+                                <div className="text-muted-foreground text-xs">Sum</div>
+                                <div className="font-mono text-yellow-600">{token.bpsSum}</div>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Launched: {new Date(token.launchedAt).toLocaleDateString()}
+                            </div>
+                            
+                            {token.anomalyAcknowledgedAt && (
+                              <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Acknowledged {new Date(token.anomalyAcknowledgedAt).toLocaleDateString()}
+                                {token.anomalyNotes && `: ${token.anomalyNotes}`}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>

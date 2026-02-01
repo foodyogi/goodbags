@@ -2,9 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
-  CHARITY_FEE_PERCENTAGE, 
-  BUYBACK_FEE_PERCENTAGE,
-  CREATOR_FEE_PERCENTAGE,
   CHARITY_FEE_BPS,
   BUYBACK_FEE_BPS,
   CREATOR_FEE_BPS,
@@ -891,6 +888,90 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Charity denial error:", error);
       res.status(500).json({ error: "Failed to deny charity" });
+    }
+  });
+
+  // Get tokens with anomalous BPS values (admin only)
+  // Anomaly: charityBps + buybackBps + creatorBps != 10000
+  app.get("/api/admin/tokens/anomalies", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const tokens = await storage.getLaunchedTokens();
+      const anomalies = tokens.filter(t => {
+        const charity = t.charityBps ?? 0;
+        const buyback = t.buybackBps ?? 0;
+        const creator = t.creatorBps ?? 0;
+        const sum = charity + buyback + creator;
+        return sum !== 10000;
+      }).map(t => ({
+        id: t.id,
+        name: t.name,
+        symbol: t.symbol,
+        mintAddress: t.mintAddress,
+        charityBps: t.charityBps,
+        buybackBps: t.buybackBps,
+        creatorBps: t.creatorBps,
+        bpsSum: (t.charityBps ?? 0) + (t.buybackBps ?? 0) + (t.creatorBps ?? 0),
+        launchedAt: t.launchedAt,
+        isTest: t.isTest,
+        anomalyAcknowledgedAt: t.anomalyAcknowledgedAt,
+        anomalyNotes: t.anomalyNotes,
+      }));
+
+      res.json({
+        anomalies,
+        count: anomalies.length,
+      });
+    } catch (error) {
+      console.error("Get token anomalies error:", error);
+      res.status(500).json({ error: "Failed to fetch token anomalies" });
+    }
+  });
+
+  // Acknowledge token anomaly (admin only)
+  app.post("/api/admin/tokens/:id/acknowledge-anomaly", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { notes } = req.body;
+      const token = await storage.getLaunchedTokenByMint(req.params.id);
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+
+      await storage.updateLaunchedToken(token.id, {
+        anomalyAcknowledgedAt: new Date(),
+        anomalyNotes: notes || null,
+      });
+
+      await storage.createAuditLog({
+        action: "TOKEN_ANOMALY_ACKNOWLEDGED",
+        entityType: "token",
+        entityId: token.id,
+        details: JSON.stringify({ 
+          name: token.name, 
+          notes: notes || "No notes",
+          charityBps: token.charityBps,
+          buybackBps: token.buybackBps,
+          creatorBps: token.creatorBps,
+        }),
+      });
+
+      res.json({
+        success: true,
+        message: "Anomaly acknowledged",
+        tokenId: token.id,
+      });
+    } catch (error) {
+      console.error("Acknowledge anomaly error:", error);
+      res.status(500).json({ error: "Failed to acknowledge anomaly" });
     }
   });
 

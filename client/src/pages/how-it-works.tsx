@@ -45,7 +45,7 @@ const steps = [
   {
     step: 4,
     title: "Trading Happens",
-    description: "Every trade automatically distributes the 1% fee using your stored split — no manual work needed.",
+    description: "Every trade automatically distributes the built-in 1% royalty using your stored split — no manual work needed.",
     icon: TrendingUp,
     color: "bg-secondary",
   },
@@ -138,8 +138,8 @@ export default function HowItWorksPage() {
             </Badge>
             <h2 className="text-2xl font-bold mb-3">Fee Splitting Logic</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              The 1% platform fee on every trade is split three ways by default. 
-              Creators can donate 0-100% of their share to charity at launch.
+              The built-in 1% royalty stream on every trade is split three ways. 
+              This split is configured at launch and enforced on-chain.
             </p>
           </div>
           

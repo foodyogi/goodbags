@@ -1,11 +1,18 @@
 import { Card } from "@/components/ui/card";
 import { Heart, Coins, TrendingUp, User, Plus } from "lucide-react";
 import { 
-  CHARITY_FEE_PERCENTAGE, 
-  BUYBACK_FEE_PERCENTAGE,
-  CREATOR_FEE_PERCENTAGE,
-  TOTAL_FEE_PERCENTAGE
-} from "@shared/schema";
+  BASE_CHARITY_BPS, 
+  BASE_BUYBACK_BPS,
+  BASE_CREATOR_BPS,
+  TOTAL_FEE_BPS,
+  bpsToPercent
+} from "@shared/feeSplit";
+
+// Derive percentages from BPS (single source of truth)
+const CHARITY_FEE_PERCENTAGE = bpsToPercent(BASE_CHARITY_BPS);
+const BUYBACK_FEE_PERCENTAGE = bpsToPercent(BASE_BUYBACK_BPS);
+const CREATOR_FEE_PERCENTAGE = bpsToPercent(BASE_CREATOR_BPS);
+const TOTAL_FEE_PERCENTAGE = bpsToPercent(TOTAL_FEE_BPS);
 
 interface FeeRowProps {
   percentage: string;
@@ -39,14 +46,14 @@ export function FeeTransparency() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5 mb-4" data-testid="badge-transparency">
             <Heart className="h-4 w-4 text-pink-500" />
-            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">Low 1% Fee</span>
+            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">1% Royalty Stream</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold mb-3" data-testid="heading-fee-breakdown">
             Every Trade Supports Your Cause
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Unlike other platforms where creators keep trading fees, GoodBags sends 
-            most of the royalty to your chosen charity.
+            Unlike other platforms where creators keep trading royalties, tokens launched on 
+            GoodBags direct most of the 1% royalty stream to your chosen charity.
           </p>
         </div>
 

@@ -26,15 +26,16 @@ import {
 import { SiX, SiFacebook } from "react-icons/si";
 import { format } from "date-fns";
 import { useState } from "react";
-import { 
-  CHARITY_FEE_PERCENTAGE, 
-  BUYBACK_FEE_PERCENTAGE,
-  CREATOR_FEE_PERCENTAGE,
-  CHARITY_FEE_BPS,
-  BUYBACK_FEE_BPS,
-  CREATOR_FEE_BPS,
-  TOKEN_APPROVAL_STATUS 
-} from "@shared/schema";
+import { TOKEN_APPROVAL_STATUS } from "@shared/schema";
+import {
+  deriveTierFromBps,
+  getTierLabel,
+  bpsToPercent,
+  isBpsAnomaly,
+  BASE_CHARITY_BPS,
+  BASE_BUYBACK_BPS,
+  BASE_CREATOR_BPS,
+} from "@shared/feeSplit";
 import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
@@ -366,52 +367,78 @@ export default function TokenDetailPage() {
             <CardContent>
               <div className="space-y-3">
                 {/* Show per-token split if available, otherwise use defaults */}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-pink-500" />
-                    <span className="text-sm">To Charity</span>
-                    {token.donateCreatorShare && (
-                      <Badge variant="secondary" className="text-xs">+Creator Share</Badge>
-                    )}
-                  </div>
-                  <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
-                    {token.charityBps ? (token.charityBps / 100).toFixed(2) : CHARITY_FEE_PERCENTAGE}%
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm">FYI Buyback</span>
-                  </div>
-                  <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                    {token.buybackBps ? (token.buybackBps / 100).toFixed(2) : BUYBACK_FEE_PERCENTAGE}%
-                  </Badge>
-                </div>
-                {/* Show creator share if not donated */}
-                {!token.donateCreatorShare && (
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Token Creator</span>
-                    </div>
-                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                      {token.creatorBps ? (token.creatorBps / 100).toFixed(2) : CREATOR_FEE_PERCENTAGE}%
-                    </Badge>
-                  </div>
-                )}
-                <div className="pt-3 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Total Fee</span>
-                    <Badge variant="outline" className="font-bold">
-                      1%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {token.donateCreatorShare 
-                      ? "Creator donated their share - 100% of fees support good causes!" 
-                      : "Low 1% total fee keeps trading volume high"}
-                  </p>
-                </div>
+                {(() => {
+                  // Use stored BPS values with fallback to base constants
+                  const charityBps = token.charityBps ?? BASE_CHARITY_BPS;
+                  const buybackBps = token.buybackBps ?? BASE_BUYBACK_BPS;
+                  const creatorBps = token.creatorBps ?? BASE_CREATOR_BPS;
+                  const derivedTier = deriveTierFromBps(charityBps, buybackBps, creatorBps);
+                  const hasAnomaly = isBpsAnomaly(charityBps, buybackBps, creatorBps);
+                  const tierLabel = getTierLabel(derivedTier);
+                  
+                  return (
+                    <>
+                      {/* Show donation tier if creator donated any portion */}
+                      {derivedTier !== null && derivedTier > 0 && (
+                        <div className="flex justify-between items-center pb-2 mb-2 border-b border-muted">
+                          <span className="text-sm font-medium text-primary">Creator Donation</span>
+                          <Badge className="bg-primary/10 text-primary border-primary/20">
+                            {tierLabel}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Heart className="h-4 w-4 text-pink-500" />
+                          <span className="text-sm">To Charity</span>
+                        </div>
+                        <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
+                          {bpsToPercent(charityBps)}%
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm">FYI Buyback</span>
+                        </div>
+                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                          {bpsToPercent(buybackBps)}%
+                        </Badge>
+                      </div>
+                      {creatorBps > 0 && (
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-green-500" />
+                            <span className="text-sm">Token Creator</span>
+                          </div>
+                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                            {bpsToPercent(creatorBps)}%
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="pt-3 border-t">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">Total Fee</span>
+                          <Badge variant="outline" className="font-bold">
+                            1%
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {derivedTier === 100
+                            ? "Creator donated their share — 95% of fees go to charity!" 
+                            : "This 1% royalty split was configured at launch and is enforced on-chain."}
+                        </p>
+                        {hasAnomaly && (
+                          <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Fee split values may not sum to 100%
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>

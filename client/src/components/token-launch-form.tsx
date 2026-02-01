@@ -40,14 +40,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { 
-  CHARITY_FEE_PERCENTAGE, 
-  BUYBACK_FEE_PERCENTAGE, 
-  CREATOR_FEE_PERCENTAGE,
-  CHARITY_FEE_BPS,
-  BUYBACK_FEE_BPS,
-  CREATOR_FEE_BPS,
   CREATOR_DONATION_PRESETS,
 } from "@shared/schema";
+import {
+  computeFeeSplit,
+  BASE_CHARITY_BPS,
+  BASE_BUYBACK_BPS,
+  BASE_CREATOR_BPS,
+  DONATION_TIERS,
+  type DonationTier,
+  bpsToPercent,
+} from "@shared/feeSplit";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -776,7 +779,7 @@ export function TokenLaunchForm() {
           Launch New Token
         </CardTitle>
         <CardDescription>
-          Create your memecoin with {CHARITY_FEE_PERCENTAGE}% to charity + {BUYBACK_FEE_PERCENTAGE}% buyback + {CREATOR_FEE_PERCENTAGE}% to you
+          Create your memecoin with {bpsToPercent(BASE_CHARITY_BPS)}% to charity + {bpsToPercent(BASE_BUYBACK_BPS)}% buyback + {bpsToPercent(BASE_CREATOR_BPS)}% to you
         </CardDescription>
         {bagsStatus?.configured === false && (
           <div className="mt-2 rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400">
@@ -1236,20 +1239,30 @@ export function TokenLaunchForm() {
             </div>
 
             <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Charity Donation</span>
-                <span className="font-medium">{(CHARITY_FEE_PERCENTAGE + (CREATOR_FEE_PERCENTAGE * donateCreatorPercent / 100)).toFixed(2)}% of trades</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">FYI Buyback</span>
-                <span className="font-medium">{BUYBACK_FEE_PERCENTAGE}% of trades</span>
-              </div>
-              {donateCreatorPercent < 100 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Creator Share</span>
-                  <span className="font-medium">{(CREATOR_FEE_PERCENTAGE * (100 - donateCreatorPercent) / 100).toFixed(2)}% of trades</span>
-                </div>
-              )}
+              {(() => {
+                const validTier = DONATION_TIERS.includes(donateCreatorPercent as DonationTier)
+                  ? (donateCreatorPercent as DonationTier)
+                  : 0;
+                const feeSplit = computeFeeSplit(validTier);
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Charity Donation</span>
+                      <span className="font-medium">{bpsToPercent(feeSplit.charityBps)}% of trades</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">FYI Buyback</span>
+                      <span className="font-medium">{bpsToPercent(feeSplit.buybackBps)}% of trades</span>
+                    </div>
+                    {feeSplit.creatorBps > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Creator Share</span>
+                        <span className="font-medium">{bpsToPercent(feeSplit.creatorBps)}% of trades</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
               <div className="pt-2 border-t border-muted">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">How donations work:</span>{" "}

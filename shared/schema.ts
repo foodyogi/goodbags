@@ -148,6 +148,11 @@ export const launchedTokens = pgTable("launched_tokens", {
   buybackBps: integer("buyback_bps").notNull().default(500),  // Default: 5% to FYI buyback (500 BPS)
   creatorBps: integer("creator_bps").notNull().default(2000), // Default: 20% to creator (2000 BPS)
   donateCreatorShare: boolean("donate_creator_share").notNull().default(false), // Legacy: if true, creator donated 100%
+  // Normalized donation tier (0, 25, 50, 75, 100) - null means custom or unknown
+  donateCreatorPercent: integer("donate_creator_percent"),
+  // Admin fields for anomaly acknowledgment (sum != 10000)
+  anomalyAcknowledgedAt: timestamp("anomaly_acknowledged_at"),
+  anomalyNotes: text("anomaly_notes"),
 });
 
 // Donation tracking table - blockchain verified

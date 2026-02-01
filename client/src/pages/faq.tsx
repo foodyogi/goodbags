@@ -57,7 +57,7 @@ const faqCategories = [
     questions: [
       {
         question: "What is the fee split?",
-        answer: "GoodBags applies a 1% total platform fee on all token trades. By default: 0.75% goes directly to your chosen charity, 0.05% goes to FYI token buybacks (supporting the ecosystem), and 0.20% goes to the token creator. Creators can choose to donate 0%, 25%, 50%, 75%, or 100% of their share back to charity at launch, increasing the charity's portion up to 0.95%."
+        answer: "Every token launched on GoodBags has a built-in 1% royalty stream from trading volume. This royalty is split three ways: 0.75% goes to your chosen charity, 0.05% goes to FYI token buybacks, and 0.20% goes to the token creator. Creators can donate 0%, 25%, 50%, 75%, or 100% of their share back to charity at launch, increasing the charity's portion up to 0.95%. This split is configured at launch and enforced on-chain."
       },
       {
         question: "How do charities receive donations?",
