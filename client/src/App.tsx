@@ -37,6 +37,7 @@ import PrivacyPage from "@/pages/privacy";
 import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
 import TokenDetailPage from "@/pages/token-detail";
+import CharityPortal from "@/pages/charity-portal";
 import NotFound from "@/pages/not-found";
 
 function MainRouter() {
@@ -62,6 +63,7 @@ function MainRouter() {
       <Route path="/admin/charities" component={AdminCharities} />
       <Route path="/charity/tokens" component={CharityTokenApproval} />
       <Route path="/token/:mint" component={TokenDetailPage} />
+      <Route path="/charity-portal" component={CharityPortal} />
       <Route component={NotFound} />
     </Switch>
   );

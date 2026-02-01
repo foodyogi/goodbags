@@ -1191,6 +1191,207 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to deny token" });
     }
   });
+
+  // === CHARITY PORTAL ENDPOINTS (X-verified approval) ===
+  
+  // Get token details for charity portal
+  app.get("/api/charity-portal/token", async (req, res) => {
+    try {
+      const { mint, charity } = req.query;
+      
+      if (!mint || !charity) {
+        return res.status(400).json({ error: "Missing token mint or charity ID" });
+      }
+      
+      // Get the token
+      const token = await storage.getLaunchedTokenByMint(mint as string);
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      
+      // Verify this token is for the specified charity
+      if (token.charityId !== charity) {
+        return res.status(404).json({ error: "Token not associated with this charity" });
+      }
+      
+      // Get the charity details
+      const charityData = await storage.getCharityById(charity as string);
+      if (!charityData) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      
+      res.json({
+        id: token.id,
+        name: token.name,
+        symbol: token.symbol,
+        mintAddress: token.mintAddress,
+        imageUrl: token.imageUrl,
+        creatorWallet: token.creatorWallet,
+        launchedAt: token.launchedAt,
+        charityName: charityData.name,
+        charityTwitterHandle: charityData.twitterHandle || "",
+        charityBps: token.charityBps || 7500,
+        buybackBps: token.buybackBps || 500,
+        creatorBps: token.creatorBps || 2000,
+        charityApprovalStatus: token.charityApprovalStatus,
+      });
+    } catch (error) {
+      console.error("Charity portal token fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch token details" });
+    }
+  });
+  
+  // Approve token via charity portal (requires X verification)
+  app.post("/api/charity-portal/approve", async (req, res) => {
+    try {
+      const { tokenMint, charityId, note } = req.body;
+      
+      // User must be logged in
+      if (!req.user) {
+        return res.status(401).json({ error: "You must be logged in with X to approve tokens" });
+      }
+      
+      const userTwitterHandle = (req.user as any).twitterUsername;
+      if (!userTwitterHandle) {
+        return res.status(401).json({ error: "X account not linked. Please login with X." });
+      }
+      
+      // Get the token
+      const token = await storage.getLaunchedTokenByMint(tokenMint);
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      
+      // Verify token is for the specified charity
+      if (token.charityId !== charityId) {
+        return res.status(400).json({ error: "Token not associated with this charity" });
+      }
+      
+      // Get the charity
+      const charity = await storage.getCharityById(charityId);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      
+      // CRITICAL: Verify the user's X handle matches the charity's X handle
+      const charityHandle = charity.twitterHandle?.replace("@", "").toLowerCase();
+      const userHandle = userTwitterHandle.replace("@", "").toLowerCase();
+      
+      if (charityHandle !== userHandle) {
+        return res.status(403).json({ 
+          error: `X verification failed. You are signed in as @${userTwitterHandle}, but this token requires @${charity.twitterHandle}` 
+        });
+      }
+      
+      // Check if already reviewed
+      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
+        return res.status(400).json({ error: "This token has already been reviewed" });
+      }
+      
+      // Approve the token
+      const updated = await storage.updateTokenApprovalStatus(token.id, TOKEN_APPROVAL_STATUS.APPROVED, note);
+      
+      await storage.createAuditLog({
+        action: "TOKEN_APPROVED_VIA_PORTAL",
+        entityType: "token",
+        entityId: token.id,
+        details: JSON.stringify({ 
+          charityId,
+          charityName: charity.name,
+          verifiedHandle: userTwitterHandle,
+          tokenName: token.name,
+          note,
+        }),
+      });
+      
+      console.log(`[Charity Portal] Token ${token.name} approved by @${userTwitterHandle} for ${charity.name}`);
+      
+      res.json({
+        success: true,
+        message: "Token officially endorsed",
+        token: updated,
+      });
+    } catch (error) {
+      console.error("Charity portal approval error:", error);
+      res.status(500).json({ error: "Failed to approve token" });
+    }
+  });
+  
+  // Deny token via charity portal (requires X verification)
+  app.post("/api/charity-portal/deny", async (req, res) => {
+    try {
+      const { tokenMint, charityId, reason } = req.body;
+      
+      // User must be logged in
+      if (!req.user) {
+        return res.status(401).json({ error: "You must be logged in with X to deny tokens" });
+      }
+      
+      const userTwitterHandle = (req.user as any).twitterUsername;
+      if (!userTwitterHandle) {
+        return res.status(401).json({ error: "X account not linked. Please login with X." });
+      }
+      
+      // Get the token
+      const token = await storage.getLaunchedTokenByMint(tokenMint);
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      
+      // Verify token is for the specified charity
+      if (token.charityId !== charityId) {
+        return res.status(400).json({ error: "Token not associated with this charity" });
+      }
+      
+      // Get the charity
+      const charity = await storage.getCharityById(charityId);
+      if (!charity) {
+        return res.status(404).json({ error: "Charity not found" });
+      }
+      
+      // CRITICAL: Verify the user's X handle matches the charity's X handle
+      const charityHandle = charity.twitterHandle?.replace("@", "").toLowerCase();
+      const userHandle = userTwitterHandle.replace("@", "").toLowerCase();
+      
+      if (charityHandle !== userHandle) {
+        return res.status(403).json({ 
+          error: `X verification failed. You are signed in as @${userTwitterHandle}, but this token requires @${charity.twitterHandle}` 
+        });
+      }
+      
+      // Check if already reviewed
+      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
+        return res.status(400).json({ error: "This token has already been reviewed" });
+      }
+      
+      // Deny the token
+      const updated = await storage.updateTokenApprovalStatus(token.id, TOKEN_APPROVAL_STATUS.DENIED, reason);
+      
+      await storage.createAuditLog({
+        action: "TOKEN_DENIED_VIA_PORTAL",
+        entityType: "token",
+        entityId: token.id,
+        details: JSON.stringify({ 
+          charityId,
+          charityName: charity.name,
+          verifiedHandle: userTwitterHandle,
+          tokenName: token.name,
+          reason,
+        }),
+      });
+      
+      console.log(`[Charity Portal] Token ${token.name} denied by @${userTwitterHandle} for ${charity.name}`);
+      
+      res.json({
+        success: true,
+        message: "Token denied",
+        token: updated,
+      });
+    } catch (error) {
+      console.error("Charity portal denial error:", error);
+      res.status(500).json({ error: "Failed to deny token" });
+    }
+  });
   
   // Admin: Get all tokens pending approval
   app.get("/api/admin/tokens/pending", async (req, res) => {
