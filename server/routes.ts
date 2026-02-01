@@ -24,6 +24,7 @@ import bs58Pkg from "bs58";
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
+import { sendCharityApprovalEmail, generateApprovalLink } from "./email-service";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated, authStorage } from "./replit_integrations/auth";
 import { db } from "./db";
@@ -1892,6 +1893,40 @@ export async function registerRoutes(
         });
       }
       
+      // Send email notification to charity (only for real launches with email)
+      let emailSent = false;
+      if (!isTestLaunch && charityInfo.email) {
+        const approvalLink = generateApprovalLink(mintAddress, charityInfo.id);
+        const emailResult = await sendCharityApprovalEmail({
+          charityName: charityInfo.name,
+          charityEmail: charityInfo.email,
+          tokenName: validated.name,
+          tokenSymbol: validated.symbol,
+          tokenMintAddress: mintAddress,
+          creatorWallet: validated.creatorWallet,
+          approvalLink,
+        });
+        emailSent = emailResult.success;
+        
+        if (!emailResult.success) {
+          console.warn(`[TokenLaunch] Failed to send charity notification email: ${emailResult.error}`);
+          // Log the failure but don't fail the launch
+          await storage.createAuditLog({
+            action: "CHARITY_EMAIL_FAILED",
+            entityType: "token",
+            entityId: token.id,
+            actorWallet: validated.creatorWallet,
+            details: JSON.stringify({
+              charityId: charityInfo.id,
+              charityEmail: charityInfo.email,
+              error: emailResult.error,
+            }),
+          });
+        } else {
+          console.log(`[TokenLaunch] Sent charity approval email to ${charityInfo.email}`);
+        }
+      }
+      
       res.json({
         success: true,
         isTest: isTestLaunch,
@@ -1907,6 +1942,8 @@ export async function registerRoutes(
           name: charityInfo.name,
           source: charityInfo.source,
           hasWallet: !!charityInfo.walletAddress,
+          hasEmail: !!charityInfo.email,
+          emailSent,
         },
       });
     } catch (error) {
