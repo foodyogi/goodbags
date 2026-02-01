@@ -9,15 +9,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Wallet, User, Loader2 } from "lucide-react";
+import { LogOut, Wallet, User, Loader2, Settings } from "lucide-react";
 import { SiX } from "react-icons/si";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { WalletConnectionModal } from "./wallet-connection-modal";
+import { ProfileSettingsModal } from "./profile-settings-modal";
 
 export function UserMenu() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   
   const { data: walletData } = useQuery<{ walletAddress: string | null }>({
     queryKey: ["/api/user/wallet"],
@@ -51,19 +53,24 @@ export function UserMenu() {
     );
   }
 
-  // For Twitter OAuth, use Twitter display name and username
+  // Get user profile fields
+  const customDisplayName = (user as any)?.displayName;
   const twitterDisplayName = (user as any)?.twitterDisplayName;
   const twitterUsername = (user as any)?.twitterUsername;
   
-  const initials = twitterDisplayName 
-    ? twitterDisplayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : user?.firstName && user?.lastName 
-      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-      : user?.email?.[0]?.toUpperCase() || "U";
-
-  const displayName = twitterDisplayName || (user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.email || "User");
+  // Priority: custom displayName → X username (@handle) → X display name → first+last name → email
+  const displayName = customDisplayName 
+    || (twitterUsername ? `@${twitterUsername}` : null)
+    || twitterDisplayName
+    || (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null)
+    || user?.email 
+    || "User";
+  
+  const initials = (customDisplayName || twitterDisplayName || (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null))
+    ?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    || (twitterUsername ? twitterUsername[0].toUpperCase() : null)
+    || user?.email?.[0]?.toUpperCase() 
+    || "U";
 
   const shortWallet = walletData?.walletAddress 
     ? `${walletData.walletAddress.slice(0, 4)}...${walletData.walletAddress.slice(-4)}`
@@ -121,6 +128,14 @@ export function UserMenu() {
             </a>
           </DropdownMenuItem>
           
+          <DropdownMenuItem 
+            onClick={() => setProfileModalOpen(true)}
+            data-testid="menu-item-settings"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Edit Profile
+          </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
@@ -137,6 +152,13 @@ export function UserMenu() {
         open={walletModalOpen} 
         onOpenChange={setWalletModalOpen}
         currentWallet={walletData?.walletAddress || null}
+      />
+      
+      <ProfileSettingsModal
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
+        currentDisplayName={customDisplayName || ""}
+        twitterUsername={twitterUsername}
       />
     </>
   );
