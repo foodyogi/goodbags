@@ -46,3 +46,4 @@ integrations = ["javascript_database:1.0.0", "javascript_object_storage:2.0.0", 
 [userenv.shared]
 PLATFORM_WALLET_ADDRESS = "8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8"
 FEATURED_TOKEN_MINT = "N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbGKgvBAGS"
+VITE_SOLANA_RPC_URL = "https://mainnet.helius-rpc.com/?api-key=4cb4567c-5ea4-4854-8201-b35512d5ce5d"
