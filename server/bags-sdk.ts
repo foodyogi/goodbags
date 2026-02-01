@@ -3,6 +3,7 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import bs58Pkg from "bs58";
 // Handle ESM/CommonJS interop for bs58
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
+import axios from "axios";
 import { 
   PLATFORM_WALLET, 
   PARTNER_WALLET,
@@ -15,6 +16,137 @@ import {
 } from "@shared/feeSplit";
 
 const BAGS_API_KEY = process.env.BAGS_API_KEY;
+const BAGS_API_BASE_URL = "https://public-api-v2.bags.fm/api/v1";
+
+// Enhanced diagnostic logging for Bags.fm API calls
+export interface BagsApiDiagnostic {
+  success: boolean;
+  requestUrl: string;
+  requestMethod: string;
+  requestHeaders: Record<string, string>;
+  requestBody: unknown;
+  responseStatus?: number;
+  responseStatusText?: string;
+  responseHeaders?: Record<string, string>;
+  responseData?: unknown;
+  errorMessage?: string;
+  errorCode?: number;
+  axiosVersion: string;
+  timestamp: string;
+}
+
+export async function testBagsApiConnection(): Promise<BagsApiDiagnostic> {
+  const timestamp = new Date().toISOString();
+  // Use the CORRECT endpoint that the SDK uses (with FormData)
+  const url = `${BAGS_API_BASE_URL}/token-launch/create-token-info`;
+  const method = "POST";
+  
+  // Build FormData to match SDK behavior exactly
+  const FormData = (await import("form-data")).default;
+  const formData = new FormData();
+  formData.append("name", "DiagnosticTest");
+  formData.append("symbol", "DIAG");
+  formData.append("description", "API diagnostic test");
+  formData.append("imageUrl", "https://example.com/test.png");
+  
+  const headers: Record<string, string> = {
+    ...formData.getHeaders(),
+    "x-api-key": BAGS_API_KEY || "NOT_CONFIGURED",
+  };
+  
+  const testPayload = {
+    name: "DiagnosticTest",
+    symbol: "DIAG",
+    description: "API diagnostic test",
+    imageUrl: "https://example.com/test.png",
+  };
+  
+  const diagnostic: BagsApiDiagnostic = {
+    success: false,
+    requestUrl: url,
+    requestMethod: method,
+    requestHeaders: {
+      ...headers,
+      "x-api-key": headers["x-api-key"] ? `${headers["x-api-key"].slice(0, 8)}...${headers["x-api-key"].slice(-4)} (length: ${headers["x-api-key"].length})` : "NOT_CONFIGURED",
+    },
+    requestBody: testPayload,
+    axiosVersion: axios.VERSION || "unknown",
+    timestamp,
+  };
+  
+  console.log(`\n========== BAGS API DIAGNOSTIC TEST ==========`);
+  console.log(`Timestamp: ${timestamp}`);
+  console.log(`URL: ${url}`);
+  console.log(`Method: ${method}`);
+  console.log(`Axios Version: ${diagnostic.axiosVersion}`);
+  console.log(`API Key: ${diagnostic.requestHeaders["x-api-key"]}`);
+  console.log(`Content-Type: ${headers["content-type"]}`);
+  console.log(`Request Body (as FormData):`, JSON.stringify(testPayload, null, 2));
+  
+  try {
+    const response = await axios({
+      method,
+      url,
+      headers,
+      data: formData,
+      timeout: 30000,
+      validateStatus: () => true, // Accept all status codes for diagnostic
+    });
+    
+    diagnostic.responseStatus = response.status;
+    diagnostic.responseStatusText = response.statusText;
+    diagnostic.responseHeaders = response.headers as Record<string, string>;
+    diagnostic.responseData = response.data;
+    diagnostic.success = response.status >= 200 && response.status < 300;
+    
+    console.log(`\n--- Response ---`);
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log(`Headers:`, JSON.stringify(response.headers, null, 2));
+    console.log(`Body:`, JSON.stringify(response.data, null, 2).slice(0, 2000));
+    
+    if (response.status === 403) {
+      console.log(`\n!!! 403 FORBIDDEN DETECTED !!!`);
+      console.log(`This indicates an authentication/authorization issue.`);
+      console.log(`Possible causes:`);
+      console.log(`  1. Invalid API key`);
+      console.log(`  2. API key not activated or expired`);
+      console.log(`  3. IP whitelist restrictions`);
+      console.log(`  4. API endpoint has changed`);
+      console.log(`  5. Request format not accepted`);
+    }
+    
+  } catch (error: any) {
+    diagnostic.errorMessage = error.message;
+    diagnostic.errorCode = error.code;
+    
+    console.log(`\n--- Error ---`);
+    console.log(`Message: ${error.message}`);
+    console.log(`Code: ${error.code}`);
+    
+    if (error.response) {
+      diagnostic.responseStatus = error.response.status;
+      diagnostic.responseStatusText = error.response.statusText;
+      diagnostic.responseHeaders = error.response.headers;
+      diagnostic.responseData = error.response.data;
+      
+      console.log(`Response Status: ${error.response.status}`);
+      console.log(`Response Data:`, JSON.stringify(error.response.data, null, 2).slice(0, 2000));
+    }
+    
+    if (error.request) {
+      console.log(`Request was made but no response received`);
+      console.log(`Request config:`, JSON.stringify({
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+      }, null, 2));
+    }
+  }
+  
+  console.log(`\n========== END DIAGNOSTIC ==========\n`);
+  
+  return diagnostic;
+}
 
 // Custom error class for Bags.fm API errors with user-friendly messages
 export class BagsApiError extends Error {

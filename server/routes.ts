@@ -1308,6 +1308,22 @@ export async function registerRoutes(
     res.json(status);
   });
 
+  // Diagnostic endpoint to test Bags.fm API connection directly
+  app.get("/api/bags/diagnostic", async (req, res) => {
+    try {
+      console.log(`[Bags Diagnostic] Starting API connection test...`);
+      const diagnostic = await bagsSDK.testBagsApiConnection();
+      res.json(diagnostic);
+    } catch (error) {
+      console.error(`[Bags Diagnostic] Test failed:`, error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // Step 1: Create token metadata on Bags.fm
   // Rate limited: 10 requests per minute (token launches are expensive operations)
   app.post("/api/tokens/prepare", rateLimitMiddleware(10), async (req, res) => {
