@@ -167,19 +167,25 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>&copy; {new Date().getFullYear()} Master 22 Solutions. All rights reserved.</span>
-          </div>
-          <div className="flex items-center gap-4">
+        <div className="mt-8 pt-6 border-t border-border/50">
+          <p className="text-xs text-muted-foreground text-center mb-4">
+            GoodBags is a launch experience and impact layer built on top of Bags. 
+            Bags provides the token launch and fee infrastructure.
+          </p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Built with</span>
-              <Heart className="h-3 w-3 text-pink-500" />
-              <span>for social impact</span>
+              <span>&copy; {new Date().getFullYear()} Master 22 Solutions. All rights reserved.</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Shield className="h-3 w-3 text-green-500" />
-              <span>On-chain verified</span>
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Built with</span>
+                <Heart className="h-3 w-3 text-pink-500" />
+                <span>for social impact</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3 text-green-500" />
+                <span>On-chain verified</span>
+              </div>
             </div>
           </div>
         </div>

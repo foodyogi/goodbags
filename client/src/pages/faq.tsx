@@ -30,7 +30,7 @@ const faqCategories = [
     questions: [
       {
         question: "What is GoodBags?",
-        answer: "GoodBags is a platform that allows you to create Solana-based tokens (memecoins) with built-in charitable donations. Every trade of your token automatically generates donations to your chosen charity through our transparent fee system."
+        answer: "GoodBags is a launch experience and impact layer built on top of Bags. It allows you to create purpose-driven Solana tokens with built-in charitable giving. Every trade automatically routes 1% to your chosen charity, buyback, and creator split — all stored on-chain and verifiable."
       },
       {
         question: "How do I get started?",
@@ -43,6 +43,10 @@ const faqCategories = [
       {
         question: "How much SOL do I need to launch a token?",
         answer: "You'll need approximately 0.05-0.1 SOL to cover the token creation costs and initial transaction fees. The exact amount depends on current Solana network conditions."
+      },
+      {
+        question: "Can AI Agents launch coins?",
+        answer: "Yes. Bags supports agentic authentication flows. Creators can use AI Agents to launch coins and claim fees (where applicable). Impact settings are stored at launch and enforced on-chain. GoodBags works seamlessly with agent-assisted launches."
       }
     ]
   },
@@ -52,8 +56,8 @@ const faqCategories = [
     icon: Coins,
     questions: [
       {
-        question: "What fees does GoodBags charge?",
-        answer: "GoodBags applies a 1% trading royalty on all token trades. Of this 1%: 0.75% goes directly to your chosen charity, 0.05% goes to FYI token buybacks, and 0.20% goes to the token creator. Creators can donate 0%, 25%, 50%, 75%, or 100% of their share to charity at launch. This is one of the lowest and most transparent fee structures in the memecoin space."
+        question: "What is the fee split?",
+        answer: "GoodBags applies a 1% total platform fee on all token trades. By default: 0.75% goes directly to your chosen charity, 0.05% goes to FYI token buybacks (supporting the ecosystem), and 0.20% goes to the token creator. Creators can choose to donate 0%, 25%, 50%, 75%, or 100% of their share back to charity at launch, increasing the charity's portion up to 0.95%."
       },
       {
         question: "How do charities receive donations?",
@@ -121,8 +125,12 @@ const faqCategories = [
     icon: Shield,
     questions: [
       {
+        question: "Do you custody funds?",
+        answer: "No. GoodBags does not custody funds. Users control their own wallets and permissions. All fee distributions happen automatically on-chain through Bags infrastructure. We never have access to your private keys or the ability to move your funds."
+      },
+      {
         question: "Is GoodBags safe to use?",
-        answer: "Yes. We use server-side wallet lookups for charities (preventing fund diversion), implement multi-step charity verification, and all transactions are recorded on the Solana blockchain for transparency. We never have access to your wallet's private keys."
+        answer: "Yes. We use server-side wallet lookups for charities (preventing fund diversion), implement multi-step charity verification, and all transactions are recorded on the Solana blockchain for transparency. Fee settings are stored at launch and enforced on-chain."
       },
       {
         question: "How do I know donations are real?",

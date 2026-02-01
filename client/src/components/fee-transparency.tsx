@@ -83,7 +83,7 @@ export function FeeTransparency() {
             <FeeRow
               percentage={`${CREATOR_FEE_PERCENTAGE}%`}
               recipient="to Token Creator"
-              description="Your reward for launching (can donate some or all to charity)"
+              description="Your reward for launching — donate 0-100% to charity at launch"
               icon={User}
               color="bg-blue-500 dark:bg-blue-600"
               testId="fee-row-creator"

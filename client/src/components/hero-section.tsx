@@ -36,16 +36,16 @@ export function HeroSection() {
             </div>
             
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-              Launch your Coin
+              Purpose-Driven
               <br />
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Make a Social Impact
+                Coins
               </span>
             </h1>
             
             <p className="text-lg text-muted-foreground max-w-lg">
-              Create and launch your own Solana memecoins with built-in donations to verified charities. 
-              Support verified charities like Food Yoga International with every trade.
+              Launch Solana tokens with built-in charitable giving. 1% of every trade is automatically 
+              routed on-chain — transparent, verifiable, and stored at launch.
             </p>
             
             <div className="flex flex-wrap gap-4">
@@ -61,14 +61,17 @@ export function HeroSection() {
                 }}
               >
                 <Rocket className="h-5 w-5" />
-                Launch Your Token
+                Launch a Purpose-Driven Coin
               </Button>
-              <Link href="/dashboard">
-                <Button size="lg" variant="outline" className="gap-2 text-base" data-testid="button-hero-dashboard">
-                  View Dashboard
+              <Link href="/how-it-works">
+                <Button size="lg" variant="outline" className="gap-2 text-base" data-testid="button-hero-how-it-works">
+                  See How It Works
                 </Button>
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Powered by <a href="https://bags.fm" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Bags</a>
+            </p>
           </div>
 
           <div className="relative lg:pl-8">

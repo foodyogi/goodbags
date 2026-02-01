@@ -13,61 +13,79 @@ import {
   Eye,
   FileCheck,
   ArrowRight,
-  User
+  User,
+  Wallet,
+  AtSign,
+  Calculator
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
 
 const steps = [
   {
     step: 1,
-    title: "Choose Your Cause",
-    description: "Select from our verified charities across categories like hunger, environment, education, health, animals, and more.",
+    title: "Choose a Verified Charity",
+    description: "Select from 75+ verified charities across categories like hunger, environment, education, health, and more.",
     icon: Heart,
     color: "bg-pink-500 dark:bg-pink-600",
   },
   {
     step: 2,
-    title: "Create Your Token",
-    description: "Design your memecoin with a name, symbol, and image. Our platform handles all the technical blockchain work.",
-    icon: Rocket,
-    color: "bg-primary",
+    title: "Set Your Creator Donation %",
+    description: "Choose how much of your 0.20% creator share to donate back to charity (0%, 25%, 50%, 75%, or 100%).",
+    icon: User,
+    color: "bg-blue-500 dark:bg-blue-600",
   },
   {
     step: 3,
     title: "Launch on Solana",
-    description: "Your token goes live with built-in trading fees that automatically go to your chosen charity.",
+    description: "Your token goes live via Bags with fee settings stored on-chain. Impact settings are locked at launch.",
+    icon: Rocket,
+    color: "bg-primary",
+  },
+  {
+    step: 4,
+    title: "Trading Happens",
+    description: "Every trade automatically distributes the 1% fee using your stored split — no manual work needed.",
     icon: TrendingUp,
     color: "bg-secondary",
   },
   {
-    step: 4,
-    title: "Impact Grows Automatically",
-    description: "Every trade generates donations. No manual work needed - the blockchain handles everything transparently.",
-    icon: CheckCircle,
+    step: 5,
+    title: "Track Your Impact",
+    description: "View proof of donations on-chain. Every transaction is verifiable on Solscan.",
+    icon: Eye,
     color: "bg-green-500 dark:bg-green-600",
   },
 ];
 
-const securityFeatures = [
+const donationTiers = [
+  { donation: "0%", charity: "0.75%", buyback: "0.05%", creator: "0.20%" },
+  { donation: "25%", charity: "0.80%", buyback: "0.05%", creator: "0.15%" },
+  { donation: "50%", charity: "0.85%", buyback: "0.05%", creator: "0.10%" },
+  { donation: "75%", charity: "0.90%", buyback: "0.05%", creator: "0.05%" },
+  { donation: "100%", charity: "0.95%", buyback: "0.05%", creator: "0.00%" },
+];
+
+const trustFeatures = [
+  {
+    icon: Eye,
+    title: "On-chain verifiable",
+    description: "Every transaction recorded on Solana",
+  },
   {
     icon: Lock,
-    title: "Server-Side Wallet Lookup",
-    description: "Charity wallets are looked up from our verified database on the server. Users cannot divert funds to fake wallets.",
+    title: "No custody",
+    description: "You control your wallet and funds",
   },
   {
     icon: FileCheck,
-    title: "3-Step Charity Verification",
-    description: "Every charity must verify their email, sign with their wallet, and pass manual review before receiving donations.",
-  },
-  {
-    icon: Eye,
-    title: "Blockchain Transparency",
-    description: "Every donation, trade, and buyback is recorded on Solana. Anyone can verify transactions on Solscan.",
+    title: "Fee settings stored at launch",
+    description: "Impact settings locked on-chain",
   },
   {
     icon: Shield,
-    title: "Audit Logging",
-    description: "All charity submissions and token launches are logged for compliance and security review.",
+    title: "Built to reduce scams",
+    description: "Verified charities only",
   },
 ];
 
@@ -81,31 +99,31 @@ export default function HowItWorksPage() {
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 mb-4" data-testid="badge-how-it-works">
             <Shield className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Trust & Security</span>
+            <span className="text-sm font-medium text-primary">How It Works</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="heading-how-it-works">
-            How GoodBags Works
+            Launch Purpose-Driven Coins
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            We've built GoodBags with transparency and security at its core. 
-            Here's everything you need to know about how your impact tokens work.
+            GoodBags makes it easy to launch tokens with built-in charitable giving. 
+            Every fee split is stored on-chain and distributed automatically.
           </p>
         </div>
 
         <section className="mb-16">
-          <h2 className="text-2xl font-bold mb-8 text-center">Launch in 4 Simple Steps</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-2xl font-bold mb-8 text-center">5 Simple Steps</h2>
+          <div className="grid gap-4 md:grid-cols-5">
             {steps.map(({ step, title, description, icon: Icon, color }) => (
               <Card key={step} className="relative" data-testid={`step-card-${step}`}>
-                <CardContent className="p-6">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color} text-white font-bold text-lg mb-4`}>
+                <CardContent className="p-5">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${color} text-white font-bold text-sm mb-3`}>
                     {step}
                   </div>
-                  <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Icon className="h-5 w-5" />
-                    {title}
+                  <h3 className="font-semibold mb-1 text-sm flex items-center gap-1.5">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{title}</span>
                   </h3>
-                  <p className="text-sm text-muted-foreground">{description}</p>
+                  <p className="text-xs text-muted-foreground">{description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -116,26 +134,26 @@ export default function HowItWorksPage() {
           <div className="text-center mb-8">
             <Badge className="mb-4 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">
               <Heart className="h-3 w-3 mr-1" />
-              Low 1% Fee
+              1% Total Fee
             </Badge>
-            <h2 className="text-2xl font-bold mb-3">Trading Fee Distribution</h2>
+            <h2 className="text-2xl font-bold mb-3">Fee Splitting Logic</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Unlike other platforms where creators keep trading fees, GoodBags sends 
-              most of the 1% royalty to your chosen charity.
+              The 1% platform fee on every trade is split three ways by default. 
+              Creators can donate 0-100% of their share to charity at launch.
             </p>
           </div>
           
           <Card className="max-w-3xl mx-auto" data-testid="section-fee-split">
             <CardContent className="p-6">
-              <div className="space-y-4">
+              <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-pink-500/5 border border-pink-500/20">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-500 dark:bg-pink-600">
                       <Heart className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium">Your Chosen Charity</p>
-                      <p className="text-sm text-muted-foreground">Majority of trading royalty goes to verified charities</p>
+                      <p className="font-medium">Charity</p>
+                      <p className="text-sm text-muted-foreground">Goes directly to verified charity chosen at launch</p>
                     </div>
                   </div>
                   <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75%</Badge>
@@ -147,8 +165,8 @@ export default function HowItWorksPage() {
                       <TrendingUp className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium">FYI Token Buyback</p>
-                      <p className="text-sm text-muted-foreground">Platform fee auto-buys FYI every hour</p>
+                      <p className="font-medium">FYI Buyback</p>
+                      <p className="text-sm text-muted-foreground">Used to buy back FYI tokens, supporting the ecosystem</p>
                     </div>
                   </div>
                   <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.05%</Badge>
@@ -161,7 +179,7 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">Token Creator</p>
-                      <p className="text-sm text-muted-foreground">Optional: can donate to charity at launch</p>
+                      <p className="text-sm text-muted-foreground">Creator's share for launching the token</p>
                     </div>
                   </div>
                   <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">0.20%</Badge>
@@ -172,16 +190,67 @@ export default function HowItWorksPage() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="flex items-start gap-3">
-                  <Coins className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Plus: Bags.fm Referral Credits</p>
-                    <p className="text-sm text-muted-foreground">
-                      All token launches also earn Bags.fm referral credits, which automatically 
-                      buy FYI tokens to support platform growth and sustainability.
-                    </p>
-                  </div>
+              <div className="border-t border-border pt-6">
+                <h3 className="font-semibold mb-4 text-center">Creator Donation Options</h3>
+                <p className="text-sm text-muted-foreground text-center mb-4">
+                  At launch, creators choose how much of their 0.20% share to donate to charity:
+                </p>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" data-testid="table-donation-tiers">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-3 font-medium">Creator Donates</th>
+                        <th className="text-center py-2 px-3 font-medium text-pink-600 dark:text-pink-400">Charity</th>
+                        <th className="text-center py-2 px-3 font-medium">Buyback</th>
+                        <th className="text-center py-2 px-3 font-medium text-green-600 dark:text-green-400">Creator</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {donationTiers.map((tier, index) => (
+                        <tr key={tier.donation} className={index % 2 === 0 ? "bg-muted/20" : ""}>
+                          <td className="py-2 px-3 font-medium">{tier.donation}</td>
+                          <td className="py-2 px-3 text-center text-pink-600 dark:text-pink-400">{tier.charity}</td>
+                          <td className="py-2 px-3 text-center text-muted-foreground">{tier.buyback}</td>
+                          <td className="py-2 px-3 text-center text-green-600 dark:text-green-400">{tier.creator}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mb-16">
+          <Card className="max-w-3xl mx-auto bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" data-testid="section-example-calculation">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Calculator className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold">Example Calculation</h3>
+              </div>
+              <p className="text-muted-foreground mb-4">
+                If someone trades 100 SOL worth of a token and the creator donates 75%:
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="p-3 rounded-lg bg-background/50 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Total fee</p>
+                  <p className="font-bold text-lg">1 SOL</p>
+                </div>
+                <div className="p-3 rounded-lg bg-pink-500/10 text-center">
+                  <p className="text-xs text-pink-600 dark:text-pink-400 mb-1">Charity receives</p>
+                  <p className="font-bold text-lg text-pink-600 dark:text-pink-400">0.90 SOL</p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-500/10 text-center">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">FYI Buyback</p>
+                  <p className="font-bold text-lg text-blue-600 dark:text-blue-400">0.05 SOL</p>
+                </div>
+                <div className="p-3 rounded-lg bg-green-500/10 text-center">
+                  <p className="text-xs text-green-600 dark:text-green-400 mb-1">Creator receives</p>
+                  <p className="font-bold text-lg text-green-600 dark:text-green-400">0.05 SOL</p>
                 </div>
               </div>
             </CardContent>
@@ -190,25 +259,74 @@ export default function HowItWorksPage() {
 
         <section className="mb-16">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-3">Security & Trust Features</h2>
+            <h2 className="text-2xl font-bold mb-3">Payout Options</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              We've implemented multiple security measures to ensure donations reach legitimate charities.
+              Charities can receive their donations through two verified methods:
             </p>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2">
-            {securityFeatures.map(({ icon: Icon, title, description }) => (
-              <Card key={title} data-testid={`security-feature-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10">
-                      <Icon className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">{title}</h3>
-                      <p className="text-sm text-muted-foreground">{description}</p>
-                    </div>
+          <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+            <Card data-testid="payout-direct-wallet">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Wallet className="h-6 w-6 text-primary" />
                   </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Direct Wallet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      SOL is sent directly to the charity's verified Solana address. 
+                      Funds arrive automatically as trades occur.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card data-testid="payout-x-claim">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary/10">
+                    <AtSign className="h-6 w-6 text-secondary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">X/Twitter Claim</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Donations are held until the charity verifies via their X account. 
+                      They can then claim accumulated funds.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="mb-16" data-testid="section-trust-transparency">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-1.5 mb-4">
+              <Shield className="h-4 w-4 text-green-500" />
+              <span className="text-sm font-medium text-green-600 dark:text-green-400">Trust & Transparency</span>
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Built for Transparency</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              GoodBags is designed with security and transparency at its core.
+            </p>
+          </div>
+          
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {trustFeatures.map((feature) => (
+              <Card 
+                key={feature.title} 
+                className="text-center"
+                data-testid={`trust-feature-${feature.title.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <CardContent className="p-5">
+                  <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-full bg-green-500/10 mb-3">
+                    <feature.icon className="h-5 w-5 text-green-500" />
+                  </div>
+                  <h3 className="font-semibold mb-1 text-sm">{feature.title}</h3>
+                  <p className="text-xs text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -251,14 +369,17 @@ export default function HowItWorksPage() {
         <section className="text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Make an Impact?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            Launch your impact token today and start generating donations for your chosen cause.
+            Launch your purpose-driven coin today and start generating donations for your chosen cause.
           </p>
           <Link href="/launch">
             <Button size="lg" className="gap-2" data-testid="button-launch-cta">
               <Rocket className="h-5 w-5" />
-              Launch Your Token
+              Launch a Purpose-Driven Coin
             </Button>
           </Link>
+          <p className="text-xs text-muted-foreground mt-3">
+            Powered by <a href="https://bags.fm" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">Bags</a>
+          </p>
         </section>
       </div>
     </div>

@@ -16,10 +16,10 @@ export function Header() {
 
   const navItems = [
     { href: "/", label: "Launch", icon: Rocket },
+    { href: "/how-it-works", label: "How It Works", icon: Info },
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/my-impact", label: "My Impact", icon: Trophy },
     { href: "/charities", label: "Charities", icon: Heart },
-    { href: "/buyback", label: "Buyback", icon: TrendingUp },
     { href: "/features", label: "Features", icon: Sparkles },
   ];
 
@@ -39,7 +39,7 @@ export function Header() {
               ) : (
                 <>
                   <Heart className="h-2.5 w-2.5 text-pink-500" />
-                  Launch tokens for good
+                  Purpose-Driven Coins
                 </>
               )}
             </span>
