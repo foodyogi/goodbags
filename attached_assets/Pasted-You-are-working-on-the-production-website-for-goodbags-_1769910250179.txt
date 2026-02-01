@@ -1,0 +1,122 @@
+You are working on the production website for goodbags.tech (a Solana token launch platform with built-in charitable giving).
+Goal: Update website copy + sections to reflect Bags’ new AI Agent onboarding / fee sharing capability, and position GoodBags as the easiest way to launch “purpose-driven coins” with verifiable, on-chain impact — using the actual fee-splitting logic currently implemented in the app.
+
+⸻
+
+HIGH-LEVEL REQUIREMENTS
+
+1) Update messaging across homepage and key pages to emphasize:
+	•	“Purpose-Driven Coins” (tagline under logo)
+	•	Built-in giving with exact fee logic: 1% total platform fee on every trade
+	•	Transparent, on-chain, automatic distribution
+	•	Agent-friendly: creators can use AI Agents to launch coins and claim fees (where applicable), while impact settings are stored at launch and enforced on-chain
+
+2) Add a new homepage section titled:
+
+“AI Agents Ready”
+
+Include 3 bullets:
+	•	Launch coins for anyone (agent-assisted)
+	•	Claim fees (agent-assisted)
+	•	Trade / market-make (agent-assisted)
+
+Add a short disclaimer line:
+“GoodBags does not custody funds. Wallet permissions are controlled by the user.”
+
+⸻
+
+FEE SPLITTING LOGIC (MUST MATCH EXACTLY)
+
+Total Platform Fee: 1% of all trades
+
+This 1% fee is split three ways by default:
+	•	Charity: 0.75%
+Goes directly to the verified charity chosen at token launch
+	•	FYI Buyback: 0.05%
+Used to buy back FYI tokens, supporting the ecosystem
+	•	Token Creator: 0.20%
+Creator’s share for launching the token
+
+Creator Donation Option (at launch)
+
+Creators can choose to donate 0–100% of their 0.20% share back to the charity.
+
+Show this exact table (or a mobile-friendly equivalent):
+	•	0% donation → Charity 0.75%, Buyback 0.05%, Creator 0.20%
+	•	25% donation → Charity 0.80%, Buyback 0.05%, Creator 0.15%
+	•	50% donation → Charity 0.85%, Buyback 0.05%, Creator 0.10%
+	•	75% donation → Charity 0.90%, Buyback 0.05%, Creator 0.05%
+	•	100% donation → Charity 0.95%, Buyback 0.05%, Creator 0.00%
+
+⸻
+
+3) Add a new page (or section) called “How It Works” with clear steps:
+
+Keep it simple, readable, and non-technical, but accurate.
+
+Step 1: Choose a verified charity (at launch)
+Step 2: Choose your creator donation % (0–100% of the 0.20% creator share)
+Step 3: Launch on Solana (via Bags)
+Step 4: Trading happens → the 1% fee is automatically distributed using the stored split
+Step 5: Track proof / transparency (link to token dashboard / on-chain records placeholder)
+
+Include a small “Payout options” subsection:
+	•	Direct wallet: sent to the charity’s verified Solana address
+	•	X/Twitter claim: held until the charity verifies via their X account
+
+Include the example box (use these exact numbers):
+Example: If someone trades 100 SOL and the creator donates 75%, then:
+	•	Total fee: 1 SOL
+	•	Charity receives: 0.90 SOL
+	•	FYI Buyback: 0.05 SOL
+	•	Creator receives: 0.05 SOL
+
+⸻
+
+4) Add a “Trust & Transparency” block (homepage + How It Works) with:
+	•	On-chain verifiable
+	•	No custody
+	•	Fee settings stored at launch
+	•	Built to reduce scams/spam
+Add a small “Learn more” link to How It Works
+
+⸻
+
+5) Update CTA buttons:
+	•	Primary: “Launch a Purpose-Driven Coin”
+	•	Secondary: “See How It Works”
+Add a small text link near CTAs: “Powered by Bags”
+
+⸻
+
+6) Add a small footer line (or FAQ):
+
+“GoodBags is a launch experience and impact layer built on top of Bags. Bags provides the token launch and fee infrastructure.”
+
+⸻
+
+CONTENT/STYLE GUIDELINES
+	•	Tone: confident, modern, simple, impact-forward.
+	•	Avoid overpromising. Don’t say “guaranteed donations” unless it’s enforced; prefer:
+	•	“routes automatically”
+	•	“stored on-chain”
+	•	“verifiable”
+	•	Keep sections short and scannable.
+
+⸻
+
+IMPLEMENTATION NOTES
+	•	Do not break current layout.
+	•	Reuse existing components/styles where possible.
+	•	Ensure mobile responsiveness (tables must collapse nicely).
+	•	If there is an existing FAQ, add these Qs:
+	1.	“What is the fee split?” → Explain the 1% total fee and default split, plus creator donation option.
+	2.	“Can AI Agents launch coins?” → “Yes. Bags supports agentic authentication flows; GoodBags works with agent-assisted launches.”
+	3.	“Do you custody funds?” → “No. Users control wallets and permissions.”
+
+⸻
+
+DELIVERABLE
+	•	Make the changes directly in the codebase.
+	•	Provide a summary of modified files and what changed.
+	•	If you add a new page/route, include the route path and link it in navigation or footer.
