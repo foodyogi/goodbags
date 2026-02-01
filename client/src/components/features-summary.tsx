@@ -44,8 +44,8 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Charity Endorsements",
-    description: "Anti-rug pull protection - charities can officially endorse tokens",
+    title: "Charity Approval Portal",
+    description: "Anti-rug pull protection - charities verify via X and approve tokens in their name",
     color: "text-green-500",
     bgColor: "bg-green-500/10",
   },

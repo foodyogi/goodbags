@@ -93,6 +93,18 @@ const faqCategories = [
       {
         question: "What types of charities are supported?",
         answer: "We support charities across many categories including hunger relief, environmental causes, education, health, animal welfare, disaster relief, and more. All charities must be legitimate nonprofit organizations."
+      },
+      {
+        question: "Can charities approve or deny tokens launched in their name?",
+        answer: "Yes! We have an anti-rug pull protection system. When a token is launched for a charity, they can review and either endorse it or deny it through our Charity Approval Portal. Charities verify their identity by signing in with their official X (Twitter) account."
+      },
+      {
+        question: "How does the Charity Approval Portal work?",
+        answer: "When a token is launched, the charity receives a notification (via email or X). They can visit the Charity Approval Portal, sign in with their verified X account, review the token details, and choose to officially endorse or deny it. Approved tokens display an endorsement badge, while denied tokens are marked as not endorsed."
+      },
+      {
+        question: "What if a charity doesn't respond to an approval request?",
+        answer: "Tokens remain in 'pending' status until the charity responds. The token is still tradeable, but won't display an endorsement badge. Token creators can reach out to charities via X using the pre-written message template we provide on the token detail page."
       }
     ]
   },
@@ -143,6 +155,10 @@ const faqCategories = [
       {
         question: "Is my personal information protected?",
         answer: "We collect minimal personal information. Your wallet address is public on the blockchain, but we don't require email registration or other personal details to use the platform. See our Privacy Policy for full details."
+      },
+      {
+        question: "How does the anti-rug pull protection work?",
+        answer: "Our Charity Approval Portal prevents misuse of charity names. Charities must verify their identity via X (Twitter) OAuth to approve tokens. Only charity representatives with matching X handles can endorse or deny tokens, ensuring no one can falsely claim charity endorsement."
       }
     ]
   },

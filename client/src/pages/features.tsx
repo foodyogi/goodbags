@@ -144,14 +144,15 @@ const personalFeatures = [
 const securityFeatures = [
   {
     icon: Shield,
-    title: "Charity Endorsement System",
-    description: "Our anti-rug pull protection ensures charities approve tokens launched in their name.",
+    title: "Charity Approval Portal",
+    description: "Our anti-rug pull protection lets charities approve tokens launched in their name via secure X verification.",
     details: [
-      "Charities receive email notifications for new tokens",
+      "Charities verify identity via X (Twitter) OAuth",
+      "Dedicated portal for reviewing token details",
       "Charities can officially endorse or deny tokens",
-      "Endorsed tokens get a special badge",
-      "Denied tokens show warnings to traders",
-      "Full audit trail of all decisions"
+      "Endorsed tokens display a verified badge",
+      "Denied tokens show clear warnings to traders",
+      "Full audit trail of all approval decisions"
     ],
   },
   {
