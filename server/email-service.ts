@@ -53,7 +53,7 @@ function generateApprovalEmailHtml(data: CharityNotificationData): string {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 New Token Launched!</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">New Token Launched!</h1>
   </div>
   
   <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
@@ -100,7 +100,7 @@ function generateApprovalEmailHtml(data: CharityNotificationData): string {
     
     <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
       <p style="margin: 0; font-size: 14px; color: #92400e;">
-        <strong>⚠️ Important:</strong> If you don't recognize this request or didn't authorize this token, 
+        <strong>Important:</strong> If you don't recognize this request or didn't authorize this token, 
         you can deny it to prevent any association with your organization.
       </p>
     </div>
