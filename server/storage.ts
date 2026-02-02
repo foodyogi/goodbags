@@ -355,6 +355,7 @@ export class DatabaseStorage implements IStorage {
     return db
       .select()
       .from(launchedTokens)
+      .where(eq(launchedTokens.isTest, false))
       .orderBy(desc(launchedTokens.launchedAt));
   }
 
@@ -443,7 +444,8 @@ export class DatabaseStorage implements IStorage {
         totalDonated: sql<string>`coalesce(sum(${launchedTokens.charityDonated}::numeric), 0)`,
         totalPlatformFees: sql<string>`coalesce(sum(${launchedTokens.platformFeeCollected}::numeric), 0)`,
       })
-      .from(launchedTokens);
+      .from(launchedTokens)
+      .where(eq(launchedTokens.isTest, false));
 
     return {
       totalTokens: Number(tokenStats?.count ?? 0),
