@@ -28,7 +28,6 @@ import CharityTokenApproval from "@/pages/charity-token-approval";
 import CharitiesPage from "@/pages/charities";
 import BuybackPage from "@/pages/buyback";
 import HowItWorksPage from "@/pages/how-it-works";
-import PumpFunResearch from "@/pages/pump-fun-research";
 import FeaturesPage from "@/pages/features";
 import FoodYogaInternational from "@/pages/food-yoga-international";
 import HelpPage from "@/pages/help";
@@ -66,8 +65,7 @@ function MainRouter() {
       <Route path="/token/:mint" component={TokenDetailPage} />
       <Route path="/tokens/:mint" component={TokenDetailPage} />
       <Route path="/charity-portal" component={CharityPortal} />
-      <Route path="/pump-fun-research" component={PumpFunResearch} />
-      <Route component={NotFound} />
+            <Route component={NotFound} />
     </Switch>
   );
 }
