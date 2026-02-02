@@ -7,7 +7,8 @@ import crypto from "crypto";
 
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID!;
 const TWITTER_CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET!;
-const TWITTER_AUTH_URL = "https://twitter.com/i/oauth2/authorize";
+// Use x.com instead of twitter.com - some developers report this helps with account switching
+const TWITTER_AUTH_URL = "https://x.com/i/oauth2/authorize";
 const TWITTER_TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
 const TWITTER_USER_URL = "https://api.twitter.com/2/users/me";
 

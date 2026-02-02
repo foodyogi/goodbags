@@ -319,16 +319,23 @@ export default function CharityPortal() {
         </CardHeader>
         <CardContent>
           {!user ? (
-            <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Sign in with X to verify you control @{tokenData.charityTwitterHandle}
-              </p>
-              <Button onClick={handleLogin} data-testid="button-login-x">
-                <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Sign in with X
-              </Button>
+            <div className="space-y-4 py-4">
+              <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-yellow-600 dark:text-yellow-400">Important:</strong> Before signing in, make sure you're logged into X (x.com) with the <strong>@{tokenData.charityTwitterHandle}</strong> account. X will use your currently active account.
+                </p>
+              </div>
+              <div className="text-center">
+                <Button onClick={handleLogin} data-testid="button-login-x">
+                  <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Sign in with X as @{tokenData.charityTwitterHandle}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tip: Use an incognito/private window if you have multiple X accounts
+                </p>
+              </div>
             </div>
           ) : isVerified ? (
             <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
@@ -356,10 +363,13 @@ export default function CharityPortal() {
                   <strong>To verify as @{tokenData.charityTwitterHandle}:</strong>
                 </p>
                 <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1 mb-3">
-                  <li>Log out of X (twitter.com) in your browser</li>
-                  <li>Log into X with the @{tokenData.charityTwitterHandle} account</li>
-                  <li>Click the button below to sign in again</li>
+                  <li>Open an <strong>incognito/private window</strong> (recommended)</li>
+                  <li>Go to x.com and log in as @{tokenData.charityTwitterHandle}</li>
+                  <li>Return to this page in that window and click the button below</li>
                 </ol>
+                <p className="text-xs text-muted-foreground mb-3 italic">
+                  Note: X uses whichever account is active in your browser. Incognito ensures a fresh login.
+                </p>
                 <Button 
                   variant="outline" 
                   className="w-full gap-2"
