@@ -148,7 +148,7 @@ export function EndorsementCelebration({
                 </p>
               ) : hasCharityEmail === false && twitterUrl ? (
                 (() => {
-                  const portalUrl = tokenMintAddress ? `https://goodbags.tech/charity-portal?token=${tokenMintAddress}&charity=${charityId || ""}` : "";
+                  const portalUrl = tokenMintAddress ? `https://goodbags.tech/charity-portal?token=${tokenMintAddress}&charity=${charityId || ""}&reauth=true` : "";
                   const messageTemplate = `Hi @${twitterHandle}! A token called $${tokenSymbol || "TOKEN"} (${tokenName || "Token"}) was just launched on @GoodBags_Tech in support of your organization. It includes automatic donation royalties from trading that you can claim directly using this X handle. Would you like to officially endorse it? Details: ${portalUrl}`;
                   
                   const handleCopy = () => {

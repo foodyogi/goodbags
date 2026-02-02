@@ -162,5 +162,6 @@ If you have any questions, please contact us at contact@master22solutions.com
 
 export function generateApprovalLink(tokenMintAddress: string, charityId: string): string {
   const baseUrl = process.env.APP_URL || 'https://goodbags.tech';
-  return `${baseUrl}/charity-portal?token=${tokenMintAddress}&charity=${charityId}`;
+  // Include reauth=true to force fresh X login when clicking from email
+  return `${baseUrl}/charity-portal?token=${tokenMintAddress}&charity=${charityId}&reauth=true`;
 }

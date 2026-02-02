@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -48,10 +48,23 @@ export default function CharityPortal() {
   const [approvalNote, setApprovalNote] = useState("");
   const [denialReason, setDenialReason] = useState("");
   const [showDenialForm, setShowDenialForm] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const urlParams = new URLSearchParams(window.location.search);
   const tokenMint = urlParams.get("token");
   const charityId = urlParams.get("charity");
+  const forceReauth = urlParams.get("reauth") === "true";
+  
+  // If forceReauth is set and user is logged in, auto-logout and redirect to login
+  // This ensures fresh X account selection when clicking verification links
+  useEffect(() => {
+    if (forceReauth && user && !authLoading && !isRedirecting) {
+      setIsRedirecting(true);
+      // Build return URL without the reauth param to prevent loop
+      const returnUrl = `/charity-portal?token=${tokenMint}&charity=${charityId}`;
+      window.location.href = `/api/logout?returnTo=${encodeURIComponent(returnUrl)}`;
+    }
+  }, [forceReauth, user, authLoading, tokenMint, charityId, isRedirecting]);
 
   const { data: tokenData, isLoading: tokenLoading, error: tokenError } = useQuery<TokenForApproval>({
     queryKey: ["/api/charity-portal/token", tokenMint, charityId],
@@ -140,13 +153,15 @@ export default function CharityPortal() {
     );
   }
 
-  if (tokenLoading || authLoading) {
+  if (tokenLoading || authLoading || isRedirecting) {
     return (
       <div className="container max-w-2xl mx-auto py-12 px-4">
         <Card>
           <CardContent className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Loading token details...</p>
+            <p className="text-muted-foreground">
+              {isRedirecting ? "Preparing verification..." : "Loading token details..."}
+            </p>
           </CardContent>
         </Card>
       </div>
