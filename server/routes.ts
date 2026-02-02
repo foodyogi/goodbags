@@ -1413,6 +1413,52 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/tokens/:mintAddress/approve", async (req, res) => {
+    try {
+      const adminSecret = req.headers["x-admin-secret"] as string;
+      if (!isAdminAuthorized(adminSecret)) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const { mintAddress } = req.params;
+      const { note } = req.body;
+      
+      const token = await storage.getLaunchedTokenByMint(mintAddress);
+      if (!token) {
+        return res.status(404).json({ error: "Token not found" });
+      }
+      
+      const updated = await storage.updateTokenApprovalStatus(
+        token.id,
+        "approved",
+        note || "Approved by GoodBags admin"
+      );
+      
+      await storage.createAuditLog({
+        action: "admin_token_approved",
+        entityType: "token",
+        entityId: token.id,
+        details: JSON.stringify({
+          tokenName: token.name,
+          charityName: token.charityName,
+          mintAddress,
+          note: note || "Approved by GoodBags admin",
+        }),
+      });
+      
+      console.log(`[Admin] Token ${token.name} approved for ${token.charityName}`);
+      
+      res.json({
+        success: true,
+        message: "Token approved",
+        token: updated,
+      });
+    } catch (error) {
+      console.error("Admin token approval error:", error);
+      res.status(500).json({ error: "Failed to approve token" });
+    }
+  });
+
   // === CHANGE API ENDPOINTS ===
   // Search nonprofits via Change API (1.3M+ verified with Solana wallets)
 
