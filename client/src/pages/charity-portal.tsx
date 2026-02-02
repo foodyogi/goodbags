@@ -134,7 +134,9 @@ export default function CharityPortal() {
   });
 
   const handleLogin = () => {
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    // Use OAuth 1.0a force login endpoint to ensure X prompts for account selection
+    // This fixes the issue where X auto-selects a cached account instead of letting user choose
+    window.location.href = `/api/login/force?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   };
 
   if (!tokenMint || !charityId) {
@@ -320,9 +322,9 @@ export default function CharityPortal() {
         <CardContent>
           {!user ? (
             <div className="space-y-4 py-4">
-              <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <p className="text-sm text-muted-foreground">
-                  <strong className="text-yellow-600 dark:text-yellow-400">Important:</strong> Before signing in, make sure you're logged into X (x.com) with the <strong>@{tokenData.charityTwitterHandle}</strong> account. X will use your currently active account.
+                  Click below to sign in with X. You'll be prompted to choose which X account to use - make sure to select <strong>@{tokenData.charityTwitterHandle}</strong>.
                 </p>
               </div>
               <div className="text-center">
@@ -332,9 +334,6 @@ export default function CharityPortal() {
                   </svg>
                   Sign in with X as @{tokenData.charityTwitterHandle}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Tip: Use an incognito/private window if you have multiple X accounts
-                </p>
               </div>
             </div>
           ) : isVerified ? (
@@ -360,29 +359,22 @@ export default function CharityPortal() {
               </div>
               <div className="p-3 bg-muted/50 rounded-lg border">
                 <p className="text-sm text-muted-foreground mb-3">
-                  <strong>To verify as @{tokenData.charityTwitterHandle}:</strong>
-                </p>
-                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1 mb-3">
-                  <li>Open an <strong>incognito/private window</strong> (recommended)</li>
-                  <li>Go to x.com and log in as @{tokenData.charityTwitterHandle}</li>
-                  <li>Return to this page in that window and click the button below</li>
-                </ol>
-                <p className="text-xs text-muted-foreground mb-3 italic">
-                  Note: X uses whichever account is active in your browser. Incognito ensures a fresh login.
+                  Click below to sign out and sign in with a different X account. You'll be prompted to enter credentials for <strong>@{tokenData.charityTwitterHandle}</strong>.
                 </p>
                 <Button 
                   variant="outline" 
                   className="w-full gap-2"
                   onClick={() => {
-                    // Log out and redirect back to this page
-                    window.location.href = `/api/logout?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    // Use OAuth 1.0a force login - this will log out and force X to show login screen
+                    const returnUrl = window.location.pathname + window.location.search;
+                    window.location.href = `/api/logout?returnTo=${encodeURIComponent(`/api/login/force?returnTo=${encodeURIComponent(returnUrl)}`)}`;
                   }}
                   data-testid="button-switch-account"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
-                  Sign Out & Switch X Account
+                  Sign Out & Sign In with Different X Account
                 </Button>
               </div>
             </div>

@@ -4,13 +4,36 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 import crypto from "crypto";
+import OAuth from "oauth-1.0a";
 
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID!;
 const TWITTER_CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET!;
-// Use x.com instead of twitter.com - some developers report this helps with account switching
+// OAuth 1.0a credentials (same as OAuth 2.0 for Twitter apps with OAuth 1.0a enabled)
+const TWITTER_API_KEY = process.env.TWITTER_API_KEY || TWITTER_CLIENT_ID;
+const TWITTER_API_SECRET = process.env.TWITTER_API_SECRET || TWITTER_CLIENT_SECRET;
+
+// OAuth 2.0 URLs
 const TWITTER_AUTH_URL = "https://x.com/i/oauth2/authorize";
 const TWITTER_TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
 const TWITTER_USER_URL = "https://api.twitter.com/2/users/me";
+
+// OAuth 1.0a URLs (supports force_login parameter!)
+const TWITTER_REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token";
+const TWITTER_AUTHENTICATE_URL = "https://api.twitter.com/oauth/authenticate";
+const TWITTER_ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token";
+const TWITTER_VERIFY_CREDENTIALS_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
+
+// Initialize OAuth 1.0a
+const oauth1a = new OAuth({
+  consumer: {
+    key: TWITTER_API_KEY,
+    secret: TWITTER_API_SECRET,
+  },
+  signature_method: "HMAC-SHA1",
+  hash_function(base_string, key) {
+    return crypto.createHmac("sha1", key).update(base_string).digest("base64");
+  },
+});
 
 interface TwitterUser {
   id: string;
@@ -273,6 +296,221 @@ export async function setupAuth(app: Express) {
       user: user ? { id: (user as any).id, username: (user as any).username } : null,
       hasCookies: cookies !== "none",
     });
+  });
+
+  // OAuth 1.0a forced login endpoint - used for charity verification
+  // This forces X to show the login screen instead of auto-selecting a cached account
+  app.get("/api/login/force", async (req, res) => {
+    try {
+      const returnTo = req.query.returnTo as string;
+      console.log(`[Twitter OAuth 1.0a] Force login initiated, returnTo: ${returnTo || '/'}`);
+
+      if (returnTo && req.session) {
+        (req.session as any).returnTo = returnTo;
+      }
+
+      const baseUrl = getBaseUrl(req);
+      const callbackUrl = `${baseUrl}/api/auth/twitter/callback/force`;
+
+      // Get request token from Twitter (OAuth 1.0a step 1)
+      const requestData = {
+        url: TWITTER_REQUEST_TOKEN_URL,
+        method: "POST" as const,
+        data: { oauth_callback: callbackUrl },
+      };
+
+      const authHeader = oauth1a.toHeader(oauth1a.authorize(requestData));
+      
+      const response = await fetch(TWITTER_REQUEST_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          ...authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `oauth_callback=${encodeURIComponent(callbackUrl)}`,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Twitter OAuth 1.0a] Request token failed:", response.status, errorText);
+        return res.redirect(`/?error=oauth_request_token_failed`);
+      }
+
+      const responseText = await response.text();
+      const params = new URLSearchParams(responseText);
+      const oauthToken = params.get("oauth_token");
+      const oauthTokenSecret = params.get("oauth_token_secret");
+
+      if (!oauthToken || !oauthTokenSecret) {
+        console.error("[Twitter OAuth 1.0a] Missing tokens in response:", responseText);
+        return res.redirect(`/?error=oauth_missing_tokens`);
+      }
+
+      // Store both token and token secret in session for callback verification
+      (req.session as any).oauth1aToken = oauthToken;
+      (req.session as any).oauth1aTokenSecret = oauthTokenSecret;
+
+      req.session.save((err) => {
+        if (err) {
+          console.error("[Twitter OAuth 1.0a] Session save error:", err);
+          return res.status(500).send("Session error");
+        }
+
+        // Redirect to Twitter with force_login=true (OAuth 1.0a supports this!)
+        const authUrl = `${TWITTER_AUTHENTICATE_URL}?oauth_token=${oauthToken}&force_login=true`;
+        console.log(`[Twitter OAuth 1.0a] Redirecting to Twitter with force_login=true`);
+        res.redirect(authUrl);
+      });
+    } catch (error) {
+      console.error("[Twitter OAuth 1.0a] Error:", error);
+      res.redirect("/?error=oauth_error");
+    }
+  });
+
+  // OAuth 1.0a callback endpoint for forced login
+  app.get("/api/auth/twitter/callback/force", async (req, res) => {
+    try {
+      const { oauth_token, oauth_verifier, denied } = req.query;
+      
+      if (denied) {
+        console.log("[Twitter OAuth 1.0a] User denied authorization");
+        return res.redirect("/?error=access_denied");
+      }
+
+      if (!oauth_token || !oauth_verifier) {
+        console.error("[Twitter OAuth 1.0a] Missing oauth_token or oauth_verifier");
+        return res.redirect("/?error=oauth_missing_params");
+      }
+
+      // Verify oauth_token matches what we stored (CSRF protection)
+      const savedOauthToken = (req.session as any).oauth1aToken;
+      if (oauth_token !== savedOauthToken) {
+        console.error(`[Twitter OAuth 1.0a] Token mismatch - received: ${oauth_token}, saved: ${savedOauthToken}`);
+        return res.redirect("/?error=oauth_token_mismatch");
+      }
+
+      const oauthTokenSecret = (req.session as any).oauth1aTokenSecret;
+      const returnTo = (req.session as any).returnTo;
+
+      if (!oauthTokenSecret) {
+        console.error("[Twitter OAuth 1.0a] Missing token secret in session");
+        return res.redirect("/?error=session_expired");
+      }
+
+      // Exchange for access token (OAuth 1.0a step 3)
+      // oauth_verifier must be included in signed parameters
+      const accessTokenData = {
+        url: TWITTER_ACCESS_TOKEN_URL,
+        method: "POST" as const,
+        data: { oauth_verifier: oauth_verifier as string },
+      };
+
+      const token = {
+        key: oauth_token as string,
+        secret: oauthTokenSecret,
+      };
+
+      const authHeader = oauth1a.toHeader(oauth1a.authorize(accessTokenData, token));
+
+      const accessResponse = await fetch(TWITTER_ACCESS_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          ...authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `oauth_verifier=${encodeURIComponent(oauth_verifier as string)}`,
+      });
+
+      if (!accessResponse.ok) {
+        const errorText = await accessResponse.text();
+        console.error("[Twitter OAuth 1.0a] Access token failed:", accessResponse.status, errorText);
+        return res.redirect("/?error=oauth_access_token_failed");
+      }
+
+      const accessResponseText = await accessResponse.text();
+      const accessParams = new URLSearchParams(accessResponseText);
+      const accessToken = accessParams.get("oauth_token");
+      const accessTokenSecret = accessParams.get("oauth_token_secret");
+      const userId = accessParams.get("user_id");
+      const screenName = accessParams.get("screen_name");
+
+      if (!accessToken || !accessTokenSecret || !userId || !screenName) {
+        console.error("[Twitter OAuth 1.0a] Missing access token data:", accessResponseText);
+        return res.redirect("/?error=oauth_incomplete_response");
+      }
+
+      console.log(`[Twitter OAuth 1.0a] Successfully authenticated as @${screenName}`);
+
+      // Get full user profile using verify_credentials
+      const verifyData = {
+        url: `${TWITTER_VERIFY_CREDENTIALS_URL}?include_email=false`,
+        method: "GET" as const,
+      };
+
+      const userToken = {
+        key: accessToken,
+        secret: accessTokenSecret,
+      };
+
+      const userAuthHeader = oauth1a.toHeader(oauth1a.authorize(verifyData, userToken));
+
+      const userResponse = await fetch(`${TWITTER_VERIFY_CREDENTIALS_URL}?include_email=false`, {
+        headers: userAuthHeader as unknown as Record<string, string>,
+      });
+
+      let profileImageUrl: string | undefined;
+      let displayName = screenName;
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        profileImageUrl = userData.profile_image_url_https?.replace("_normal", "_400x400");
+        displayName = userData.name || screenName;
+      }
+
+      // Upsert user in database
+      const user = await authStorage.upsertUserByTwitter({
+        twitterId: userId,
+        twitterUsername: screenName,
+        twitterDisplayName: displayName,
+        profileImageUrl,
+      });
+
+      // Clear OAuth 1.0a data from session
+      delete (req.session as any).oauth1aToken;
+      delete (req.session as any).oauth1aTokenSecret;
+
+      // Set user in session
+      const sessionUser = {
+        id: user.id,
+        twitterId: user.twitterId,
+        twitterUsername: user.twitterUsername,
+        twitterDisplayName: user.twitterDisplayName,
+        profileImageUrl: user.profileImageUrl,
+        email: user.email,
+        walletAddress: user.walletAddress,
+      };
+
+      req.login(sessionUser, (err) => {
+        if (err) {
+          console.error("[Twitter OAuth 1.0a] Login error:", err);
+          return res.redirect("/?error=login_failed");
+        }
+
+        // Validate returnTo to prevent open redirect attacks
+        // Only allow relative paths that start with / and don't start with //
+        let redirectTo = "/";
+        if (returnTo && typeof returnTo === "string" && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+          redirectTo = returnTo;
+        }
+        
+        delete (req.session as any).returnTo;
+        console.log(`[Twitter OAuth 1.0a] Login successful, redirecting to: ${redirectTo}`);
+        res.redirect(redirectTo);
+      });
+    } catch (error) {
+      console.error("[Twitter OAuth 1.0a] Callback error:", error);
+      res.redirect("/?error=callback_failed");
+    }
   });
 }
 
