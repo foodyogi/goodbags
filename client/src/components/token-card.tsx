@@ -116,7 +116,7 @@ export function TokenCard({ token }: TokenCardProps) {
       </CardContent>
       
       <CardFooter className="pt-0 flex gap-2">
-        <Link href={`/token/${token.mintAddress}`} className="flex-1">
+        <Link href={`/tokens/${token.mintAddress}`} className="flex-1">
           <Button 
             variant="default" 
             className="w-full gap-2" 
@@ -128,16 +128,17 @@ export function TokenCard({ token }: TokenCardProps) {
         </Link>
         {!token.isTest && (
           <a
-            href={`https://solscan.io/token/${token.mintAddress}?cluster=devnet`}
+            href={`https://bags.fm/${token.mintAddress}`}
             target="_blank"
             rel="noopener noreferrer"
           >
             <Button 
               variant="outline" 
               size="icon"
-              data-testid={`button-view-solscan-${token.id}`}
+              data-testid={`button-buy-bags-${token.id}`}
+              title="Buy on Bags.fm"
             >
-              <ExternalLink className="h-4 w-4" />
+              <img src="https://bags.fm/assets/images/bags-icon.png" alt="Bags" className="h-4 w-4" />
             </Button>
           </a>
         )}

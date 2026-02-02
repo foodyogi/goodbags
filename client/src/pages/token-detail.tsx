@@ -276,9 +276,37 @@ export default function TokenDetailPage() {
                   </p>
                 )}
                 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                   <Clock className="h-4 w-4" />
                   <span>Launched {format(new Date(token.launchedAt), "MMM d, yyyy 'at' h:mm a")}</span>
+                </div>
+                
+                {/* Quick action buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={`https://bags.fm/${token.mintAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-quick-buy"
+                  >
+                    <Button className="gap-2" data-testid="button-quick-buy">
+                      <img src="https://bags.fm/assets/images/bags-icon.png" alt="Bags" className="h-4 w-4" />
+                      Buy on Bags.fm
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
+                  <a
+                    href={`https://jup.ag/swap?sell=So11111111111111111111111111111111111111112&buy=${token.mintAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="link-quick-jupiter"
+                  >
+                    <Button variant="outline" className="gap-2" data-testid="button-quick-jupiter">
+                      <img src="https://jup.ag/favicon.ico" alt="Jupiter" className="h-4 w-4" />
+                      Jupiter
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </a>
                 </div>
               </div>
             </div>
