@@ -29,7 +29,7 @@ export function SocialShare({
   totalDonated,
   isApproved 
 }: SocialShareProps) {
-  const goodbagsUrl = `https://goodbags.tech/token/${mintAddress}`;
+  const goodbagsUrl = `https://goodbags.tech/tokens/${mintAddress}`;
   const bagsUrl = `https://bags.fm/${mintAddress}`;
   
   const getShareText = (type: 'launch' | 'milestone' | 'endorsed') => {

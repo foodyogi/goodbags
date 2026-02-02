@@ -120,7 +120,7 @@ function TrendingTokenRow({ token, rank }: { token: TrendingToken; rank: number 
         </div>
       </div>
       
-      <Link href={`/token/${token.mintAddress}`}>
+      <Link href={`/tokens/${token.mintAddress}`}>
         <Button variant="ghost" size="icon" data-testid={`button-trending-view-${token.id}`}>
           <ArrowRight className="h-4 w-4" />
         </Button>

@@ -123,7 +123,7 @@ function LeaderboardRow({ token, type }: { token: RankedToken; type: Leaderboard
         )}
       </div>
       
-      <Link href={`/token/${token.mintAddress}`}>
+      <Link href={`/tokens/${token.mintAddress}`}>
         <Button variant="ghost" size="icon" data-testid={`button-leaderboard-view-${token.id}`}>
           <ArrowRight className="h-4 w-4" />
         </Button>
