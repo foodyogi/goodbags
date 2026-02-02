@@ -326,13 +326,39 @@ export default function CharityPortal() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-              <XCircle className="h-5 w-5 text-destructive shrink-0" />
-              <div>
-                <p className="font-medium text-destructive">Verification Failed</p>
-                <p className="text-sm text-muted-foreground">
-                  Signed in as @{user.twitterUsername}, but this token requires @{tokenData.charityTwitterHandle}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">Verification Failed</p>
+                  <p className="text-sm text-muted-foreground">
+                    Signed in as @{user.twitterUsername}, but this token requires @{tokenData.charityTwitterHandle}
+                  </p>
+                </div>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg border">
+                <p className="text-sm text-muted-foreground mb-3">
+                  <strong>To verify as @{tokenData.charityTwitterHandle}:</strong>
                 </p>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1 mb-3">
+                  <li>Log out of X (twitter.com) in your browser</li>
+                  <li>Log into X with the @{tokenData.charityTwitterHandle} account</li>
+                  <li>Click the button below to sign in again</li>
+                </ol>
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2"
+                  onClick={() => {
+                    // Log out and redirect back to this page
+                    window.location.href = `/api/logout?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                  }}
+                  data-testid="button-switch-account"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Sign Out & Switch X Account
+                </Button>
               </div>
             </div>
           )}

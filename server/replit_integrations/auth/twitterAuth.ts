@@ -241,9 +241,15 @@ export async function setupAuth(app: Express) {
 
   // Logout endpoint
   app.get("/api/logout", (req, res) => {
+    const returnTo = req.query.returnTo as string;
     req.logout(() => {
       req.session.destroy(() => {
-        res.redirect("/");
+        // Redirect to returnTo if provided and is a valid path (security check)
+        if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+          res.redirect(returnTo);
+        } else {
+          res.redirect("/");
+        }
       });
     });
   });
