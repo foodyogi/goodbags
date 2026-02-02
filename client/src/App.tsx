@@ -63,6 +63,7 @@ function MainRouter() {
       <Route path="/admin/charities" component={AdminCharities} />
       <Route path="/charity/tokens" component={CharityTokenApproval} />
       <Route path="/token/:mint" component={TokenDetailPage} />
+      <Route path="/tokens/:mint" component={TokenDetailPage} />
       <Route path="/charity-portal" component={CharityPortal} />
       <Route component={NotFound} />
     </Switch>
