@@ -322,17 +322,25 @@ export default function CharityPortal() {
         <CardContent>
           {!user ? (
             <div className="space-y-4 py-4">
-              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                <p className="text-sm text-muted-foreground">
-                  Click below to sign in with X. You'll be prompted to choose which X account to use - make sure to select <strong>@{tokenData.charityTwitterHandle}</strong>.
+              <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30 mb-4">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-2">
+                  Important: Mobile Users
                 </p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  On mobile, X uses your X app's logged-in account. Before clicking verify:
+                </p>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
+                  <li>Open the <strong>X app</strong> on your phone</li>
+                  <li>Tap your profile icon and <strong>switch to @{tokenData.charityTwitterHandle}</strong></li>
+                  <li>Come back here and click the verify button below</li>
+                </ol>
               </div>
               <div className="text-center">
                 <Button onClick={handleLogin} data-testid="button-login-x">
                   <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
-                  Sign in with X as @{tokenData.charityTwitterHandle}
+                  I've switched to @{tokenData.charityTwitterHandle} - Verify Now
                 </Button>
               </div>
             </div>
@@ -351,21 +359,27 @@ export default function CharityPortal() {
               <div className="flex items-center gap-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                 <XCircle className="h-5 w-5 text-destructive shrink-0" />
                 <div>
-                  <p className="font-medium text-destructive">Verification Failed</p>
+                  <p className="font-medium text-destructive">Wrong Account</p>
                   <p className="text-sm text-muted-foreground">
                     Signed in as @{user.twitterUsername}, but this token requires @{tokenData.charityTwitterHandle}
                   </p>
                 </div>
               </div>
-              <div className="p-3 bg-muted/50 rounded-lg border">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Click below to sign out and sign in with a different X account. You'll be prompted to enter credentials for <strong>@{tokenData.charityTwitterHandle}</strong>.
+              <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-2">
+                  How to switch accounts (Mobile)
                 </p>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1 mb-3">
+                  <li>Open the <strong>X app</strong> on your phone</li>
+                  <li>Tap your profile icon in the top-left</li>
+                  <li>Tap the "..." icon, then <strong>"Add an existing account"</strong> or switch to @{tokenData.charityTwitterHandle}</li>
+                  <li>Come back here and click the button below</li>
+                </ol>
                 <Button 
                   variant="outline" 
                   className="w-full gap-2"
                   onClick={() => {
-                    // Use OAuth 1.0a force login - this will log out and force X to show login screen
+                    // Sign out and try again with forced login
                     const returnUrl = window.location.pathname + window.location.search;
                     window.location.href = `/api/logout?returnTo=${encodeURIComponent(`/api/login/force?returnTo=${encodeURIComponent(returnUrl)}`)}`;
                   }}
@@ -374,7 +388,7 @@ export default function CharityPortal() {
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
-                  Sign Out & Sign In with Different X Account
+                  I've switched in the X app - Try Again
                 </Button>
               </div>
             </div>
