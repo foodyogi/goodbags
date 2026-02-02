@@ -20,6 +20,7 @@ const TWITTER_USER_URL = "https://api.twitter.com/2/users/me";
 // OAuth 1.0a URLs (supports force_login parameter!)
 const TWITTER_REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token";
 const TWITTER_AUTHENTICATE_URL = "https://api.twitter.com/oauth/authenticate";
+const TWITTER_AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize";
 const TWITTER_ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token";
 const TWITTER_VERIFY_CREDENTIALS_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
 
@@ -356,9 +357,10 @@ export async function setupAuth(app: Express) {
           return res.status(500).send("Session error");
         }
 
-        // Redirect to Twitter with force_login=true (OAuth 1.0a supports this!)
-        const authUrl = `${TWITTER_AUTHENTICATE_URL}?oauth_token=${oauthToken}&force_login=true`;
-        console.log(`[Twitter OAuth 1.0a] Redirecting to Twitter with force_login=true`);
+        // Use oauth/authorize (not oauth/authenticate) with force_login=true
+        // oauth/authorize always shows full authorization, giving user chance to switch accounts
+        const authUrl = `${TWITTER_AUTHORIZE_URL}?oauth_token=${oauthToken}&force_login=true`;
+        console.log(`[Twitter OAuth 1.0a] Redirecting to Twitter authorize with force_login=true`);
         res.redirect(authUrl);
       });
     } catch (error) {
