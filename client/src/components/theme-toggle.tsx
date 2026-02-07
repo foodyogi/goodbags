@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 
 // Get initial theme synchronously to prevent flash
 function getInitialTheme(): "light" | "dark" {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   const stored = localStorage.getItem("theme") as "light" | "dark" | null;
   if (stored) return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 }
 
 export function ThemeToggle() {
