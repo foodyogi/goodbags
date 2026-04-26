@@ -98,7 +98,7 @@ function App() {
       <TooltipProvider>
         <SolanaProvider>
           <ScrollToTop />
-          <div className="flex min-h-screen flex-col">
+          <div className="flex min-h-screen flex-col overflow-x-hidden">
             <Header />
             <main className="flex-1">
               <MainRouter />
