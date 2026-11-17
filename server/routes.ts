@@ -2431,7 +2431,8 @@ export async function registerRoutes(
   app.get("/api/creator/:wallet/impact", async (req, res) => {
     try {
       const { wallet } = req.params;
-      const tokens = await storage.getTokensByCreator(wallet);
+      // Public creator totals exclude test-mode tokens
+      const tokens = (await storage.getTokensByCreator(wallet)).filter(t => !t.isTest);
       
       let totalDonated = 0;
       let totalDonationCount = 0;

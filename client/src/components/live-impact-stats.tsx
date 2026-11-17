@@ -73,8 +73,8 @@ export function LiveImpactStats() {
             Real-Time Impact Dashboard
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            All statistics are pulled directly from the blockchain. 
-            Every donation and transaction is publicly verifiable.
+            Token and launch figures come from GoodBags launch records. 
+            Donations are only counted once they have an on-chain transaction signature.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export function LiveImpactStats() {
                 icon={Heart}
                 label="Total Donated to Charity"
                 value={`${formattedDonated} SOL`}
-                subtext="Verified on-chain"
+                subtext="Only donations with an on-chain transaction signature"
                 color="bg-pink-500 dark:bg-pink-600"
                 testId="stat-total-donated"
               />
@@ -100,23 +100,23 @@ export function LiveImpactStats() {
                 icon={Rocket}
                 label="Tokens Launched"
                 value={String(stats?.totalTokens ?? 0)}
-                subtext="Impact tokens created"
+                subtext="Live tokens with an on-chain launch transaction"
                 color="bg-primary"
                 testId="stat-tokens-launched"
               />
               <StatCard
                 icon={TrendingUp}
-                label="Total Trading Volume"
+                label="Launch Buy Volume"
                 value={`${formattedVolume} SOL`}
-                subtext="Across all tokens"
+                subtext="Initial buys recorded at launch, later trading not tracked"
                 color="bg-secondary"
                 testId="stat-trading-volume"
               />
               <StatCard
                 icon={Coins}
-                label="FYI Buyback Pool"
+                label="Estimated Buyback Fees"
                 value={`${parseFloat(stats?.totalPlatformFees ?? "0").toFixed(4)} SOL`}
-                subtext="Auto-buying FYI tokens"
+                subtext="Estimate from launch buys, not verified on-chain"
                 color="bg-blue-500 dark:bg-blue-600"
                 testId="stat-buyback-pool"
               />

@@ -24,7 +24,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       iconColor: "text-primary",
     },
     {
-      title: "Total Donated",
+      title: "Verified Donated",
       value: stats?.totalDonated ?? "0",
       icon: Heart,
       suffix: " SOL",
@@ -32,7 +32,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       iconColor: "text-pink-500",
     },
     {
-      title: "Trading Volume",
+      title: "Launch Buy Volume",
       value: stats?.totalVolume ?? "0",
       icon: TrendingUp,
       suffix: " SOL",

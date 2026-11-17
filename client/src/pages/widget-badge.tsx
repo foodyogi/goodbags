@@ -58,7 +58,7 @@ export default function WidgetBadge() {
         <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1 text-pink-400">
             <Heart className="h-3 w-3" />
-            <span>Verified Impact</span>
+            <span>{impactData?.certified ? "Verified Impact" : "Impact pending"}</span>
           </div>
           <span className="text-gray-500">GoodBags</span>
         </div>

@@ -160,7 +160,7 @@ export default function PublicProfilePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold" data-testid="value-public-total-donated">{formatSol(stats.totalDonated)}</p>
-                <p className="text-sm text-muted-foreground">SOL Donated</p>
+                <p className="text-sm text-muted-foreground">SOL Donated (verified)</p>
               </div>
             </div>
           </CardContent>
@@ -174,7 +174,7 @@ export default function PublicProfilePage() {
               </div>
               <div>
                 <p className="text-2xl font-bold" data-testid="value-public-total-volume">{formatSol(stats.totalVolume)}</p>
-                <p className="text-sm text-muted-foreground">SOL Volume</p>
+                <p className="text-sm text-muted-foreground">SOL Launch Buys</p>
               </div>
             </div>
           </CardContent>

@@ -19,6 +19,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
+import { isValidTxSignature, verifiedDonationTotals } from "@shared/solana";
 
 export interface IStorage {
   // Charity methods
@@ -351,12 +352,28 @@ export class DatabaseStorage implements IStorage {
     return newToken;
   }
 
+  // Public token figures (charityDonated, donationCount) only count donations
+  // with a real on-chain signature. Stored values are launch-time estimates.
+  private async withVerifiedDonations(tokens: LaunchedToken[]): Promise<LaunchedToken[]> {
+    const allDonations = await this.getDonations();
+    return tokens.map((token) => {
+      const { totalDonated, donationCount } = verifiedDonationTotals(
+        allDonations.filter((d) => d.tokenMint === token.mintAddress),
+      );
+      return { ...token, charityDonated: totalDonated, donationCount };
+    });
+  }
+
+  // Public list: live tokens whose launch has a real on-chain signature
   async getLaunchedTokens(): Promise<LaunchedToken[]> {
-    return db
+    const tokens = await db
       .select()
       .from(launchedTokens)
       .where(eq(launchedTokens.isTest, false))
       .orderBy(desc(launchedTokens.launchedAt));
+    return this.withVerifiedDonations(
+      tokens.filter((t) => isValidTxSignature(t.transactionSignature)),
+    );
   }
 
   async getLaunchedTokenByMint(mintAddress: string): Promise<LaunchedToken | undefined> {
@@ -437,30 +454,27 @@ export class DatabaseStorage implements IStorage {
     totalVolume: string;
     totalPlatformFees: string;
   }> {
-    const [tokenStats] = await db
-      .select({
-        count: sql<number>`count(*)`,
-        totalVolume: sql<string>`coalesce(sum(${launchedTokens.tradingVolume}::numeric), 0)`,
-        totalDonated: sql<string>`coalesce(sum(${launchedTokens.charityDonated}::numeric), 0)`,
-        totalPlatformFees: sql<string>`coalesce(sum(${launchedTokens.platformFeeCollected}::numeric), 0)`,
-      })
-      .from(launchedTokens)
-      .where(eq(launchedTokens.isTest, false));
+    // Same token set as the public list; donations only count with a real signature.
+    // totalVolume and totalPlatformFees are launch-time figures and are labelled as such in the UI.
+    const tokens = await this.getLaunchedTokens();
+    const sum = (pick: (t: LaunchedToken) => string | null) =>
+      tokens.reduce((total, t) => total + parseFloat(pick(t) || "0"), 0).toFixed(9);
 
     return {
-      totalTokens: Number(tokenStats?.count ?? 0),
-      totalDonated: String(tokenStats?.totalDonated ?? "0"),
-      totalVolume: String(tokenStats?.totalVolume ?? "0"),
-      totalPlatformFees: String(tokenStats?.totalPlatformFees ?? "0"),
+      totalTokens: tokens.length,
+      totalDonated: sum((t) => t.charityDonated),
+      totalVolume: sum((t) => t.tradingVolume),
+      totalPlatformFees: sum((t) => t.platformFeeCollected),
     };
   }
 
   async getTokensByCreator(creatorWallet: string): Promise<LaunchedToken[]> {
-    return db
+    const tokens = await db
       .select()
       .from(launchedTokens)
       .where(eq(launchedTokens.creatorWallet, creatorWallet))
       .orderBy(desc(launchedTokens.launchedAt));
+    return this.withVerifiedDonations(tokens);
   }
 
   async getDonationsByToken(tokenMint: string): Promise<Donation[]> {
@@ -479,15 +493,12 @@ export class DatabaseStorage implements IStorage {
     const token = await this.getLaunchedTokenByMint(mintAddress);
     if (!token) return null;
 
+    // Totals only count donations with a real on-chain signature.
+    // recentDonations keeps unconfirmed records so the UI can show them as pending.
     const tokenDonations = await this.getDonationsByToken(mintAddress);
-    const totalDonated = tokenDonations.reduce(
-      (sum, d) => sum + parseFloat(d.amount),
-      0
-    );
 
     return {
-      totalDonated: totalDonated.toFixed(9),
-      donationCount: tokenDonations.length,
+      ...verifiedDonationTotals(tokenDonations),
       recentDonations: tokenDonations.slice(0, 10),
     };
   }
@@ -510,19 +521,21 @@ export class DatabaseStorage implements IStorage {
 
   // Token approval methods
   async getTokensPendingApproval(): Promise<LaunchedToken[]> {
-    return db
+    const tokens = await db
       .select()
       .from(launchedTokens)
       .where(eq(launchedTokens.charityApprovalStatus, "pending"))
       .orderBy(desc(launchedTokens.launchedAt));
+    return this.withVerifiedDonations(tokens);
   }
 
   async getTokensByCharityEmail(charityEmail: string): Promise<LaunchedToken[]> {
-    return db
+    const tokens = await db
       .select()
       .from(launchedTokens)
       .where(eq(launchedTokens.charityEmail, charityEmail))
       .orderBy(desc(launchedTokens.launchedAt));
+    return this.withVerifiedDonations(tokens);
   }
 
   async updateTokenApprovalStatus(

@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ExternalLink, CheckCircle2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { type Donation } from "@shared/schema";
-import { solscanUrl } from "@shared/solana";
+import { isValidTxSignature, solscanUrl } from "@shared/solana";
 
 interface DonationTrackerProps {
   donations?: Donation[];
@@ -49,10 +49,10 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Heart className="h-5 w-5 text-pink-500" />
-          Blockchain-Verified Donations
+          Charity Donations
         </CardTitle>
         <CardDescription>
-          All charity donations tracked transparently on Solana
+          A donation is marked Verified only when it has a Solana transaction signature
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -68,7 +68,9 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
         ) : (
           <ScrollArea className="h-[300px] pr-4">
             <div className="space-y-3">
-              {donations.map((donation) => (
+              {donations.map((donation) => {
+                const verified = isValidTxSignature(donation.transactionSignature);
+                return (
                 <div
                   key={donation.id}
                   className="flex items-center justify-between gap-4 rounded-lg border border-border/50 bg-muted/30 p-3"
@@ -76,13 +78,17 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/10">
-                      <CheckCircle2 className="h-4 w-4 text-pink-500" />
+                      {verified ? (
+                        <CheckCircle2 className="h-4 w-4 text-pink-500" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{formatSol(donation.amount)} SOL</span>
                         <Badge variant="outline" className="text-xs">
-                          Verified
+                          {verified ? "Verified" : "Pending on-chain confirmation"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -91,6 +97,7 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
                       </div>
                     </div>
                   </div>
+                  {verified && (
                   <a
                     href={solscanUrl("tx", donation.transactionSignature)}
                     target="_blank"
@@ -105,17 +112,19 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </a>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
 
         <div className="mt-4 pt-4 border-t border-border/50">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total Donations</span>
+            <span className="text-muted-foreground">Verified Donations</span>
             <span className="font-medium text-pink-500">
-              {donations?.length || 0} transactions
+              {donations?.filter((d) => isValidTxSignature(d.transactionSignature)).length || 0} transactions
             </span>
           </div>
         </div>

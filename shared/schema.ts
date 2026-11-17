@@ -3,6 +3,7 @@ import { pgTable, text, varchar, decimal, timestamp, integer, boolean } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import { FYI_CHARITY_WALLET } from "./solana";
 
 // Export auth models (sessions and users tables)
 export * from "./models/auth";
@@ -311,7 +312,7 @@ export const VETTED_CHARITIES = [
   {
     id: "food-yoga-international",
     name: "Food Yoga International",
-    wallet: "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP",
+    wallet: FYI_CHARITY_WALLET,
     twitterHandle: "fflglobal",
     payoutMethod: "twitter" as const,
     category: "hunger",

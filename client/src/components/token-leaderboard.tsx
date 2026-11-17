@@ -118,7 +118,7 @@ function LeaderboardRow({ token, type }: { token: RankedToken; type: Leaderboard
         </div>
         {type === "donations" && (
           <p className="text-xs text-muted-foreground">
-            {token.donationCount || 0} donations
+            {token.donationCount || 0} verified donations
           </p>
         )}
       </div>
@@ -184,7 +184,7 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
             </TabsTrigger>
             <TabsTrigger value="volume" className="gap-1" data-testid="tab-volume">
               <TrendingUp className="h-3 w-3" />
-              Most Traded
+              Top Launch Buys
             </TabsTrigger>
             <TabsTrigger value="hot" className="gap-1" data-testid="tab-hot">
               <Flame className="h-3 w-3" />
@@ -209,7 +209,7 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
               <LeaderboardRow key={token.id} token={token} type="hot" />
             ))}
             <p className="text-xs text-center text-muted-foreground pt-2" data-testid="text-hot-explanation">
-              Hot score combines recent activity, donations, and trading volume
+              Hot score combines recency, verified donations, and launch buy size
             </p>
           </TabsContent>
         </Tabs>

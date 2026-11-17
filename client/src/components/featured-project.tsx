@@ -5,6 +5,7 @@ import { ExternalLink, Heart } from "lucide-react";
 import { FyiCoin } from "@/components/fyi-coin";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FYI_COIN_FEE_WALLET, solscanUrl } from "@shared/solana";
 
 interface FeaturedProjectData {
   name: string;
@@ -98,6 +99,19 @@ export function FeaturedProject() {
             <div className="mt-6 pt-4 border-t text-center">
               <p className="text-xs text-muted-foreground" data-testid="text-featured-footer">
                 This impact token is already live on Bags.fm. Trade it to support the cause!
+              </p>
+              <p className="text-xs text-muted-foreground mt-2" data-testid="text-fyi-fee-disclosure">
+                Fees from the $FYI coin are received by a{" "}
+                <a
+                  href={solscanUrl("account", FYI_COIN_FEE_WALLET)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                  data-testid="link-fyi-fee-wallet"
+                >
+                  Bags.fm wallet
+                </a>{" "}
+                managed by our founder, Paul Rodney Turner, and forwarded to Food Yoga International.
               </p>
             </div>
           </CardContent>

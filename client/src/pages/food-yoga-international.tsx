@@ -22,9 +22,9 @@ import {
 } from "lucide-react";
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
-import { solscanUrl } from "@shared/solana";
+import { FYI_CHARITY_WALLET, solscanUrl } from "@shared/solana";
 
-const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr";
+const PARTNER_WALLET = FYI_CHARITY_WALLET;
 
 export default function FoodYogaInternational() {
   return (
@@ -345,7 +345,7 @@ export default function FoodYogaInternational() {
                         <li>Provide verification of wallet ownership (sign a message from the wallet)</li>
                       </ol>
                       <a 
-                        href="mailto:contact@solscan.io?subject=Account%20Label%20Request%20-%20Food%20Yoga%20International&body=Hello%20Solscan%20Team%2C%0A%0AI%20would%20like%20to%20request%20an%20account%20label%20for%20the%20following%20wallet%3A%0A%0AWallet%20Address%3A%203psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr%0AOrganization%3A%20Food%20Yoga%20International%0AWebsite%3A%20https%3A%2F%2Fffl.org%0A%0APlease%20let%20me%20know%20what%20verification%20is%20required.%0A%0AThank%20you!"
+                        href={`mailto:contact@solscan.io?subject=Account%20Label%20Request%20-%20Food%20Yoga%20International&body=Hello%20Solscan%20Team%2C%0A%0AI%20would%20like%20to%20request%20an%20account%20label%20for%20the%20following%20wallet%3A%0A%0AWallet%20Address%3A%20${PARTNER_WALLET}%0AOrganization%3A%20Food%20Yoga%20International%0AWebsite%3A%20https%3A%2F%2Fffl.org%0A%0APlease%20let%20me%20know%20what%20verification%20is%20required.%0A%0AThank%20you!`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

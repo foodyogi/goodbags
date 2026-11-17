@@ -39,7 +39,7 @@ import {
 import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
-import { solscanUrl } from "@shared/solana";
+import { isValidTxSignature, solscanUrl } from "@shared/solana";
 
 interface TokenImpactData {
   token: {
@@ -363,18 +363,18 @@ export default function TokenDetailPage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Total Donated</span>
+                  <span className="text-muted-foreground">Verified Donated</span>
                   <span className="text-2xl font-bold text-pink-600" data-testid="text-total-donated">
                     {formatSol(impact.totalDonated)} SOL
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Donation Count</span>
+                  <span className="text-muted-foreground">Verified Donations</span>
                   <span className="text-lg font-semibold">{impact.donationCount}</span>
                 </div>
                 {token.tradingVolume && parseFloat(token.tradingVolume) > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Trading Volume</span>
+                    <span className="text-muted-foreground">Launch Buy</span>
                     <span className="text-lg font-semibold" data-testid="text-trading-volume">
                       {formatSol(token.tradingVolume)} SOL
                     </span>
@@ -674,17 +674,23 @@ export default function TokenDetailPage() {
                         </p>
                       </div>
                     </div>
-                    <a
-                      href={solscanUrl("tx", donation.transactionSignature)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid={`link-donation-tx-${donation.id}`}
-                    >
-                      <Button variant="ghost" size="sm" className="gap-1" data-testid={`button-view-tx-${donation.id}`}>
-                        <ExternalLink className="h-3 w-3" />
-                        View TX
-                      </Button>
-                    </a>
+                    {isValidTxSignature(donation.transactionSignature) ? (
+                      <a
+                        href={solscanUrl("tx", donation.transactionSignature)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`link-donation-tx-${donation.id}`}
+                      >
+                        <Button variant="ghost" size="sm" className="gap-1" data-testid={`button-view-tx-${donation.id}`}>
+                          <ExternalLink className="h-3 w-3" />
+                          View TX
+                        </Button>
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground" data-testid={`text-donation-pending-${donation.id}`}>
+                        Pending on-chain confirmation
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

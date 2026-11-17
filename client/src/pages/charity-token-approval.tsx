@@ -315,11 +315,11 @@ export default function CharityTokenApproval() {
                               <div className="font-mono text-xs truncate">{token.creatorWallet?.slice(0, 8)}...</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Donated:</span>
+                              <span className="text-muted-foreground">Verified donated:</span>
                               <div className="text-green-600">{parseFloat(token.charityDonated || "0").toFixed(4)} SOL</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Volume:</span>
+                              <span className="text-muted-foreground">Launch buy:</span>
                               <div>{parseFloat(token.tradingVolume || "0").toFixed(4)} SOL</div>
                             </div>
                           </div>
@@ -380,11 +380,11 @@ export default function CharityTokenApproval() {
                               <div>{token.charityNotifiedAt ? new Date(token.charityNotifiedAt).toLocaleDateString() : "N/A"}</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Donated:</span>
+                              <span className="text-muted-foreground">Verified donated:</span>
                               <div className="text-green-600">{parseFloat(token.charityDonated || "0").toFixed(4)} SOL</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Volume:</span>
+                              <span className="text-muted-foreground">Launch buy:</span>
                               <div>{parseFloat(token.tradingVolume || "0").toFixed(4)} SOL</div>
                             </div>
                           </div>
@@ -419,7 +419,7 @@ export default function CharityTokenApproval() {
                       <div><strong>Symbol:</strong> ${selectedToken.symbol}</div>
                       <div><strong>Description:</strong> {selectedToken.description || "No description"}</div>
                       <div><strong>Creator Wallet:</strong> <span className="font-mono text-xs">{selectedToken.creatorWallet}</span></div>
-                      <div><strong>Total Donated:</strong> {parseFloat(selectedToken.charityDonated || "0").toFixed(4)} SOL</div>
+                      <div><strong>Verified Donated:</strong> {parseFloat(selectedToken.charityDonated || "0").toFixed(4)} SOL</div>
                     </div>
                     
                     <Alert>

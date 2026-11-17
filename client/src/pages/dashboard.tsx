@@ -85,7 +85,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold mb-2" data-testid="heading-dashboard">Dashboard</h1>
             <p className="text-muted-foreground">
-              Track your launched tokens, trading volume, and blockchain-verified donations
+              Track your launched tokens, launch buys, and blockchain-verified donations
             </p>
           </div>
           <Link href="/">
@@ -173,7 +173,7 @@ export default function Dashboard() {
                             <TrendingUp className="h-6 w-6 text-secondary" />
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Total Volume</p>
+                            <p className="text-sm text-muted-foreground">Launch Buy Volume</p>
                             <p className="text-2xl font-bold">{myStats?.totalVolume} SOL</p>
                           </div>
                         </div>
@@ -186,7 +186,7 @@ export default function Dashboard() {
                             <Heart className="h-6 w-6 text-pink-500" />
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Donated</p>
+                            <p className="text-sm text-muted-foreground">Verified Donated</p>
                             <p className="text-2xl font-bold">{myStats?.totalDonated} SOL</p>
                           </div>
                         </div>

@@ -94,7 +94,7 @@ export function TokenCard({ token }: TokenCardProps) {
               <TrendingUp className="h-3.5 w-3.5 text-secondary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Volume</p>
+              <p className="text-xs text-muted-foreground">Launch buy</p>
               <p className="text-sm font-medium">{formatSol(token.tradingVolume)} SOL</p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export function TokenCard({ token }: TokenCardProps) {
               <Heart className="h-3.5 w-3.5 text-pink-500" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Donated</p>
+              <p className="text-xs text-muted-foreground">Verified donated</p>
               <p className="text-sm font-medium">{formatSol(token.charityDonated)} SOL</p>
             </div>
           </div>

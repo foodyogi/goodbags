@@ -110,11 +110,11 @@ function TrendingTokenRow({ token, rank }: { token: TrendingToken; rank: number 
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1">
             <Heart className="h-3 w-3 text-pink-500" />
-            {formatSol(token.charityDonated)} SOL
+            {formatSol(token.charityDonated)} SOL verified
           </span>
           <span className="flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-green-500" />
-            {formatSol(token.tradingVolume)} SOL
+            {formatSol(token.tradingVolume)} SOL launch buy
           </span>
           <span>{formatTimeAgo(new Date(token.launchedAt))}</span>
         </div>
