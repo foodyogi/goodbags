@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import { FyiCoin } from "@/components/fyi-coin";
 import { ThemedLogo } from "@/components/themed-logo";
+import { FYI_TOKEN_MINT, solscanUrl } from "@shared/solana";
 
 interface BuybackStats {
   totalSolSpent: string;
@@ -33,7 +34,6 @@ interface Buyback {
 }
 
 const BUYBACK_WALLET = "8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8";
-const FYI_TOKEN_MINT = "N1WughP83SzwbcYRrfD7n34T4VtAq8bi3pbNKgvBAGS";
 
 function truncateSignature(sig: string): string {
   if (sig.length <= 16) return sig;
@@ -178,7 +178,7 @@ export default function BuybackPage() {
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" asChild data-testid="link-view-wallet">
                 <a 
-                  href={`https://solscan.io/account/${BUYBACK_WALLET}?cluster=devnet`}
+                  href={solscanUrl("account", BUYBACK_WALLET)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -188,7 +188,7 @@ export default function BuybackPage() {
               </Button>
               <Button variant="outline" size="sm" asChild data-testid="link-view-fyi">
                 <a 
-                  href={`https://solscan.io/token/${FYI_TOKEN_MINT}?cluster=devnet`}
+                  href={solscanUrl("token", FYI_TOKEN_MINT)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -253,7 +253,7 @@ export default function BuybackPage() {
                       </span>
                       {buyback.transactionSignature && (
                         <a
-                          href={`https://solscan.io/tx/${buyback.transactionSignature}?cluster=devnet`}
+                          href={solscanUrl("tx", buyback.transactionSignature)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary hover:underline inline-flex items-center gap-1 text-sm"

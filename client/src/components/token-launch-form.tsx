@@ -56,6 +56,7 @@ import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
 import { useUpload } from "@/hooks/use-upload";
+import { solscanUrl } from "@shared/solana";
 
 // Helper to parse and format error messages for user-friendly display
 // Detects Solana RPC errors vs other errors and provides appropriate guidance
@@ -779,7 +780,7 @@ export function TokenLaunchForm() {
                   </Button>
                 </a>
                 <a
-                  href={`https://solscan.io/token/${launchResult.token.mintAddress}`}
+                  href={solscanUrl("token", launchResult.token.mintAddress)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full"

@@ -39,6 +39,7 @@ import {
 import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
+import { solscanUrl } from "@shared/solana";
 
 interface TokenImpactData {
   token: {
@@ -631,7 +632,7 @@ export default function TokenDetailPage() {
                 </Button>
               </a>
               <a
-                href={`https://solscan.io/token/${token.mintAddress}?cluster=devnet`}
+                href={solscanUrl("token", token.mintAddress)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block"
@@ -674,7 +675,7 @@ export default function TokenDetailPage() {
                       </div>
                     </div>
                     <a
-                      href={`https://solscan.io/tx/${donation.transactionSignature}?cluster=devnet`}
+                      href={solscanUrl("tx", donation.transactionSignature)}
                       target="_blank"
                       rel="noopener noreferrer"
                       data-testid={`link-donation-tx-${donation.id}`}

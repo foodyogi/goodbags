@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, ExternalLink, CheckCircle2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { type Donation } from "@shared/schema";
+import { solscanUrl } from "@shared/solana";
 
 interface DonationTrackerProps {
   donations?: Donation[];
@@ -91,7 +92,7 @@ export function DonationTracker({ donations, isLoading }: DonationTrackerProps) 
                     </div>
                   </div>
                   <a
-                    href={`https://solscan.io/tx/${donation.transactionSignature}?cluster=devnet`}
+                    href={solscanUrl("tx", donation.transactionSignature)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

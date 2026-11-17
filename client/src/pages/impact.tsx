@@ -22,6 +22,7 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 import { type Donation } from "@shared/schema";
+import { solscanUrl } from "@shared/solana";
 
 interface TokenImpact {
   token: {
@@ -273,7 +274,7 @@ export default function ImpactPage() {
               Export Data
             </Button>
             <a
-              href={`https://solscan.io/account/${publicKey?.toBase58()}?cluster=devnet`}
+              href={solscanUrl("account", publicKey?.toBase58() || "")}
               target="_blank"
               rel="noopener noreferrer"
             >

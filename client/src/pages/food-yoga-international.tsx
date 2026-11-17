@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
+import { solscanUrl } from "@shared/solana";
 
 const PARTNER_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr";
 
@@ -61,7 +62,7 @@ export default function FoodYogaInternational() {
                   </Button>
                 </a>
                 <a 
-                  href={`https://solscan.io/account/${PARTNER_WALLET}`} 
+                  href={solscanUrl("account", PARTNER_WALLET)} 
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
@@ -304,7 +305,7 @@ export default function FoodYogaInternational() {
                         Copy
                       </Button>
                       <a 
-                        href={`https://solscan.io/account/${PARTNER_WALLET}`}
+                        href={solscanUrl("account", PARTNER_WALLET)}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -420,7 +421,7 @@ export default function FoodYogaInternational() {
 
                 <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
                   <a 
-                    href={`https://solscan.io/account/${PARTNER_WALLET}`}
+                    href={solscanUrl("account", PARTNER_WALLET)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

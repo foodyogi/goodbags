@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Charity } from "@shared/schema";
+import { solscanUrl } from "@shared/solana";
 import { ThemedLogo } from "@/components/themed-logo";
 
 const categoryIcons: Record<string, React.ElementType> = {
@@ -128,7 +129,7 @@ function CharityCard({ charity }: { charity: Charity }) {
                 {truncateWallet(charity.walletAddress)}
               </span>
               <a 
-                href={`https://solscan.io/account/${charity.walletAddress}?cluster=devnet`}
+                href={solscanUrl("account", charity.walletAddress)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline inline-flex items-center gap-1"
