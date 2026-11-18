@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.12
+
+- Fix: "Connect Wallet" on desktop now connects. Choosing a wallet in the wallet modal only selected it (the provider runs with autoConnect off) and nothing then called connect, so no wallet prompt ever opened. The button now connects the wallet you pick, using Phantom through window.phantom.solana, window.solana or Wallet Standard, including Brave with "Extensions (no fallback)".
+- Fix: the automatic connect used inside Phantom's mobile browser and after deep links called a stale connect() right after selecting the wallet and failed with WalletNotSelectedError. It now connects once the selection has taken effect. On desktop, an installed Phantom extension no longer triggers a wallet prompt on page load.
+- If no Solana wallet is detected, the button shows "No Solana wallet found" with a link to phantom.com instead of doing nothing.
+- Removed the wallet button's repeated per-render console logs.
+
 ## 1.0.11
 
 - Test Mode is back: a "Test launch (no wallet, no transaction, nothing on-chain)" toggle in the launch form runs the whole flow (validation, charity selection, donation tier, effective fee split) as a dry run on `POST /api/tokens/test-launch`, without login or a wallet. It makes no Bags.fm launch call, no Solana transaction, no SOL is spent and nothing is saved. The result screen is marked TEST and shows the fee split the coin would get on-chain; the form keeps its details for a real launch.

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
 import { Wallet, ExternalLink, Loader2, ChevronDown, LogOut } from "lucide-react";
@@ -148,13 +149,6 @@ function isInsidePhantomBrowser(): boolean {
   // Check URL params (definitive proof we came from deep link)
   const hasUrlParam = hasLaunchReadyParam();
   
-  console.log('[WalletConnectButton] isInsidePhantomBrowser check:', { 
-    hasPhantom, 
-    isPhantomApp, 
-    hasUrlParam, 
-    isMobile: isMobileBrowser() 
-  });
-  
   // On mobile, we're ONLY inside Phantom if:
   // 1. We have the Phantom provider AND we're in the Phantom user agent, OR
   // 2. We have URL params from a deep link (definitive proof)
@@ -215,16 +209,34 @@ function openInPhantomApp(e: React.MouseEvent, redirectPath?: string, formData?:
   window.location.href = phantomDeepLink;
 }
 
+/**
+ * What a click on "Connect Wallet" does:
+ * - mobile outside Phantom's browser: our deep-link wallet picker
+ * - no installed Solana wallet detected: the "No Solana wallet found" message
+ * - otherwise: the wallet adapter's modal, and the chosen wallet is then connected
+ */
+export function connectClickAction(state: {
+  isMobile: boolean;
+  isInPhantom: boolean;
+  hasInstalledWallet: boolean;
+}): "mobile-wallet-picker" | "no-wallet-message" | "wallet-modal" {
+  if (state.isMobile && !state.isInPhantom) return "mobile-wallet-picker";
+  if (!state.hasInstalledWallet) return "no-wallet-message";
+  return "wallet-modal";
+}
+
 function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
 export function WalletConnectButton({ className, "data-testid": testId, redirectPath, formData, onBeforeRedirect }: WalletConnectButtonProps) {
-  const { connected, publicKey, connecting, disconnect, select, wallets, connect } = useWallet();
+  const { connected, publicKey, connecting, disconnect, select, wallets, wallet, connect } = useWallet();
   // Use context instead of hook directly - on mobile this is a no-op, on desktop it's the real modal
   const { setVisible } = useWalletModalContext();
   const autoConnectAttemptedRef = useRef(false);
-  const [userClickedConnect, setUserClickedConnect] = useState(false);
+  // Set when a wallet should be connected as soon as one is selected (from the modal or auto-connect)
+  const [pendingConnect, setPendingConnect] = useState(false);
+  const [showNoWalletDialog, setShowNoWalletDialog] = useState(false);
   const [providerReady, setProviderReady] = useState(hasPhantomProvider());
   const [waitingForProvider, setWaitingForProvider] = useState(false);
   const providerCheckCountRef = useRef(0);
@@ -261,8 +273,10 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
   
   const targetRedirectPath = redirectPath || (typeof window !== 'undefined' ? window.location.pathname : '/launch');
 
-  // Determine if we should auto-connect (came from deep link OR we're in Phantom browser)
-  const shouldAutoConnect = fromDeepLink || isInPhantom;
+  // Auto-connect only when we came from a deep link or are inside Phantom's mobile in-app browser.
+  // On desktop, the Phantom extension being installed is not a reason to pop up a wallet prompt
+  // on page load: desktop users connect with the button.
+  const shouldAutoConnect = fromDeepLink || (isMobile && isInPhantom);
   
   // Poll for Phantom provider (handles timing issues where provider injects after page load)
   // IMPORTANT: Only poll on mobile if we have strong evidence of being in Phantom browser
@@ -284,8 +298,6 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     const checkInterval = setInterval(() => {
       providerCheckCountRef.current++;
       const hasIt = hasPhantomProvider();
-      
-      console.log(`[WalletConnectButton] Provider check #${providerCheckCountRef.current}/${maxAttempts}: hasProvider=${hasIt}`);
       
       if (hasIt) {
         console.log('[WalletConnectButton] ✓ Phantom provider detected!');
@@ -326,28 +338,32 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     );
     
     if (phantomWallet) {
-      console.log('[WalletConnectButton] Found Phantom wallet adapter:', phantomWallet.adapter.name);
-      console.log('[WalletConnectButton] Selecting Phantom wallet...');
+      console.log('[WalletConnectButton] Selecting Phantom wallet for auto-connect');
+      // The pending-connect effect below connects once the selection has taken effect
       select(phantomWallet.adapter.name);
-      
-      // Small delay to let selection take effect, then connect
-      setTimeout(() => {
-        console.log('[WalletConnectButton] Calling connect()...');
-        connect()
-          .then(() => {
-            console.log('[WalletConnectButton] ✓ Auto-connect successful!');
-            // Clear the deep-link intent after successful connection
-            clearDeepLinkIntent();
-          })
-          .catch((err) => {
-            console.log('[WalletConnectButton] ✗ Auto-connect failed:', err?.message || err);
-          });
-      }, 300);
+      setPendingConnect(true);
     } else {
       console.log('[WalletConnectButton] ✗ Phantom wallet not found in adapters');
       console.log('[WalletConnectButton] Available wallets:', wallets.map(w => w.adapter.name).join(', '));
     }
-  }, [providerReady, shouldAutoConnect, connected, connecting, wallets, select, connect]);
+  }, [providerReady, shouldAutoConnect, connected, connecting, wallets, select]);
+
+  // Connect once a wallet is selected. The provider runs with autoConnect off, so selecting a
+  // wallet in the modal does not connect by itself. This uses the connect() from the current
+  // render, which is bound to the newly selected wallet (a connect() captured before select()
+  // throws WalletNotSelectedError).
+  useEffect(() => {
+    if (!pendingConnect || !wallet || connected || connecting) return;
+    setPendingConnect(false);
+    connect()
+      .then(() => clearDeepLinkIntent())
+      .catch((err) => {
+        console.warn('[WalletConnectButton] Connect failed:', err?.name || err?.message || err);
+        if (err?.name === 'WalletNotReadyError') {
+          setShowNoWalletDialog(true);
+        }
+      });
+  }, [pendingConnect, wallet, connected, connecting, connect]);
   
   // Clear deep-link intent when connected
   useEffect(() => {
@@ -368,19 +384,27 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     
     console.log('[WalletConnectButton] handleConnectClick - isMobileNow:', isMobileNow, 'isInPhantomNow:', isInPhantomNow);
     
-    // On mobile, if we're NOT inside Phantom's browser, show our custom mobile wallet modal
-    // This prevents the standard wallet adapter modal from causing redirect issues
-    // We use the click-time values, not render-time values
-    if (isMobileNow && !isInPhantomNow) {
-      console.log('[WalletConnectButton] Mobile browser detected without Phantom - showing mobile wallet modal');
+    // Installed wallets are found by the adapter (Phantom via window.phantom.solana,
+    // window.solana or Wallet Standard); click-time values, not render-time values
+    const action = connectClickAction({
+      isMobile: isMobileNow,
+      isInPhantom: isInPhantomNow,
+      hasInstalledWallet: wallets.some((w) => w.readyState === WalletReadyState.Installed),
+    });
+
+    // On mobile outside Phantom's browser, our deep-link picker avoids adapter redirect issues
+    if (action === "mobile-wallet-picker") {
       setShowMobileWalletModal(true);
       return;
     }
-    
-    // Mark that user explicitly clicked connect
-    setUserClickedConnect(true);
-    
-    // Open the wallet modal (on desktop or inside Phantom browser)
+    if (action === "no-wallet-message") {
+      setShowNoWalletDialog(true);
+      return;
+    }
+
+    // Clear any earlier selection so the wallet picked in the modal is the one connected
+    select(null);
+    setPendingConnect(true);
     setVisible(true);
   };
   
@@ -432,17 +456,6 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
     setShowMobileWalletModal(false);
     window.location.href = deepLink;
   };
-
-  console.log('[WalletConnectButton] State:', { 
-    isMobile, 
-    isInPhantom, 
-    providerReady, 
-    connected, 
-    connecting,
-    fromDeepLink,
-    shouldAutoConnect,
-    waitingForProvider 
-  });
 
   // Connected state - show wallet address with dropdown
   if (connected && publicKey) {
@@ -516,6 +529,38 @@ export function WalletConnectButton({ className, "data-testid": testId, redirect
         Connect Wallet
       </Button>
       
+      {/* Shown on desktop when no Solana wallet is detected */}
+      <Dialog open={showNoWalletDialog} onOpenChange={setShowNoWalletDialog}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-no-wallet">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              No Solana wallet found
+            </DialogTitle>
+            <DialogDescription>
+              We couldn't find a Solana wallet in this browser. Install Phantom, then reload this page and click
+              Connect Wallet again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <a
+              href="https://phantom.com/download"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              data-testid="link-get-phantom"
+            >
+              Get Phantom at phantom.com
+              <ExternalLink className="h-4 w-4" />
+            </a>
+            <p className="text-xs text-muted-foreground">
+              Already have Phantom? Make sure it's unlocked and allowed on this site. In Brave, set Settings, Web3,
+              Default Solana wallet to "Extensions (no fallback)".
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Custom Mobile Wallet Selection Modal */}
       <Dialog open={showMobileWalletModal} onOpenChange={setShowMobileWalletModal}>
         <DialogContent className="sm:max-w-md">
