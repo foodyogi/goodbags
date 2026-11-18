@@ -1,7 +1,7 @@
-# GoodBags - Solana Memecoin Launcher for Social Impact
+# GoodBags - Charity fundraising, built into the token
 
 ## Overview
-GoodBags is a Solana-based memecoin launcher platform designed to integrate charity donations directly into memecoin launches. It enables users to create and launch tokens tied to over 75 verified charities, featuring an X Account Payout System for charities and an anti-rug pull token approval mechanism where charities endorse tokens launched in their name. Each token incorporates a 1% royalty stream from trading volume, split between charity (0.75%), FYI token buyback (0.05%), and the token creator (0.20%), with creators choosing their donation tier at launch. The platform aims to provide a transparent and secure way to leverage memecoins for social impact, offering public dashboards for impact tracking.
+GoodBags is charity fundraising infrastructure on Solana. Users launch coins on Bags.fm with a charity's share written into the on-chain fee split. Charities come from a list added by the GoodBags team (paid through their X account on Bags.fm) or register through the application, which verifies a US nonprofit's EIN through Every.org. Charities can endorse or deny coins launched in their name. Since Bags.fm's September 2026 change, the fee-config payer (the creator) receives 25% of a new coin's shared fees as deployer and the GoodBags split covers the other 75%, so the charity gets 56.25% to 71.25% of shared fees depending on the creator's donation tier, the FYI buyback 3.75% and the creator 40% to 25%. Coins launched before the change keep their original split (75% charity, 5% buyback, 20% creator). The tier table lives in `shared/feeSplit.ts`. Public pages show charity share earned (Bags.fm lifetime fees x each coin's on-chain charity share) and verified on-chain fee claims.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -15,7 +15,7 @@ The frontend is built with React 18, TypeScript, Wouter for routing, and TanStac
 The backend is a Node.js Express.js application in TypeScript (ES modules), providing RESTful JSON API endpoints. It uses Drizzle ORM with PostgreSQL for data persistence and Zod for schema validation.
 
 ### Authentication
-Replit Auth is used for user authentication, supporting multiple login providers. Sessions are stored in PostgreSQL. Users can link their Solana wallet addresses, which are verified cryptographically and stored for identity/tracking. Custom display names are supported. The token launch flow requires authentication and wallet connection, with a "Test Mode" available to bypass these for simulation.
+Replit Auth is used for user authentication, supporting multiple login providers. Sessions are stored in PostgreSQL. Users can link their Solana wallet addresses, which are verified cryptographically and stored for identity/tracking. Custom display names are supported. The token launch flow requires authentication and wallet connection.
 
 ### Solana Integration
 Solana integration uses `@solana/wallet-adapter-react` for wallet connections and `@bagsfm/bags-sdk` for token creation. RPC configuration is managed via environment variables, with support for dedicated RPC providers to avoid rate limiting. Mobile wallet connections utilize custom modals and deep links for Phantom and Solflare.
@@ -42,7 +42,7 @@ A dedicated portal at `/charity-portal` allows charity representatives to review
 API endpoints: `/api/charity-portal/token` (GET), `/api/charity-portal/approve` (POST), `/api/charity-portal/deny` (POST).
 
 ### Token Features
-Token image uploads are supported via Replit Object Storage to Google Cloud Storage. An automated FYI Buyback System uses 0.25% of platform fees to buy FYI tokens via Jupiter. A "Test Mode" allows simulated token launches that are marked as `isTest=true` and do not trigger charity notifications or donation records.
+Token image uploads are supported via Replit Object Storage to Google Cloud Storage. A share of fees is reserved for FYI token buybacks, and a buyback service can swap SOL in the buyback wallet for FYI via Jupiter; the buyback share has not been claimed from the fee configs yet, so no buybacks have been executed. Test Mode was removed from the UI in 1.0.5; the server still accepts `isTest=true` launch records, which are excluded from public figures.
 
 ### Community & Gamification
 The platform includes a Community Impact Tracker displaying token donations and milestones, social share integrations, and an Endorsement Celebration for charity-approved tokens. Gamification features include a Token Leaderboard (Top Givers, Most Traded, Hot Now), Trending Tokens, and Achievement Badges (10 unlockable achievements across various categories). Users have a "My Impact Profile" dashboard to view their launched tokens, aggregate stats, and earned badges.

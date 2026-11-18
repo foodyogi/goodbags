@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes, runStartupTasks } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
@@ -93,6 +93,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      runStartupTasks();
     },
   );
 })();

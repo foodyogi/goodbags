@@ -18,6 +18,7 @@ import {
 import { isValidSolanaPublicKey, isValidTxSignature } from "@shared/solana";
 import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
+import { registerSeoRoutes } from "./seo";
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
@@ -211,22 +212,28 @@ function setCachedSearch(cacheKey: string, data: any): void {
   searchCache.set(cacheKey, { data, timestamp: Date.now() });
 }
 
+// Slow startup work, run in the background once the server is listening so "/"
+// (the deploy health check) answers immediately. Errors are logged, never thrown.
+export function runStartupTasks(): void {
+  storage.seedDefaultCharities().then(
+    () => console.log("Charity seed complete"),
+    (error) => console.error("Charity seed failed on startup; continuing without it:", error)
+  );
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   
+  // Crawler files, registered before auth/session middleware and the SPA catch-all
+  registerSeoRoutes(app, () => storage.getLaunchedTokens());
+
   // Setup Replit Auth BEFORE other routes
   await setupAuth(app);
   registerAuthRoutes(app);
   
-  // Seed default charities on startup. A database outage must not stop the server
-  // from starting, or "/" (the deploy health check) goes down with it.
-  try {
-    await storage.seedDefaultCharities();
-  } catch (error) {
-    console.error("Charity seed failed on startup; continuing without it:", error);
-  }
+  // The charity seed runs in runStartupTasks() after the server is listening
   
   // Initialize buyback service (auto-buys FYI with platform fees)
   buybackService.initBuybackService();

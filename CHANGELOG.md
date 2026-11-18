@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.6
+
+- GoodBags favicon set (favicon.ico 16/32/48, favicon-32x32.png, apple-touch-icon.png, icon-192.png, icon-512.png) and site.webmanifest, replacing the default Replit favicon. New 1200x630 social share image with the GoodBags logo, "Charity fundraising, built into the token." and "goodbags.tech". All generated from the logo by `npm run generate:brand` (script/generate-brand-assets.ts).
+- Open Graph and Twitter image tags point to https://goodbags.tech/og-image.png with size, type and alt text; added theme-color and manifest links.
+- Real /robots.txt and /sitemap.xml (public routes plus live token pages; static routes only if the database is unavailable).
+- FAQPage JSON-LD on the FAQ page, generated from the same questions and answers the page renders.
+- The server now starts listening before the charity seed runs, so "/" answers health checks immediately; the seed runs in the background with errors logged.
+- replit.md overview updated to the current fee split, charity registration and buyback status.
+
 ## 1.0.5
 
 - New homepage narrative: "Charity fundraising, built into the token.", a live proof strip (charity share earned, verified fee claims by Food Yoga International), "Why GoodBags exists" and a 3-step "How it works". Page title, meta description, Open Graph and Twitter tags updated, and JSON-LD (Organization and WebApplication) added.

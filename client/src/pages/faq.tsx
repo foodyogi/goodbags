@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
+import { buildFaqJsonLd, jsonLdScriptContent } from "@/lib/faq-jsonld";
 import {
   NEW_LAUNCH_MAX_CHARITY_PERCENT,
   NEW_LAUNCH_MIN_CHARITY_PERCENT,
@@ -223,6 +224,11 @@ export default function FAQPage() {
         </div>
 
         <div className="space-y-8">
+          {/* FAQPage structured data, generated from the same questions and answers rendered below */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdScriptContent(buildFaqJsonLd(faqCategories)) }}
+          />
           {faqCategories.map(({ id, title, icon: Icon, questions }) => (
             <Card key={id} data-testid={`faq-category-${id}`}>
               <CardContent className="p-6">

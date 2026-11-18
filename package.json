@@ -1,6 +1,6 @@
 {
   "name": "rest-express",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test": "tsx --test tests/*.test.ts",
+    "generate:brand": "tsx script/generate-brand-assets.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -123,6 +124,7 @@
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
     "typescript": "5.6.3",
