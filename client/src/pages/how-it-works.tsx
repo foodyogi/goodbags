@@ -373,6 +373,10 @@ export default function HowItWorksPage() {
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
             Launch a charity coin today and its fee split starts earning for your chosen cause on every trade.
           </p>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto mb-6" data-testid="text-test-launch-note">
+            Want to try it first? Turn on "Test launch" in the launch form to see your coin's fee split with no wallet,
+            no transaction and nothing on-chain. Test launches aren't saved.
+          </p>
           <Link href="/launch">
             <Button size="lg" className="gap-2" data-testid="button-launch-cta">
               <Rocket className="h-5 w-5" />

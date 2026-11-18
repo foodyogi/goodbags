@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { StatsCards } from "@/components/stats-cards";
@@ -14,8 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Wallet, Rocket, Coins, TrendingUp, Heart, FlaskConical, Zap } from "lucide-react";
+import { Wallet, Rocket, Coins, TrendingUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import type { LaunchedToken, Donation } from "@shared/schema";
 
@@ -29,12 +27,10 @@ interface DashboardData {
   };
 }
 
-type TokenFilter = "all" | "live" | "test";
 
 export default function Dashboard() {
   const { publicKey, connected } = useWallet();
   const walletAddress = publicKey?.toBase58();
-  const [tokenFilter, setTokenFilter] = useState<TokenFilter>("all");
 
   const { data: globalData, isLoading: globalLoading } = useQuery<DashboardData>({
     queryKey: ["/api/dashboard"],
@@ -45,34 +41,9 @@ export default function Dashboard() {
     enabled: !!walletAddress,
   });
 
-  // Filter tokens based on selected filter
-  const filteredMyTokens = useMemo(() => {
-    if (!myTokens) return undefined;
-    switch (tokenFilter) {
-      case "live":
-        return myTokens.filter(t => !t.isTest);
-      case "test":
-        return myTokens.filter(t => t.isTest);
-      default:
-        return myTokens;
-    }
-  }, [myTokens, tokenFilter]);
-
-  const filteredGlobalTokens = useMemo(() => {
-    if (!globalData?.tokens) return undefined;
-    switch (tokenFilter) {
-      case "live":
-        return globalData.tokens.filter(t => !t.isTest);
-      case "test":
-        return globalData.tokens.filter(t => t.isTest);
-      default:
-        return globalData.tokens;
-    }
-  }, [globalData?.tokens, tokenFilter]);
-
-  // Count live vs test tokens for badges
-  const liveTokenCount = myTokens?.filter(t => !t.isTest).length ?? 0;
-  const testTokenCount = myTokens?.filter(t => t.isTest).length ?? 0;
+  // Test launches are never stored, and older test tokens are filtered out by the API
+  const filteredMyTokens = myTokens;
+  const filteredGlobalTokens = globalData?.tokens;
 
   // Same live figures as the home page: charity share earned and verified on-chain fee claims
   const allCharityShare = useCharityShare();
@@ -129,34 +100,6 @@ export default function Dashboard() {
                 <TokensGrid tokens={undefined} isLoading={true} />
               ) : myTokens && myTokens.length > 0 ? (
                 <>
-                  {/* Live/Test Filter Toggle */}
-                  {(liveTokenCount > 0 || testTokenCount > 0) && (
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm text-muted-foreground">Show:</span>
-                      <ToggleGroup 
-                        type="single" 
-                        value={tokenFilter} 
-                        onValueChange={(v) => v && setTokenFilter(v as TokenFilter)}
-                        data-testid="toggle-token-filter"
-                      >
-                        <ToggleGroupItem value="all" className="gap-2" data-testid="filter-all">
-                          All
-                          <Badge variant="secondary" className="text-xs">{myTokens.length}</Badge>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="live" className="gap-2" data-testid="filter-live">
-                          <Zap className="h-3 w-3" />
-                          Live
-                          <Badge variant="secondary" className="text-xs">{liveTokenCount}</Badge>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="test" className="gap-2" data-testid="filter-test">
-                          <FlaskConical className="h-3 w-3" />
-                          Test
-                          <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-600 dark:text-purple-400">{testTokenCount}</Badge>
-                        </ToggleGroupItem>
-                      </ToggleGroup>
-                    </div>
-                  )}
-                  
                   <div className="grid gap-4 md:grid-cols-3">
                     <Card data-testid="stat-my-tokens">
                       <CardContent className="pt-6">
@@ -166,7 +109,7 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">
-                              {tokenFilter === "test" ? "Test Tokens" : tokenFilter === "live" ? "Live Tokens" : "My Tokens"}
+                              My Tokens
                             </p>
                             <p className="text-2xl font-bold">{myStats?.totalTokens}</p>
                           </div>
@@ -207,7 +150,7 @@ export default function Dashboard() {
                     <div className="lg:col-span-2">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-semibold">
-                          {tokenFilter === "test" ? "My Test Tokens" : tokenFilter === "live" ? "My Live Tokens" : "My Launched Tokens"}
+                          My Launched Tokens
                         </h2>
                         <Badge variant="outline">{filteredMyTokens?.length ?? 0} token{filteredMyTokens?.length !== 1 ? "s" : ""}</Badge>
                       </div>

@@ -583,7 +583,8 @@ export class DatabaseStorage implements IStorage {
         mintAddress: launchedTokens.mintAddress,
       })
       .from(launchedTokens)
-      .where(sql`LOWER(${launchedTokens.name}) LIKE ${`%${normalizedName}%`}`)
+      // Test tokens are never public
+      .where(and(sql`LOWER(${launchedTokens.name}) LIKE ${`%${normalizedName}%`}`, eq(launchedTokens.isTest, false)))
       .limit(10);
     
     return results;

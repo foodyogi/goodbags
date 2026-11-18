@@ -19,6 +19,8 @@ import { isValidSolanaPublicKey, isValidTxSignature } from "@shared/solana";
 import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { registerSeoRoutes } from "./seo";
+import { registerTestLaunchRoute } from "./test-launch";
+import { seedPublicCharities } from "./charity-fallback";
 import { registerRetiredCharityEmailRoutes } from "./retired-routes";
 import { isCharityOnboarded } from "@shared/charities";
 import { toPublicBuyback, toPublicCharity, toPublicToken } from "@shared/public";
@@ -222,6 +224,12 @@ function setCachedSearch(cacheKey: string, data: any): void {
   searchCache.set(cacheKey, { data, timestamp: Date.now() });
 }
 
+// Test tokens (stored before test launches became a dry run) never appear publicly.
+// getLaunchedTokens already filters them in SQL; this is a second check at the route.
+function withoutTestTokens<T extends { isTest: boolean | null }>(tokens: T[]): T[] {
+  return tokens.filter((token) => !token.isTest);
+}
+
 // Slow startup work, run in the background once the server is listening so "/"
 // (the deploy health check) answers immediately. Errors are logged, never thrown.
 export function runStartupTasks(): void {
@@ -237,7 +245,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   
   // Crawler files, registered before auth/session middleware and the SPA catch-all
-  registerSeoRoutes(app, () => storage.getLaunchedTokens());
+  registerSeoRoutes(app, async () => withoutTestTokens(await storage.getLaunchedTokens()));
 
   // Setup Replit Auth BEFORE other routes
   await setupAuth(app);
@@ -416,8 +424,9 @@ export async function registerRoutes(
       const charities = await storage.getVerifiedCharities();
       res.json(charities.map(toPublicCharity));
     } catch (error) {
-      console.error("Get charities error:", error);
-      res.status(500).json({ error: "Failed to fetch charities" });
+      // Fail safe: serve the seeded list so the directory and launch form keep working
+      console.error("Get charities error, serving the seeded list:", error instanceof Error ? error.message : error);
+      res.json(seedPublicCharities());
     }
   });
 
@@ -1071,7 +1080,7 @@ export async function registerRoutes(
       
       // Get the token
       const token = await storage.getLaunchedTokenByMint(mint as string);
-      if (!token) {
+      if (!token || token.isTest) { // test tokens are never public
         return res.status(404).json({ error: "Token not found" });
       }
       
@@ -1124,7 +1133,7 @@ export async function registerRoutes(
       
       // Get the token
       const token = await storage.getLaunchedTokenByMint(tokenMint);
-      if (!token) {
+      if (!token || token.isTest) { // test tokens are never public
         return res.status(404).json({ error: "Token not found" });
       }
       
@@ -1200,7 +1209,7 @@ export async function registerRoutes(
       
       // Get the token
       const token = await storage.getLaunchedTokenByMint(tokenMint);
-      if (!token) {
+      if (!token || token.isTest) { // test tokens are never public
         return res.status(404).json({ error: "Token not found" });
       }
       
@@ -1859,10 +1868,58 @@ export async function registerRoutes(
   
   // Step 4: Record successful launch after client broadcasts transaction
   // Rate limited: 10 requests per minute
+  // Test launch: dry run that validates and previews a launch, with no Bags call,
+  // no transaction and nothing stored (server/test-launch.ts)
+  registerTestLaunchRoute(app, {
+    rateLimit: rateLimitMiddleware(20),
+    resolveCharity: async ({ charityId, charitySource, charitySolanaAddress }) => {
+      if (charitySource === "change") {
+        const verification = await verifyChangeCharityWallet(charityId, charitySource, charitySolanaAddress ?? undefined);
+        if (!verification.valid) {
+          return { ok: false, error: verification.error || "Charity verification failed" };
+        }
+        const nonprofit = await changeApi.getNonprofitById(charityId).catch(() => null);
+        return { ok: true, charity: { id: charityId, name: nonprofit?.name || "Charity", source: "change" } };
+      }
+
+      // Same rules as a real launch; the seeded list stands in if the database is unavailable
+      let charity: Pick<Charity, "id" | "name" | "status" | "walletAddress" | "twitterHandle" | "xHandleVerified" | "payoutMethod"> | undefined;
+      try {
+        charity = await storage.getCharityById(charityId);
+      } catch (error) {
+        console.error("Test launch: charity lookup failed, using the seeded list:", error instanceof Error ? error.message : error);
+        charity = seedPublicCharities().find((c) => c.id === charityId);
+      }
+      if (!charity) {
+        return { ok: false, error: "Charity not found" };
+      }
+      if (charity.status !== CHARITY_STATUS.APPROVED) {
+        return { ok: false, error: "Selected charity has not been verified. Please choose an approved charity." };
+      }
+      if (!isCharityOnboarded(charity)) {
+        return { ok: false, error: "This charity hasn't completed onboarding on GoodBags yet, so a coin can't be launched for it." };
+      }
+      const hasValidWallet = !!charity.walletAddress && isValidSolanaAddress(charity.walletAddress);
+      const hasTwitterPayout = !!charity.twitterHandle && charity.payoutMethod === "twitter";
+      if (!hasValidWallet && !hasTwitterPayout) {
+        return { ok: false, error: "Selected charity does not have a valid payout method (wallet or Twitter handle)" };
+      }
+      return { ok: true, charity: { id: charity.id, name: charity.name, source: "local" } };
+    },
+  });
+
   app.post("/api/tokens/launch", rateLimitMiddleware(10), async (req, res) => {
     try {
       const validated = tokenLaunchRequestSchema.parse(req.body);
       const { mintAddress, transactionSignature } = req.body;
+
+      // Test launches use POST /api/tokens/test-launch, which stores nothing
+      if (validated.isTest) {
+        return res.status(400).json({
+          success: false,
+          error: "Test launches use /api/tokens/test-launch and are never recorded.",
+        });
+      }
       
       if (!mintAddress) {
         return res.status(400).json({
@@ -1974,8 +2031,8 @@ export async function registerRoutes(
         });
       }
 
-      // Check if this is a test mode launch
-      const isTestLaunch = validated.isTest === true;
+      // Test launches are rejected above (they use /api/tokens/test-launch), so this is always a real launch
+      const isTestLaunch = false;
 
       // Same shared split used to build the on-chain fee config in /api/tokens/config
       let { charityBps, buybackBps, creatorBps } = computeFeeSplit(donationTier);
@@ -2156,7 +2213,7 @@ export async function registerRoutes(
   // Get all launched tokens
   app.get("/api/tokens", async (req, res) => {
     try {
-      const tokens = await storage.getLaunchedTokens();
+      const tokens = withoutTestTokens(await storage.getLaunchedTokens());
       res.json(tokens.map(toPublicToken));
     } catch (error) {
       console.error("Get tokens error:", error);
@@ -2239,7 +2296,7 @@ export async function registerRoutes(
       ]);
       
       res.json({
-        tokens: tokens.map(toPublicToken),
+        tokens: withoutTestTokens(tokens).map(toPublicToken),
         donations,
         stats,
       });
@@ -2253,7 +2310,7 @@ export async function registerRoutes(
   // Never returns 500: failures come back as available: false so the UI can say so.
   app.get("/api/charity-share", async (_req, res) => {
     try {
-      const tokens = await storage.getLaunchedTokens();
+      const tokens = withoutTestTokens(await storage.getLaunchedTokens());
       const shares = await Promise.all(
         tokens.map((t) => getTokenCharityShare(t.mintAddress, t.creatorWallet))
       );
@@ -2287,7 +2344,8 @@ export async function registerRoutes(
   app.get("/api/tokens/creator/:wallet", async (req, res) => {
     try {
       const { wallet } = req.params;
-      const tokens = await storage.getTokensByCreator(wallet);
+      // Test tokens (from before test launches stopped being stored) are never public
+      const tokens = withoutTestTokens(await storage.getTokensByCreator(wallet));
       res.json(tokens.map(toPublicToken));
     } catch (error) {
       console.error("Get creator tokens error:", error);
@@ -2301,7 +2359,7 @@ export async function registerRoutes(
       const { mint } = req.params;
       const token = await storage.getLaunchedTokenByMint(mint);
       
-      if (!token) {
+      if (!token || token.isTest) { // test tokens are never public
         return res.status(404).json({ error: "Token not found" });
       }
 
@@ -2369,7 +2427,7 @@ export async function registerRoutes(
     try {
       const { wallet } = req.params;
       // Public creator totals exclude test-mode tokens
-      const tokens = (await storage.getTokensByCreator(wallet)).filter(t => !t.isTest);
+      const tokens = withoutTestTokens(await storage.getTokensByCreator(wallet));
       
       let totalDonated = 0;
       let totalDonationCount = 0;

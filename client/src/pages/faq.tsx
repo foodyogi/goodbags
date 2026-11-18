@@ -56,6 +56,10 @@ const faqCategories = [
         answer: "You'll need approximately 0.05-0.1 SOL to cover the token creation costs and initial transaction fees. The exact amount depends on current Solana network conditions."
       },
       {
+        question: "Can I try a launch without spending SOL?",
+        answer: "Yes. Turn on \"Test launch\" in the launch form. GoodBags checks your coin details, charity and donation choice and shows the fee split your coin would get, without logging in, connecting a wallet, signing anything or spending SOL. Nothing is created on-chain and the test isn't saved or shown anywhere on the site."
+      },
+      {
         question: "Can AI Agents launch coins?",
         answer: "Yes. Bags supports agentic authentication flows. Creators can use AI Agents to launch coins and claim fees (where applicable). Impact settings are stored at launch and enforced on-chain. GoodBags works seamlessly with agent-assisted launches."
       }

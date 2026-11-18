@@ -33,11 +33,12 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
 import { SiX } from "react-icons/si";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   DONATION_TIERS,
   type DonationTier,
@@ -203,17 +204,24 @@ interface LaunchResult {
   success: boolean;
   isTest?: boolean;
   token?: {
-    id: string;
+    id?: string;
     name: string;
     symbol: string;
     mintAddress: string;
-    transactionSignature: string;
+    transactionSignature: string | null;
   };
   charity?: {
     id: string;
     name: string;
-    status: string;
-    hasWallet: boolean;
+    status?: string;
+    hasWallet?: boolean;
+  };
+  // Test launches only: the split the coin would get on-chain
+  feeSplit?: {
+    donateCreatorPercent: number;
+    charityPercent: number;
+    creatorPercent: number;
+    buybackPercent: number;
   };
   error?: string;
 }
@@ -232,6 +240,10 @@ export function TokenLaunchForm() {
   
   // Creator donation percent - can donate 0%, 25%, 50%, 75%, or 100% of their 20% share
   const [donateCreatorPercent, setDonateCreatorPercent] = useState<number>(0);
+
+  // Test launch: a dry run on GoodBags' server (POST /api/tokens/test-launch). No wallet,
+  // no transaction, no Bags.fm launch call, nothing on-chain and nothing saved.
+  const [testMode, setTestMode] = useState(false);
   
   // Token name duplicate detection
   const [nameSearchResults, setNameSearchResults] = useState<TokenNameSearchResult | null>(null);
@@ -470,6 +482,34 @@ export function TokenLaunchForm() {
   const launchMutation = useMutation({
     mutationFn: async (data: TokenLaunchFormData) => {
       if (!selectedCharity) throw new Error("Please select a charity");
+
+      if (testMode) {
+        // Same steps as a real launch, but nothing is signed or sent to Solana
+        setLaunchStep("preparing");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setLaunchStep("signing-config");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setLaunchStep("signing-launch");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setLaunchStep("recording");
+
+        const response = await fetch("/api/tokens/test-launch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...data,
+            charityId: selectedCharity.id,
+            charitySource: selectedCharity.source,
+            charitySolanaAddress: selectedCharity.solanaAddress,
+            donateCreatorPercent,
+          }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || "Test launch failed");
+        }
+        return result as LaunchResult;
+      }
       
       // Real Mode: Requires wallet connection
       if (!publicKey) throw new Error("Wallet not connected");
@@ -576,6 +616,15 @@ export function TokenLaunchForm() {
     },
     onSuccess: (data) => {
       setLaunchStep("complete");
+      if (data.success && data.token && data.isTest) {
+        // Keep the form filled in so the creator can go on to a real launch
+        setLaunchResult(data);
+        toast({
+          title: "Test launch complete",
+          description: "Nothing was created on-chain and nothing was saved.",
+        });
+        return;
+      }
       if (data.success && data.token) {
         setLaunchResult(data);
         // Clear stored form data after successful launch
@@ -602,6 +651,20 @@ export function TokenLaunchForm() {
   });
 
   const getStepMessage = () => {
+    if (testMode) {
+      switch (launchStep) {
+        case "preparing":
+          return "TEST: checking token details...";
+        case "signing-config":
+          return "TEST: checking the charity and fee split...";
+        case "signing-launch":
+          return "TEST: simulating the launch (nothing to sign)...";
+        case "recording":
+          return "TEST: preparing the result...";
+        default:
+          return "Running test launch...";
+      }
+    }
     // Real mode messages
     switch (launchStep) {
       case "preparing":
@@ -641,6 +704,76 @@ export function TokenLaunchForm() {
       source,
     });
   };
+
+  if (launchResult?.success && launchResult.token && launchResult.isTest) {
+    const split = launchResult.feeSplit;
+    return (
+      <Card className="w-full max-w-lg mx-auto border-purple-500/50" data-testid="card-test-launch-result">
+        <CardHeader className="text-center pb-4">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-500/15">
+            <FlaskConical className="h-8 w-8 text-purple-500" />
+          </div>
+          <Badge variant="outline" className="mx-auto mb-2 border-purple-500/50 text-purple-600 dark:text-purple-400" data-testid="badge-test-launch">
+            TEST
+          </Badge>
+          <CardTitle className="text-2xl">TEST launch complete</CardTitle>
+          <CardDescription>
+            This was a test. No wallet was asked to sign, no transaction was sent, no SOL was spent,
+            nothing was created on-chain and nothing was saved.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Name</span>
+              <span className="font-medium">{launchResult.token.name}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Ticker</span>
+              <span className="font-mono font-medium">{launchResult.token.symbol}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Mint address</span>
+              <span className="font-mono text-sm" data-testid="text-test-mint">{launchResult.token.mintAddress} (TEST, not real)</span>
+            </div>
+          </div>
+
+          {launchResult.charity && (
+            <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Heart className="h-4 w-4 text-pink-500" />
+                <span className="text-sm font-medium">Supported Charity (TEST)</span>
+              </div>
+              <span className="text-sm">{launchResult.charity.name}</span>
+            </div>
+          )}
+
+          {split && (
+            <div className="rounded-lg border p-4 space-y-2 text-sm" data-testid="section-test-fee-split">
+              <p className="font-medium">Fee split this coin would get on-chain (TEST)</p>
+              <div className="flex justify-between"><span className="text-muted-foreground">Charity</span><span>{formatPercent(split.charityPercent)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">You (creator, including the 25% deployer share)</span><span>{formatPercent(split.creatorPercent)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">FYI buyback</span><span>{formatPercent(split.buybackPercent)}</span></div>
+              <p className="text-xs text-muted-foreground">You chose to donate {split.donateCreatorPercent}% of your creator share.</p>
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setLaunchResult(null)}
+            className="w-full"
+            data-testid="button-back-from-test"
+          >
+            Back to the launch form
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            Your details are kept. Turn off test launch to launch for real.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (launchResult?.success && launchResult.token) {
     return (
@@ -760,7 +893,7 @@ export function TokenLaunchForm() {
       </CardHeader>
       <CardContent>
         {/* Ready to Launch Status - shows when form is pre-filled from mobile deep link */}
-        {prefilledFromUrl && hasWalletForSigning && (
+        {prefilledFromUrl && hasWalletForSigning && !testMode && (
           <div className="mb-4 rounded-lg border border-primary/50 bg-primary/10 p-4" data-testid="ready-to-launch-status">
             <div className="flex items-center gap-3 mb-2">
               <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
@@ -775,7 +908,7 @@ export function TokenLaunchForm() {
         )}
 
         {/* Waiting for wallet connection - shows when form pre-filled but wallet not yet connected */}
-        {prefilledFromUrl && !hasWalletForSigning && connecting && (
+        {prefilledFromUrl && !hasWalletForSigning && connecting && !testMode && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="connecting-wallet-status">
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
@@ -790,7 +923,7 @@ export function TokenLaunchForm() {
         )}
 
         {/* Form pre-filled but wallet not connected (and not currently connecting) */}
-        {prefilledFromUrl && !isAuthenticated && (
+        {prefilledFromUrl && !isAuthenticated && !testMode && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="login-needed-status">
             <div className="flex items-center gap-3 mb-2">
               <SiX className="h-4 w-4 text-amber-600" />
@@ -815,7 +948,7 @@ export function TokenLaunchForm() {
           </div>
         )}
         
-        {prefilledFromUrl && isAuthenticated && !hasWalletForSigning && !connecting && (
+        {prefilledFromUrl && isAuthenticated && !hasWalletForSigning && !connecting && !testMode && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="wallet-needed-status">
             <div className="flex items-center gap-3 mb-2">
               <Wallet className="h-4 w-4 text-amber-600" />
@@ -835,7 +968,7 @@ export function TokenLaunchForm() {
         )}
         
         {/* Wallet Status Indicator */}
-        {hasWalletForSigning && !prefilledFromUrl && (
+        {hasWalletForSigning && !prefilledFromUrl && !testMode && (
           <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 flex items-center gap-3" data-testid="wallet-connected-status">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <div className="flex-1">
@@ -1321,8 +1454,31 @@ export function TokenLaunchForm() {
               )}
             </div>
 
+            {/* Test launch toggle */}
+            <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-4" data-testid="section-test-mode">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="switch-test-mode" className="flex items-center gap-2 cursor-pointer">
+                  <FlaskConical className="h-4 w-4 text-purple-500 shrink-0" />
+                  <span className="text-sm font-medium">Test launch (no wallet, no transaction, nothing on-chain)</span>
+                </Label>
+                <Switch
+                  id="switch-test-mode"
+                  checked={testMode}
+                  onCheckedChange={setTestMode}
+                  data-testid="switch-test-mode"
+                />
+              </div>
+              {testMode && (
+                <p className="mt-3 pt-3 border-t border-purple-500/20 text-xs text-purple-600 dark:text-purple-400">
+                  Runs the launch flow as a dry run: GoodBags checks your details, charity and donation choice and shows
+                  the fee split your coin would get. You don't need to log in or connect a wallet, nothing is signed,
+                  no SOL is spent, and nothing is saved or shown anywhere on the site.
+                </p>
+              )}
+            </div>
+
             <div ref={launchButtonRef}>
-              {!isAuthenticated ? (
+              {!isAuthenticated && !testMode ? (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                   <SiX className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1360,7 +1516,7 @@ export function TokenLaunchForm() {
                     Login with X
                   </Button>
                 </div>
-              ) : !hasWalletForSigning ? (
+              ) : !hasWalletForSigning && !testMode ? (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                   <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1410,6 +1566,11 @@ export function TokenLaunchForm() {
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {getStepMessage()}
+                    </>
+                  ) : testMode ? (
+                    <>
+                      <FlaskConical className="h-4 w-4" />
+                      Run Test Launch
                     </>
                   ) : (
                     <>

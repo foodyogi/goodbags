@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.11
+
+- Test Mode is back: a "Test launch (no wallet, no transaction, nothing on-chain)" toggle in the launch form runs the whole flow (validation, charity selection, donation tier, effective fee split) as a dry run on `POST /api/tokens/test-launch`, without login or a wallet. It makes no Bags.fm launch call, no Solana transaction, no SOL is spent and nothing is saved. The result screen is marked TEST and shows the fee split the coin would get on-chain; the form keeps its details for a real launch.
+- Test launches are never stored, so they can't appear anywhere. The real launch route now rejects `isTest`, and test tokens stored by earlier versions are filtered out of every public list and page (home stats, trending, leaderboard, dashboard, sitemap, charity share and fee claims, creator pages, token pages, charity portal, name search). Tests fail if a test token leaks into any public endpoint.
+- The dashboard's Live/Test filter is removed (there are no test tokens to show).
+- `/api/charities` falls back to the seeded charity list if the database is unavailable, so the directory and launch form keep working.
+- FAQ and How It Works explain Test Mode.
+
 ## 1.0.10
 
 - X login diagnostics: every failure point in both X login flows logs the step, HTTP status, X's error fields (title, detail, type, errors, OAuth error and description) and the x-rate-limit-* headers, and a successful login logs the X username. Nothing secret is logged; three existing log lines that could print token secrets, access tokens or state values were replaced.
