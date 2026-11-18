@@ -42,6 +42,7 @@ import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
 import { solscanUrl } from "@shared/solana";
+import { LISTED_LABEL } from "@shared/charities";
 import {
   CHARITY_SHARE_LABEL,
   CHARITY_SHARE_UNAVAILABLE,
@@ -51,6 +52,7 @@ import {
 } from "@/components/charity-share-earned";
 
 interface TokenImpactData {
+  endorsedBy?: "charity" | "goodbags_team" | null;
   token: {
     id: string;
     name: string;
@@ -91,6 +93,7 @@ interface TokenImpactData {
     wallet: string;
     category: string;
     status: string;
+    onboarded?: boolean;
     feePercentage: number;
     buybackFeePercentage: number;
     creatorFeePercentage: number;
@@ -136,10 +139,13 @@ function CopyButton({ text, testId }: { text: string; testId?: string }) {
   );
 }
 
-function getStatusDisplay(status: string): { label: string; color: string } {
+// "Verified" only for charities that completed onboarding (shared isCharityOnboarded rule)
+function getStatusDisplay(status: string, onboarded: boolean): { label: string; color: string } {
   switch (status) {
     case "verified":
-      return { label: "Verified", color: "bg-green-500/10 text-green-600 border-green-500/20" };
+      return onboarded
+        ? { label: "Verified", color: "bg-green-500/10 text-green-600 border-green-500/20" }
+        : { label: LISTED_LABEL, color: "bg-muted text-muted-foreground" };
     case "pending":
       return { label: "Pending", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" };
     case "email_verified":
@@ -340,6 +346,7 @@ export default function TokenDetailPage() {
           tokenName={token.name}
           tokenSymbol={token.symbol}
           tokenMintAddress={token.mintAddress}
+          endorsedBy={data.endorsedBy ?? null}
         />
 
         {token.charityApprovalStatus && (
@@ -363,6 +370,7 @@ export default function TokenDetailPage() {
             charityName={token.charityName || charityInfo?.name || null}
             claimedSol={claimedSol}
             isApproved={token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED}
+            endorsedBy={data.endorsedBy ?? null}
           />
         </div>
 
@@ -551,9 +559,9 @@ export default function TokenDetailPage() {
                 )}
                 <div className="flex flex-wrap justify-between items-center gap-2">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge variant="outline" className={getStatusDisplay(charityInfo.status).color}>
+                  <Badge variant="outline" className={getStatusDisplay(charityInfo.status, charityInfo.onboarded === true).color}>
                     <Shield className="h-3 w-3 mr-1" />
-                    {getStatusDisplay(charityInfo.status).label}
+                    {getStatusDisplay(charityInfo.status, charityInfo.onboarded === true).label}
                   </Badge>
                 </div>
               </div>

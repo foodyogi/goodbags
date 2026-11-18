@@ -33,9 +33,16 @@ import {
   Filter
 } from "lucide-react";
 import { Link } from "wouter";
-import type { Charity } from "@shared/schema";
+import type { PublicCharity as Charity } from "@shared/public";
 import { solscanUrl } from "@shared/solana";
 import { ThemedLogo } from "@/components/themed-logo";
+import {
+  LISTED_LABEL,
+  LISTED_NOTICE,
+  LISTED_SECTION_TITLE,
+  ONBOARDED_SECTION_TITLE,
+  isCharityOnboarded,
+} from "@shared/charities";
 
 const categoryIcons: Record<string, React.ElementType> = {
   hunger: Heart,
@@ -66,6 +73,7 @@ function truncateWallet(wallet: string): string {
 
 function CharityCard({ charity }: { charity: Charity }) {
   const Icon = categoryIcons[charity.category] || HandHeart;
+  const onboarded = isCharityOnboarded(charity);
   
   return (
     <Card className="hover-elevate" data-testid={`charity-card-${charity.id}`}>
@@ -90,10 +98,16 @@ function CharityCard({ charity }: { charity: Charity }) {
               </div>
             </div>
           </div>
-          <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" data-testid={`badge-verified-${charity.id}`}>
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Verified
-          </Badge>
+          {onboarded ? (
+            <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" data-testid={`badge-verified-${charity.id}`}>
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Verified
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground" data-testid={`badge-listed-${charity.id}`}>
+              {LISTED_LABEL}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -244,6 +258,11 @@ export default function CharitiesPage() {
     
     return result;
   }, [approvedCharities, searchQuery, selectedCategory, sortBy]);
+
+  const onboardedCount = approvedCharities.filter(isCharityOnboarded).length;
+  const listedCount = approvedCharities.length - onboardedCount;
+  const onboardedResults = filteredCharities.filter(isCharityOnboarded);
+  const listedResults = filteredCharities.filter((c) => !isCharityOnboarded(c));
   
   const hasFilters = searchQuery.trim() || selectedCategory !== "all";
   
@@ -262,17 +281,17 @@ export default function CharitiesPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-1.5 mb-4" data-testid="badge-verified-charities">
             <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
             <span className="text-sm font-medium text-green-600 dark:text-green-400">
-              {approvedCharities.length} Verified Charities
-              {countryCount > 0 && ` from ${countryCount} Countries`}
+              {onboardedCount} onboarded · {listedCount} listed
+              {countryCount > 0 && ` · ${countryCount} countries`}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="heading-charities">
-            Our Verified Partner Charities
+            Charity directory
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-            Charities here were added by the GoodBags team or registered through our application, which verifies a
-            US nonprofit's EIN through Every.org. Charities claim their share of fees on Bags.fm with their X account
-            or Solana wallet.
+            Onboarded charities can be chosen for a coin and claim their share of fees on Bags.fm with their X
+            account or Solana wallet. Charities onboard through our application, which verifies a US nonprofit's EIN
+            through Every.org. Every other nonprofit here is listed from public records only.
           </p>
           <Link href="/charities/apply">
             <Button variant="outline" data-testid="button-apply-charity">
@@ -285,28 +304,28 @@ export default function CharitiesPage() {
         <div className="mb-8 p-4 rounded-lg bg-muted/30 border border-border" data-testid="section-verification-process">
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Our Verification Process
+            How a charity completes onboarding
           </h3>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white text-sm font-bold">1</div>
               <div>
-                <p className="font-medium">Email Verification</p>
-                <p className="text-sm text-muted-foreground">Verify ownership of official charity email</p>
+                <p className="font-medium">EIN and Email</p>
+                <p className="text-sm text-muted-foreground">US EIN checked against Every.org, then the official email is verified</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white text-sm font-bold">2</div>
               <div>
-                <p className="font-medium">Wallet Signature</p>
-                <p className="text-sm text-muted-foreground">Prove ownership of donation wallet</p>
+                <p className="font-medium">Wallet or X Account</p>
+                <p className="text-sm text-muted-foreground">Sign with the charity's Solana wallet, or connect its X account</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white text-sm font-bold">3</div>
               <div>
                 <p className="font-medium">Manual Review</p>
-                <p className="text-sm text-muted-foreground">GoodBags team verifies legitimacy</p>
+                <p className="text-sm text-muted-foreground">The GoodBags team reviews the application</p>
               </div>
             </div>
           </div>
@@ -406,9 +425,9 @@ export default function CharitiesPage() {
           <Card className="text-center py-12">
             <CardContent>
               <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Verified Charities Yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No Charities Listed Yet</h3>
               <p className="text-muted-foreground mb-4">
-                Be the first charity to get verified on GoodBags!
+                Be the first charity to onboard on GoodBags!
               </p>
               <Link href="/charities/apply">
                 <Button data-testid="button-apply-first">Apply Now</Button>
@@ -430,17 +449,35 @@ export default function CharitiesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredCharities.map((charity) => (
-              <CharityCard key={charity.id} charity={charity} />
-            ))}
+          <div className="space-y-12">
+            {onboardedResults.length > 0 && (
+              <section data-testid="section-onboarded-charities">
+                <h2 className="text-2xl font-bold mb-4">{ONBOARDED_SECTION_TITLE}</h2>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {onboardedResults.map((charity) => (
+                    <CharityCard key={charity.id} charity={charity} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {listedResults.length > 0 && (
+              <section data-testid="section-listed-charities">
+                <h2 className="text-2xl font-bold mb-2">{LISTED_SECTION_TITLE}</h2>
+                <p className="text-muted-foreground mb-4" data-testid="text-listed-notice">{LISTED_NOTICE}</p>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {listedResults.map((charity) => (
+                    <CharityCard key={charity.id} charity={charity} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
 
         <div className="mt-12 text-center p-6 rounded-lg bg-muted/20 border border-border" data-testid="section-blockchain-note">
-          <h3 className="font-semibold mb-2">Blockchain-Verified Transparency</h3>
+          <h3 className="font-semibold mb-2">On-chain Transparency</h3>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-            Every fee claim by these charities is recorded on the Solana blockchain.
+            Every fee claim by an onboarded charity is recorded on the Solana blockchain.
             Click "Verify" on any charity wallet to see its transactions on Solscan.
           </p>
         </div>

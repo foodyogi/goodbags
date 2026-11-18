@@ -8,8 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2, Search, CheckCircle2, ExternalLink, Building2, Heart, Twitter, MapPin, Wallet, Mail, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Charity } from "@shared/schema";
+import type { PublicCharity as Charity } from "@shared/public";
 import { NEW_LAUNCH_MIN_CHARITY_PERCENT } from "@shared/feeSplit";
+import { isCharityOnboarded } from "@shared/charities";
+import { Link } from "wouter";
 
 interface CharityOption {
   id: string;
@@ -159,34 +161,18 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
     });
   }, [allCharities, showOnlyWithX, showOnlyWithWallet]);
 
-  const { selectable, notSelectable } = useMemo(() => {
-    const selectable: CharityOption[] = [];
-    const notSelectable: CharityOption[] = [];
-    
-    for (const c of filteredCharities) {
-      // Only verified X handles or direct wallets are selectable for token launches
-      const hasVerifiedX = c.twitterHandle && c.xHandleVerified;
-      if (hasVerifiedX || c.solanaAddress) {
-        selectable.push(c);
-      } else {
-        notSelectable.push(c);
-      }
-    }
-    
-    return { selectable, notSelectable };
-  }, [filteredCharities]);
+  // Only onboarded charities (confirmed X handle or Solana wallet) can be chosen, so only they are shown
+  const selectable = useMemo(() => filteredCharities.filter(isCharityOnboarded), [filteredCharities]);
 
   const handleSelect = (charity: CharityOption) => {
-    const hasVerifiedX = charity.twitterHandle && charity.xHandleVerified;
-    if (!hasVerifiedX && !charity.solanaAddress) return;
+    if (!isCharityOnboarded(charity)) return;
     onSelect(charity);
   };
 
   const isLoading = localLoading;
   const isSearching = changeFetching && debouncedQuery.length >= 2;
 
-  const localCount = localCharities?.filter(c => c.status === "verified").length || 0;
-  const changeCount = changeResults?.results?.length || 0;
+  const changeCount = changeResults?.results?.filter(isCharityOnboarded).length || 0;
 
   return (
     <div className="space-y-3">
@@ -194,7 +180,7 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder={`Search ${localCount}+ verified charities + millions more...`}
+          placeholder="Search onboarded charities, or nonprofits with a Solana wallet..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -248,16 +234,16 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
         </div>
       )}
 
-      {!isLoading && filteredCharities.length === 0 && searchQuery && (
+      {!isLoading && selectable.length === 0 && searchQuery && (
         <div className="text-center py-8 text-muted-foreground">
           <Heart className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No charities found</p>
+          <p className="text-sm">No onboarded charities found</p>
           <p className="text-xs mt-1">Try a different search term or adjust filters</p>
         </div>
       )}
 
-      {!isLoading && filteredCharities.length > 0 && (
-        <ScrollArea className="h-[320px]">
+      {!isLoading && selectable.length > 0 && (
+        <ScrollArea className={selectable.length > 3 ? "h-[320px]" : undefined}>
           <div className="space-y-2 pr-4">
             {selectable.map((charity) => (
               <CharityCard
@@ -269,36 +255,17 @@ export function CharitySearch({ onSelect, selectedId }: CharitySearchProps) {
               />
             ))}
             
-            {notSelectable.length > 0 && selectable.length > 0 && (
-              <div className="my-4 border-t pt-4">
-                <div className="flex items-center gap-2 mb-3 text-muted-foreground">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Not Yet Available for Donations</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  These charities don&apos;t have a verified X handle or SOL wallet yet. Contact them to encourage crypto donations!
-                </p>
-              </div>
-            )}
-            
-            {notSelectable.map((charity) => (
-              <CharityCard
-                key={charity.id}
-                charity={charity}
-                isSelected={false}
-                onSelect={() => {}}
-                disabled={true}
-              />
-            ))}
           </div>
         </ScrollArea>
       )}
 
       {!isLoading && (
-        <p className="text-xs text-center text-muted-foreground">
-          Showing {selectable.length} selectable
-          {notSelectable.length > 0 && ` + ${notSelectable.length} not yet available`}
-          {debouncedQuery.length >= 2 && changeCount > 0 && ` (including ${changeCount} from Change API)`}
+        <p className="text-xs text-center text-muted-foreground" data-testid="text-charity-directory-link">
+          Don't see your charity?{" "}
+          <Link href="/charities" className="text-primary hover:underline">See the directory</Link>
+          {" "}or{" "}
+          <Link href="/charities/apply" className="text-primary hover:underline">invite it to register</Link>.
+          {debouncedQuery.length >= 2 && changeCount > 0 && ` Includes ${changeCount} from Change API search.`}
         </p>
       )}
     </div>

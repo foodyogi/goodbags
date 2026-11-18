@@ -72,13 +72,13 @@ export default function TermsPage() {
                 Platform Description
               </h2>
               <p className="text-muted-foreground mb-4">
-                GoodBags is a platform that enables users to create and launch Solana-based tokens ("memecoins") with 
-                integrated charitable donation mechanisms. The Platform facilitates:
+                GoodBags is a platform that enables users to create and launch Solana-based tokens ("charity coins") with
+                a charity's share written into each coin's fee split. The Platform facilitates:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 mb-4">
                 <li>Creation and deployment of tokens on the Solana blockchain</li>
-                <li>Integration with verified charitable organizations</li>
-                <li>Automated fee distribution to charities</li>
+                <li>Integration with charitable organizations that have completed onboarding</li>
+                <li>Fee splits written into each coin's on-chain Bags.fm fee config at launch</li>
                 <li>Tracking and transparency of charitable contributions</li>
               </ul>
             </CardContent>
@@ -132,17 +132,18 @@ export default function TermsPage() {
             <CardContent className="p-6 md:p-8">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">5</span>
-                Charitable Donations
+                Charity Fee Shares
               </h2>
               <p className="text-muted-foreground mb-4">
-                Regarding charitable donations facilitated through the Platform:
+                Regarding the charity's share of fees from coins launched through the Platform:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 mb-4">
-                <li>We verify charities through a multi-step process but cannot guarantee the actions of any charity</li>
-                <li>Donation amounts are calculated automatically based on trading fees</li>
-                <li>Charities receive donations via their verified wallet addresses or X (Twitter) handles</li>
-                <li>Donation delivery depends on charity verification status and blockchain conditions</li>
-                <li>We are not responsible for how charities use donations received</li>
+                <li>We verify charities through a multi-step onboarding process but cannot guarantee the actions of any charity</li>
+                <li>A coin can be launched only for a charity that has completed onboarding</li>
+                <li>The charity's share of each coin's trading fees builds up in the coin's Bags.fm fee config</li>
+                <li>The charity claims its share on Bags.fm with its verified Solana wallet or X account; nothing is sent to the charity automatically</li>
+                <li>Whether and when a charity claims its share depends on the charity, Bags.fm and blockchain conditions</li>
+                <li>We are not responsible for how charities use the funds they claim</li>
               </ul>
             </CardContent>
           </Card>

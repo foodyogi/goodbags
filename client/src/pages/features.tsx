@@ -44,11 +44,11 @@ const coreFeatures = [
   },
   {
     icon: Heart,
-    title: "Verified Charities",
-    description: "Pick a charity from the GoodBags list, or register a US nonprofit. Registration verifies the organization's EIN through Every.org, then its email and its Solana wallet or X account, before manual approval.",
+    title: "Charity Directory",
+    description: "Pick a charity that has completed onboarding. US nonprofits onboard through our application, which checks the organization's EIN through Every.org, then its email and its Solana wallet or X account, before manual approval.",
     details: [
       "Categories: hunger, education, health, animals, environment, and more",
-      "The GoodBags list includes charities in the US and other countries, paid through their X account on Bags.fm",
+      "The directory also lists nonprofits from public records, which can't be chosen until they onboard",
       "Self-serve registration is for US nonprofits with an EIN listed on Every.org",
       "Search more nonprofits with Solana wallets through the Change API"
     ],
@@ -155,7 +155,7 @@ const securityFeatures = [
       "Charities verify identity via X (Twitter) OAuth",
       "Dedicated portal for reviewing token details",
       "Charities can officially endorse or deny tokens",
-      "Endorsed tokens display a verified badge",
+      "Endorsed tokens display an endorsement badge",
       "Denied tokens show clear warnings to traders",
       "Full audit trail of all approval decisions"
     ],

@@ -45,7 +45,7 @@ const faqCategories = [
       },
       {
         question: "How do I get started?",
-        answer: "To get started, you'll need a Solana wallet (like Phantom or Solflare) with some SOL for transaction fees. Connect your wallet, choose a verified charity you want to support, fill in your token details, and launch. Your token will be live on Solana within minutes."
+        answer: "To get started, you'll need a Solana wallet (like Phantom or Solflare) with some SOL for transaction fees. Connect your wallet, choose an onboarded charity you want to support, fill in your token details, and launch. Your token will be live on Solana within minutes."
       },
       {
         question: "Do I need to know how to code?",
@@ -94,15 +94,15 @@ const faqCategories = [
     icon: Heart,
     questions: [
       {
-        question: "How are charities verified?",
-        answer: "Self-serve registration is for US nonprofits. The charity enters its EIN, which we check against Every.org, verifies its email, signs with its Solana wallet or connects its X account, and then our team reviews the application. The GoodBags list also includes charities added by our team, in the US and other countries, which are paid through their X account on Bags.fm."
+        question: "How do charities onboard?",
+        answer: "Self-serve registration is for US nonprofits. The charity enters its EIN, which we check against Every.org, verifies its email, signs with its Solana wallet or connects its X account, and then our team reviews the application. The charity directory also lists nonprofits from public records. They have not joined GoodBags or endorsed it, and a coin can't be launched for them until they complete onboarding."
       },
       {
         question: "Can I launch a token for any charity?",
-        answer: "You can launch coins for charities on the GoodBags list, or for nonprofits with a Solana wallet found through our charity search. If your preferred charity isn't listed and is a US nonprofit, it can register itself."
+        answer: "You can launch coins only for charities that have completed onboarding, or for nonprofits with a Solana wallet found through our charity search. If your preferred charity hasn't onboarded and is a US nonprofit, invite it to register."
       },
       {
-        question: "I represent a charity. How do I get verified?",
+        question: "I represent a charity. How do we onboard?",
         answer: "Visit our 'Register Your Charity' page. Registration currently supports US nonprofits: you'll enter your EIN (checked against Every.org), verify your email, then sign with your Solana wallet or connect your X account. Our team reviews every application."
       },
       {

@@ -10,6 +10,7 @@ interface SocialShareProps {
   charityName: string | null;
   claimedSol?: string | null; // Verified on-chain fee claims
   isApproved?: boolean;
+  endorsedBy?: "charity" | "goodbags_team" | null;
 }
 
 function formatSol(value: string | null | undefined): string {
@@ -27,7 +28,8 @@ export function SocialShare({
   mintAddress, 
   charityName, 
   claimedSol,
-  isApproved 
+  isApproved,
+  endorsedBy
 }: SocialShareProps) {
   const goodbagsUrl = `https://goodbags.tech/tokens/${mintAddress}`;
   const bagsUrl = `https://bags.fm/${mintAddress}`;
@@ -37,9 +39,11 @@ export function SocialShare({
     
     switch (type) {
       case 'endorsed':
-        return `$${tokenSymbol} is now OFFICIALLY ENDORSED by ${charityName}! 
+        return `${endorsedBy === "goodbags_team"
+          ? `$${tokenSymbol} is endorsed by the GoodBags team on behalf of ${charityName}.`
+          : `$${tokenSymbol} is endorsed by ${charityName}.`}
 
-This coin is legit: the charity approved it.
+An endorsement is not financial advice. Trading tokens carries risk.
 
 Every trade earns ${charityName} a share of the fees. Verified on-chain fee claims so far: ${claimed} SOL
 

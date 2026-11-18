@@ -421,7 +421,7 @@ export default function CharityTokenApproval() {
                       <div><strong>Symbol:</strong> ${selectedToken.symbol}</div>
                       <div><strong>Description:</strong> {selectedToken.description || "No description"}</div>
                       <div><strong>Creator Wallet:</strong> <span className="font-mono text-xs">{selectedToken.creatorWallet}</span></div>
-                      <div><strong>Verified Donated:</strong> {parseFloat(selectedToken.charityDonated || "0").toFixed(4)} SOL</div>
+                      <div><strong>Charity share earned:</strong> {formatFigureSol(figuresFor(selectedToken.mintAddress).earnedSol)}</div>
                     </div>
                     
                     <Alert>

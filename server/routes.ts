@@ -19,6 +19,8 @@ import { isValidSolanaPublicKey, isValidTxSignature } from "@shared/solana";
 import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { registerSeoRoutes } from "./seo";
+import { isCharityOnboarded } from "@shared/charities";
+import { toPublicBuyback, toPublicCharity, toPublicToken } from "@shared/public";
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
@@ -404,7 +406,7 @@ export async function registerRoutes(
   app.get("/api/charities", async (req, res) => {
     try {
       const charities = await storage.getVerifiedCharities();
-      res.json(charities);
+      res.json(charities.map(toPublicCharity));
     } catch (error) {
       console.error("Get charities error:", error);
       res.status(500).json({ error: "Failed to fetch charities" });
@@ -415,10 +417,11 @@ export async function registerRoutes(
   app.get("/api/charities/:id", async (req, res) => {
     try {
       const charity = await storage.getCharityById(req.params.id);
-      if (!charity) {
+      // Only approved charities are public; applications in progress are not
+      if (!charity || charity.status !== CHARITY_STATUS.APPROVED) {
         return res.status(404).json({ error: "Charity not found" });
       }
-      res.json(charity);
+      res.json(toPublicCharity(charity));
     } catch (error) {
       console.error("Get charity error:", error);
       res.status(500).json({ error: "Failed to fetch charity" });
@@ -1039,7 +1042,7 @@ export async function registerRoutes(
       const pendingTokens = tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING);
       
       res.json({
-        tokens: pendingTokens,
+        tokens: pendingTokens.map(toPublicToken),
         totalPending: pendingTokens.length,
       });
     } catch (error) {
@@ -1065,7 +1068,7 @@ export async function registerRoutes(
       const tokens = await storage.getTokensByCharityEmail(charityEmail);
       
       res.json({
-        tokens,
+        tokens: tokens.map(toPublicToken),
         stats: {
           total: tokens.length,
           pending: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING).length,
@@ -1125,7 +1128,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: "Token officially endorsed by charity",
-        token: updated,
+        token: updated ? toPublicToken(updated) : null,
       });
     } catch (error) {
       console.error("Token approval error:", error);
@@ -1179,7 +1182,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: "Token denied by charity",
-        token: updated,
+        token: updated ? toPublicToken(updated) : null,
       });
     } catch (error) {
       console.error("Token denial error:", error);
@@ -1304,7 +1307,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: "Token officially endorsed",
-        token: updated,
+        token: updated ? toPublicToken(updated) : null,
       });
     } catch (error) {
       console.error("Charity portal approval error:", error);
@@ -1380,7 +1383,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         message: "Token denied",
-        token: updated,
+        token: updated ? toPublicToken(updated) : null,
       });
     } catch (error) {
       console.error("Charity portal denial error:", error);
@@ -1582,8 +1585,9 @@ export async function registerRoutes(
         console.log(`[Bags Status] RPC check passed, block height: ${blockHeight}`);
       } catch (rpcError) {
         status.rpcConnected = false;
-        status.rpcError = rpcError instanceof Error ? rpcError.message : String(rpcError);
-        console.error(`[Bags Status] RPC check failed:`, status.rpcError);
+        // Don't echo the raw error publicly: it can include the RPC URL and its API key
+        status.rpcError = "RPC check failed";
+        console.error(`[Bags Status] RPC check failed:`, rpcError instanceof Error ? rpcError.message : rpcError);
       }
     }
     
@@ -1592,6 +1596,10 @@ export async function registerRoutes(
 
   // Diagnostic endpoint to test Bags.fm API connection directly
   app.get("/api/bags/diagnostic", async (req, res) => {
+    // Admin only: the diagnostic echoes part of the Bags API key and raw upstream responses
+    if (!isAdminAuthorized(req.headers["x-admin-secret"] as string)) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     try {
       console.log(`[Bags Diagnostic] Starting API connection test...`);
       const diagnostic = await bagsSDK.testBagsApiConnection();
@@ -1667,6 +1675,14 @@ export async function registerRoutes(
           return res.status(400).json({
             success: false,
             error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+
+        // Only charities that completed onboarding can be chosen for a coin (same rule as the launch form)
+        if (!isCharityOnboarded(charity)) {
+          return res.status(400).json({
+            success: false,
+            error: "This charity hasn't completed onboarding on GoodBags yet, so a coin can't be launched for it.",
           });
         }
         
@@ -1838,6 +1854,14 @@ export async function registerRoutes(
           return res.status(400).json({
             success: false,
             error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+
+        // Only charities that completed onboarding can be chosen for a coin (same rule as the launch form)
+        if (!isCharityOnboarded(charity)) {
+          return res.status(400).json({
+            success: false,
+            error: "This charity hasn't completed onboarding on GoodBags yet, so a coin can't be launched for it.",
           });
         }
         
@@ -2036,6 +2060,14 @@ export async function registerRoutes(
           return res.status(400).json({
             success: false,
             error: "Selected charity has not been verified. Please choose an approved charity.",
+          });
+        }
+
+        // Only charities that completed onboarding can be chosen for a coin (same rule as the launch form)
+        if (!isCharityOnboarded(charity)) {
+          return res.status(400).json({
+            success: false,
+            error: "This charity hasn't completed onboarding on GoodBags yet, so a coin can't be launched for it.",
           });
         }
         
@@ -2257,7 +2289,7 @@ export async function registerRoutes(
   app.get("/api/tokens", async (req, res) => {
     try {
       const tokens = await storage.getLaunchedTokens();
-      res.json(tokens);
+      res.json(tokens.map(toPublicToken));
     } catch (error) {
       console.error("Get tokens error:", error);
       res.status(500).json({ error: "Failed to fetch tokens" });
@@ -2339,7 +2371,7 @@ export async function registerRoutes(
       ]);
       
       res.json({
-        tokens,
+        tokens: tokens.map(toPublicToken),
         donations,
         stats,
       });
@@ -2388,7 +2420,7 @@ export async function registerRoutes(
     try {
       const { wallet } = req.params;
       const tokens = await storage.getTokensByCreator(wallet);
-      res.json(tokens);
+      res.json(tokens.map(toPublicToken));
     } catch (error) {
       console.error("Get creator tokens error:", error);
       res.status(500).json({ error: "Failed to fetch creator tokens" });
@@ -2421,45 +2453,37 @@ export async function registerRoutes(
       const tokenCharityPct = (token.charityBps ?? CHARITY_FEE_BPS) / 100;
       const tokenBuybackPct = (token.buybackBps ?? BUYBACK_FEE_BPS) / 100;
       const tokenCreatorPct = (token.creatorBps ?? CREATOR_FEE_BPS) / 100;
+
+      // Who endorsed an approved coin, from the approval audit log: the charity itself,
+      // or the GoodBags team on its behalf. null if unknown or the lookup fails.
+      const publicCharity = charity ? toPublicCharity(charity) : null;
+
+      let endorsedBy: "charity" | "goodbags_team" | null = null;
+      if (token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED) {
+        try {
+          const action = await storage.getLatestTokenApprovalAction(token.id);
+          endorsedBy = action === "admin_token_approved" ? "goodbags_team" : action ? "charity" : null;
+        } catch (error) {
+          console.error(`Endorsement lookup failed for ${mint}:`, error);
+        }
+      }
       
       res.json({
-        token: {
-          id: token.id,
-          name: token.name,
-          symbol: token.symbol,
-          description: token.description,
-          mintAddress: token.mintAddress,
-          imageUrl: token.imageUrl,
-          creatorWallet: token.creatorWallet,
-          launchedAt: token.launchedAt,
-          charityId: token.charityId,
-          tradingVolume: token.tradingVolume,
-          charityApprovalStatus: token.charityApprovalStatus,
-          charityName: token.charityName,
-          charityApprovalNote: token.charityApprovalNote,
-          // Charity contact info for creator outreach
-          charityWebsite: token.charityWebsite,
-          charityTwitter: token.charityTwitter,
-          charityFacebook: token.charityFacebook,
-          // Notification tracking
-          charityNotifiedAt: token.charityNotifiedAt,
-          hasCharityEmail: !!token.charityEmail,
-          // Per-token fee split (stored at launch time)
-          charityBps: token.charityBps,
-          buybackBps: token.buybackBps,
-          creatorBps: token.creatorBps,
-        },
+        endorsedBy,
+        // Shared allowlist serializer (no charity email or admin notes)
+        token: toPublicToken(token),
         impact: impact || {
           totalDonated: "0",
           donationCount: 0,
           recentDonations: [],
         },
-        charityInfo: charity ? {
-          id: charity.id,
-          name: charity.name,
-          wallet: charity.walletAddress,
-          category: charity.category,
-          status: charity.status,
+        charityInfo: publicCharity ? {
+          id: publicCharity.id,
+          name: publicCharity.name,
+          wallet: publicCharity.walletAddress,
+          category: publicCharity.category,
+          status: publicCharity.status,
+          onboarded: publicCharity.onboarded,
           // Per-token fee percentages (as % of total trade volume)
           feePercentage: tokenCharityPct / 100, // Convert from "75" to "0.75"
           buybackFeePercentage: tokenBuybackPct / 100,
@@ -2582,7 +2606,7 @@ export async function registerRoutes(
   app.get("/api/buyback/history", async (req, res) => {
     try {
       const buybacks = await storage.getAllBuybacks();
-      res.json(buybacks);
+      res.json(buybacks.map(toPublicBuyback));
     } catch (error) {
       console.error("Get buyback history error:", error);
       res.status(500).json({ error: "Failed to fetch buyback history" });

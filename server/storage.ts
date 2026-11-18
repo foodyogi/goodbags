@@ -18,7 +18,7 @@ import {
   VETTED_CHARITIES,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { isValidSolanaPublicKey, isValidTxSignature, verifiedDonationTotals } from "@shared/solana";
 
 export interface IStorage {
@@ -77,6 +77,7 @@ export interface IStorage {
   // Audit methods
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(limit?: number): Promise<AuditLog[]>;
+  getLatestTokenApprovalAction(tokenId: string): Promise<string | undefined>;
   
   // Buyback methods
   createBuyback(buyback: InsertBuyback): Promise<Buyback>;
@@ -333,6 +334,21 @@ export class DatabaseStorage implements IStorage {
       .values(log)
       .returning();
     return newLog;
+  }
+
+  // Most recent audit action that approved this token (charity email flow, charity portal or admin)
+  async getLatestTokenApprovalAction(tokenId: string): Promise<string | undefined> {
+    const [log] = await db
+      .select({ action: auditLogs.action })
+      .from(auditLogs)
+      .where(and(
+        eq(auditLogs.entityType, "token"),
+        eq(auditLogs.entityId, tokenId),
+        inArray(auditLogs.action, ["TOKEN_APPROVED_BY_CHARITY", "TOKEN_APPROVED_VIA_PORTAL", "admin_token_approved"])
+      ))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(1);
+    return log?.action;
   }
 
   async getAuditLogs(limit: number = 100): Promise<AuditLog[]> {

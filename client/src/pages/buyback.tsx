@@ -21,7 +21,7 @@ import { NEW_LAUNCH_SPLITS, formatPercent } from "@shared/feeSplit";
 interface BuybackStats {
   totalSolSpent: string;
   totalFyiBought: string;
-  totalTransactions: number;
+  totalBuybacks: number; // GET /api/buyback/stats field name
   walletAddress: string;
 }
 
@@ -157,7 +157,7 @@ export default function BuybackPage() {
               <StatCard
                 icon={RefreshCw}
                 label="Buybacks Executed"
-                value={stats ? String(stats.totalTransactions) : "Unavailable"}
+                value={stats ? String(stats.totalBuybacks ?? 0) : "Unavailable"}
                 color="bg-secondary"
               />
             </>

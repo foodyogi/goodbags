@@ -676,7 +676,7 @@ export function TokenLaunchForm() {
             <div className="rounded-lg border border-pink-500/20 bg-pink-500/5 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Heart className="h-4 w-4 text-pink-500" />
-                <span className="text-sm font-medium">Impact Partner</span>
+                <span className="text-sm font-medium">Supported Charity</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">{launchResult.charity.name}</span>

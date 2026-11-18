@@ -60,7 +60,7 @@ export default function FoodYogaInternational() {
                 Formerly Food For Life Global
               </p>
               <p className="text-lg text-white/90 mb-6 max-w-2xl drop-shadow-md">
-                The world's largest plant-based food relief organization, serving over 1 million free meals daily across 65+ countries.
+                One of the world's largest plant-based food relief organizations, serving over 1 million free meals daily across 63 countries.
               </p>
               
               <div className="flex flex-wrap gap-4">
@@ -105,7 +105,7 @@ export default function FoodYogaInternational() {
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
-              <div className="text-3xl font-bold text-green-600 mb-1">65+</div>
+              <div className="text-3xl font-bold text-green-600 mb-1">63</div>
               <div className="text-sm text-muted-foreground">Countries</div>
             </CardContent>
           </Card>
@@ -437,7 +437,7 @@ export default function FoodYogaInternational() {
                 <p className="text-muted-foreground mb-4">
                   Food Yoga International (formerly Food For Life Global) is a <strong>founding partner</strong> and verified charity on GoodBags. 
                   As one of the world's largest plant-based food relief organizations, FYI has been serving humanity since 1974, 
-                  distributing over 8 billion free meals across 65+ countries.
+                  distributing over 8 billion free meals across 63 countries.
                 </p>
                 
                 <div className="mb-4 space-y-2">

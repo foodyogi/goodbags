@@ -31,7 +31,7 @@ const gettingStartedGuides = [
   {
     icon: Heart,
     title: "Choose a Charity",
-    description: "Browse our verified charities and select the cause you want to support with your token.",
+    description: "Browse the charity directory and pick an onboarded charity for your coin.",
     link: "/charities",
   },
   {
@@ -71,7 +71,7 @@ const commonIssues = [
     icon: Heart,
     title: "Charity Questions",
     problem: "Questions about charity verification or payouts",
-    solution: "Charities are either added by the GoodBags team or register through our application, which verifies a US nonprofit's EIN through Every.org, its email, and its Solana wallet or X account before manual review. Charities claim their share on Bags.fm, and every claim can be verified on Solscan.",
+    solution: "A charity can be chosen for a coin only after it completes onboarding through our application, which checks a US nonprofit's EIN through Every.org, its email, and its Solana wallet or X account before manual review. Other nonprofits in the directory are listed from public records and have not joined GoodBags. Charities claim their share on Bags.fm, and every claim can be verified on Solscan.",
   },
 ];
 
@@ -243,8 +243,8 @@ export default function HelpPage() {
                   <div className="flex items-center gap-3">
                     <Heart className="h-5 w-5 text-primary" />
                     <div>
-                      <h3 className="font-semibold">Verified Charities</h3>
-                      <p className="text-sm text-muted-foreground">Browse all supported charities</p>
+                      <h3 className="font-semibold">Charity Directory</h3>
+                      <p className="text-sm text-muted-foreground">Onboarded charities and nonprofits listed from public records</p>
                     </div>
                   </div>
                 </CardContent>

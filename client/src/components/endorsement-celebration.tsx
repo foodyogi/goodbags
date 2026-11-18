@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BadgeCheck, Sparkles, Shield, AlertCircle, Clock3, Trophy, Star, Copy, Check } from "lucide-react";
+import { BadgeCheck, Shield, AlertCircle, Clock3, Trophy, Copy, Check } from "lucide-react";
 import { TOKEN_APPROVAL_STATUS } from "@shared/schema";
 
 interface EndorsementCelebrationProps {
@@ -17,6 +17,8 @@ interface EndorsementCelebrationProps {
   tokenName?: string;
   tokenSymbol?: string;
   tokenMintAddress?: string;
+  // From the approval audit log; null when the record doesn't say who endorsed
+  endorsedBy?: "charity" | "goodbags_team" | null;
 }
 
 export function EndorsementCelebration({ 
@@ -30,7 +32,8 @@ export function EndorsementCelebration({
   charityId,
   tokenName,
   tokenSymbol,
-  tokenMintAddress
+  tokenMintAddress,
+  endorsedBy
 }: EndorsementCelebrationProps) {
   const [copied, setCopied] = useState(false);
   if (status === TOKEN_APPROVAL_STATUS.APPROVED) {
@@ -49,22 +52,22 @@ export function EndorsementCelebration({
               <div className="space-y-1">
                 <div className="flex items-center justify-center gap-2">
                   <Trophy className="h-5 w-5 text-yellow-500" />
-                  <h3 className="text-lg font-bold text-green-600" data-testid="text-endorsed-title">Officially Endorsed!</h3>
+                  <h3 className="text-lg font-bold text-green-600" data-testid="text-endorsed-title">Endorsed</h3>
                   <Trophy className="h-5 w-5 text-yellow-500" />
                 </div>
                 <p className="text-sm text-muted-foreground" data-testid="text-endorsed-charity">
-                  {charityName} has officially approved this token
+                  {endorsedBy === "goodbags_team"
+                    ? `The GoodBags team has endorsed this coin on behalf of ${charityName}.`
+                    : endorsedBy === "charity"
+                      ? `${charityName} has endorsed this coin.`
+                      : `This coin is recorded as endorsed for ${charityName}.`}
                 </p>
               </div>
               
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-600" data-testid={`badge-endorsed-${tokenId}`}>
                   <BadgeCheck className="h-3 w-3 mr-1" />
-                  Charity Verified
-                </Badge>
-                <Badge variant="outline" className="border-green-500/30" data-testid="badge-legit-token">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Legit Token
+                  {endorsedBy === "goodbags_team" ? "Endorsed by GoodBags team" : "Charity endorsed"}
                 </Badge>
               </div>
               
@@ -79,11 +82,9 @@ export function EndorsementCelebration({
                 </div>
               )}
               
-              <div className="flex items-center gap-1 text-xs text-muted-foreground" data-testid="text-safe-to-trade">
-                <Star className="h-3 w-3 text-yellow-500" />
-                <span>This token is safe to trade and support</span>
-                <Star className="h-3 w-3 text-yellow-500" />
-              </div>
+              <p className="text-xs text-muted-foreground" data-testid="text-endorsement-disclaimer">
+                An endorsement is not financial advice. Trading tokens carries risk.
+              </p>
             </div>
           </CardContent>
         </div>

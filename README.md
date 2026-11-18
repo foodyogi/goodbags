@@ -28,7 +28,7 @@ The buyback share is reserved for FYI token buybacks. None have been executed ye
 
 ## Features
 
-- **Charities** - Pick from the GoodBags list, or a US nonprofit can register with its EIN, verified through Every.org
+- **Charity directory** - Pick a charity that has completed onboarding; US nonprofits onboard with their EIN, checked through Every.org. Other nonprofits are listed from public records only
 - **Charity Endorsements** - Charities can endorse or deny coins launched in their name
 - **Verified on-chain fee claims** - Every charity claim is listed with its Solscan transaction
 - **Impact Dashboard** - Charity share earned (Bags.fm lifetime fees x each coin's on-chain charity share) and verified fee claims

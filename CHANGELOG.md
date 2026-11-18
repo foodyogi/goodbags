@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.8
+
+- Security: public API responses are built from explicit allowlists in one shared module (`shared/public.ts`). Charity responses no longer include email verification tokens, wallet verification nonces, applicant emails, EINs, submitter wallets or internal verification fields; token responses no longer include the charity email or admin anomaly notes; buyback history no longer includes error details.
+- `GET /api/charities/:id` only returns approved charities, so applications in progress are no longer public.
+- `GET /api/bags/diagnostic` now requires the admin secret (it echoed part of the Bags API key and raw upstream responses). `GET /api/bags/status?test=true` no longer echoes raw RPC errors.
+- Tests fail if a public charity response contains a key matching token, nonce, secret or password, or if a public route sends raw rows.
+
+## 1.0.7
+
+- Honest charity directory: one shared onboarding rule (`isCharityOnboarded` in `shared/charities.ts`: a confirmed X handle or a Solana wallet, the rule the launch form already used). The Charities page is now "Charity directory", with "Onboarded charities" (Verified) first and "Listed, not yet onboarded" below, explaining that those nonprofits are listed from public records and have not joined or endorsed GoodBags.
+- The launch form only shows onboarded charities and links to the directory instead of listing the not-yet-available ones. The launch API applies the same rule, so a coin can only be launched for an onboarded charity.
+- Token pages show "Verified" for a charity only when it is onboarded. "Verified" and "partner" no longer describe the listed charities anywhere on the site.
+- Token endorsement box and share text no longer say a coin is "safe" or "legit"; they say who endorsed it (the charity, or the GoodBags team on its behalf, from the approval record) and that an endorsement is not financial advice.
+- Buyback page shows the real number of buybacks executed (0) instead of "undefined".
+- Food Yoga International: 63 countries, "one of the world's largest plant-based food relief organizations".
+- Terms: "charity coins", and the charity share is described as building up in the coin's Bags.fm fee config until the charity claims it.
+
 ## 1.0.6
 
 - GoodBags favicon set (favicon.ico 16/32/48, favicon-32x32.png, apple-touch-icon.png, icon-192.png, icon-512.png) and site.webmanifest, replacing the default Replit favicon. New 1200x630 social share image with the GoodBags logo, "Charity fundraising, built into the token." and "goodbags.tech". All generated from the logo by `npm run generate:brand` (script/generate-brand-assets.ts).

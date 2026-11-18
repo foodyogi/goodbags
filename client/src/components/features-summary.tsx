@@ -16,8 +16,8 @@ import {
 const features = [
   {
     icon: Heart,
-    title: "Verified Charities",
-    description: "Pick a charity from the GoodBags list, or a US nonprofit can register with its EIN, verified through Every.org",
+    title: "Charity Directory",
+    description: "Pick a charity that has completed onboarding. US nonprofits onboard with their EIN, checked through Every.org",
     color: "text-pink-500",
     bgColor: "bg-pink-500/10",
   },

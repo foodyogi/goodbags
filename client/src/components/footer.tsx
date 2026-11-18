@@ -55,7 +55,7 @@ export function Footer() {
                 data-testid="link-footer-charities"
               >
                 <Heart className="h-3 w-3" />
-                Verified Charities
+                Charity Directory
               </Link>
               <Link
                 href="/buyback"

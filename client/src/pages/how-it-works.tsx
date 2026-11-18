@@ -29,8 +29,8 @@ const sol = (percent: number) => `${Number((percent / 100).toFixed(4))} SOL`;
 const steps = [
   {
     step: 1,
-    title: "Choose a Verified Charity",
-    description: "Pick a charity from the GoodBags list, or one registered through our application, which verifies US nonprofits by EIN through Every.org.",
+    title: "Choose an Onboarded Charity",
+    description: "Pick a charity that has completed onboarding through our application, which checks US nonprofits by EIN through Every.org.",
     icon: Heart,
     color: "bg-pink-500 dark:bg-pink-600",
   },
@@ -353,7 +353,7 @@ export default function HowItWorksPage() {
               <div className="flex flex-wrap justify-center gap-4">
                 <Link href="/charities">
                   <Button variant="outline" data-testid="link-view-charities">
-                    View Verified Charities
+                    View the Charity Directory
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
