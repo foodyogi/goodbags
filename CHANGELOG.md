@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.13
+
+- Diagnostics for the Phantom "Request blocked" seen while signing the fee configuration transaction. Right before each launch transaction goes to the wallet (each fee config transaction, then the launch transaction), the browser console shows a "[Launch TX check]" block: step, instruction count, every program called with its name where known (System, Compute Budget, Address Lookup Table, SPL Token, Bags fee-share, Meteora and others, UNKNOWN otherwise), fee payer, required signers and whether each has already signed, SOL transfers and account creations (from, to, amount), lookup tables, recent blockhash, durable nonce use and the transaction as base64.
+- New read-only `POST /api/tokens/tx-check` resolves lookup tables and simulates the transaction on our RPC (signature check off, fresh blockhash), returning the result, program logs, compute units and each signer's SOL balance before and after. If the check or simulation fails, the console says so and the launch continues to the wallet as before.
+- No change to the fee split, who pays, or what any transaction does: the transactions are logged and simulated exactly as received from Bags.fm, never modified, signed or sent by the check.
+
 ## 1.0.12
 
 - Fix: "Connect Wallet" on desktop now connects. Choosing a wallet in the wallet modal only selected it (the provider runs with autoConnect off) and nothing then called connect, so no wallet prompt ever opened. The button now connects the wallet you pick, using Phantom through window.phantom.solana, window.solana or Wallet Standard, including Brave with "Extensions (no fallback)".

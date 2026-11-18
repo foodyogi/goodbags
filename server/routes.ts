@@ -20,6 +20,7 @@ import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { registerSeoRoutes } from "./seo";
 import { registerTestLaunchRoute } from "./test-launch";
+import { registerTxCheckRoute } from "./launch-tx-check";
 import { seedPublicCharities } from "./charity-fallback";
 import { registerRetiredCharityEmailRoutes } from "./retired-routes";
 import { isCharityOnboarded } from "@shared/charities";
@@ -1866,6 +1867,10 @@ export async function registerRoutes(
     }
   });
   
+  // Pre-sign diagnostics: decode and simulate a launch transaction before the wallet signs it.
+  // Read only, never signs or sends (server/launch-tx-check.ts)
+  registerTxCheckRoute(app, { rateLimit: rateLimitMiddleware(30), getConnection: bagsSDK.getConnection });
+
   // Step 4: Record successful launch after client broadcasts transaction
   // Rate limited: 10 requests per minute
   // Test launch: dry run that validates and previews a launch, with no Bags call,

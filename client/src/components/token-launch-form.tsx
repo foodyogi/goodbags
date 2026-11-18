@@ -53,6 +53,7 @@ import { Badge } from "@/components/ui/badge";
 import { CharitySearch, SelectedCharityDisplay } from "@/components/charity-search";
 import { useUpload } from "@/hooks/use-upload";
 import { solscanUrl } from "@shared/solana";
+import { logLaunchTxCheck } from "@/lib/launch-tx-check";
 
 // Helper to parse and format error messages for user-friendly display
 // Detects Solana RPC errors vs other errors and provides appropriate guidance
@@ -560,9 +561,10 @@ export function TokenLaunchForm() {
 
         // Sign and send config transactions if any
         if (configResult.transactions && configResult.transactions.length > 0) {
-          for (const txBase64 of configResult.transactions) {
+          for (const [index, txBase64] of configResult.transactions.entries()) {
             const txBytes = base64ToUint8Array(txBase64);
             const tx = VersionedTransaction.deserialize(txBytes);
+            await logLaunchTxCheck(`Fee config transaction ${index + 1} of ${configResult.transactions.length}`, tx, txBase64);
             const signedTx = await signTransaction(tx);
             const sig = await connection.sendRawTransaction(signedTx.serialize());
             const confirmation = await connection.confirmTransaction(sig, "confirmed");
@@ -590,6 +592,7 @@ export function TokenLaunchForm() {
         if (launchTxResult.transaction) {
           const txBytes = base64ToUint8Array(launchTxResult.transaction);
           const tx = VersionedTransaction.deserialize(txBytes);
+          await logLaunchTxCheck("Launch transaction", tx, launchTxResult.transaction);
           const signedTx = await signTransaction(tx);
           transactionSignature = await connection.sendRawTransaction(signedTx.serialize());
           const confirmation = await connection.confirmTransaction(transactionSignature, "confirmed");
