@@ -22,6 +22,7 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 import { type Donation } from "@shared/schema";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, FEE_CLAIMS_LABEL } from "@/components/charity-share-earned";
 import { solscanUrl } from "@shared/solana";
 
 interface TokenImpact {
@@ -34,6 +35,8 @@ interface TokenImpact {
   };
   donated: string;
   donationCount: number;
+  charityShareEarnedSol: string | null;
+  verifiedClaimsSol: string | null;
 }
 
 interface CreatorImpactData {
@@ -41,6 +44,9 @@ interface CreatorImpactData {
   totalTokens: number;
   totalDonated: string;
   totalDonationCount: number;
+  charityShareEarnedSol: string | null;
+  verifiedClaimsSol: string | null;
+  verifiedClaimCount: number | null;
   tokens: TokenImpact[];
   charityInfo: {
     name: string;
@@ -135,7 +141,7 @@ export default function ImpactPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Impact Report</h1>
         <p className="text-muted-foreground">
-          Track your social impact and donation performance
+          Track the charity share your coins have earned and the charities' verified on-chain fee claims
         </p>
       </div>
 
@@ -143,14 +149,14 @@ export default function ImpactPage() {
       <div className="grid gap-4 md:grid-cols-3 mb-8">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
           <CardHeader className="pb-2">
-            <CardDescription className="text-primary/70">Total Donated</CardDescription>
+            <CardDescription className="text-primary/70">{CHARITY_SHARE_LABEL}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-primary">
-              {formatSol(impactData?.totalDonated || "0")}
+            <div className={`${impactData?.charityShareEarnedSol != null ? "text-3xl" : "text-base"} font-bold text-primary`}>
+              {impactData?.charityShareEarnedSol != null ? formatSol(impactData.charityShareEarnedSol) : CHARITY_SHARE_UNAVAILABLE}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              to your chosen charities
+              for your chosen charities
             </p>
           </CardContent>
         </Card>
@@ -164,21 +170,23 @@ export default function ImpactPage() {
               {impactData?.totalTokens || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              with charity donations
+              with a charity share in their fee split
             </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-pink-500/10 to-pink-500/5 border-pink-500/20">
           <CardHeader className="pb-2">
-            <CardDescription className="text-pink-500/70">Donations Made</CardDescription>
+            <CardDescription className="text-pink-500/70">{FEE_CLAIMS_LABEL}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-pink-500">
-              {impactData?.totalDonationCount || 0}
+            <div className={`${impactData?.verifiedClaimsSol != null ? "text-3xl" : "text-base"} font-bold text-pink-500`}>
+              {impactData?.verifiedClaimsSol != null ? formatSol(impactData.verifiedClaimsSol) : CHARITY_SHARE_UNAVAILABLE}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              blockchain-verified
+              {impactData?.verifiedClaimCount != null
+                ? `${impactData.verifiedClaimCount} claims by charity wallets`
+                : "claimed by charities on Bags.fm"}
             </p>
           </CardContent>
         </Card>
@@ -205,8 +213,8 @@ export default function ImpactPage() {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {impactData?.certified 
-                      ? `We have made the following certified social impact: ${formatSol(impactData.totalDonated)} donated through ${impactData.totalDonationCount} transactions.`
-                      : "Launch tokens and make donations to become certified and display your impact badge."}
+                      ? `Your coins have earned charities ${impactData.charityShareEarnedSol != null ? formatSol(impactData.charityShareEarnedSol) : "a share of fees"}, with ${impactData.verifiedClaimCount ?? 0} verified on-chain fee claims.`
+                      : "Launch coins that earn your chosen charity a share of fees to become certified and display your impact badge."}
                   </p>
                 </div>
               </div>
@@ -253,19 +261,19 @@ export default function ImpactPage() {
               className="w-full justify-start gap-2"
               onClick={() => {
                 const csv = [
-                  ['Token', 'Symbol', 'Donated (SOL)', 'Transactions'],
+                  ['Token', 'Symbol', 'Charity share earned (SOL)', 'Verified fee claims (SOL)'],
                   ...(impactData?.tokens || []).map(t => [
                     t.token.name,
                     t.token.symbol,
-                    t.donated,
-                    t.donationCount.toString()
+                    t.charityShareEarnedSol ?? 'unavailable',
+                    t.verifiedClaimsSol ?? 'unavailable'
                   ])
                 ].map(row => row.join(',')).join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `donations-${publicKey?.toBase58().slice(0, 8)}.csv`;
+                a.download = `charity-impact-${publicKey?.toBase58().slice(0, 8)}.csv`;
                 a.click();
               }}
               data-testid="button-export-data"
@@ -298,7 +306,7 @@ export default function ImpactPage() {
               Your Tokens
             </CardTitle>
             <CardDescription>
-              Tokens you've launched with charity donations
+              Coins you've launched, with the charity share each has earned
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -338,8 +346,12 @@ export default function ImpactPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium text-pink-500">{formatSol(item.donated)}</div>
-                        <div className="text-xs text-muted-foreground">{item.donationCount} donations</div>
+                        <div className="font-medium text-pink-500">
+                          {item.charityShareEarnedSol != null ? formatSol(item.charityShareEarnedSol) : CHARITY_SHARE_UNAVAILABLE}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.verifiedClaimsSol != null ? `${formatSol(item.verifiedClaimsSol)} claimed` : "charity share earned"}
+                        </div>
                       </div>
                     </div>
                   ))}

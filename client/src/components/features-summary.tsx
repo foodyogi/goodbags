@@ -6,7 +6,7 @@ import {
   Users, 
   Shield, 
   Share2, 
-  FlaskConical, 
+  ShieldCheck, 
   Award,
   ArrowRight,
   Heart,
@@ -16,15 +16,15 @@ import {
 const features = [
   {
     icon: Heart,
-    title: "75+ Verified Charities",
-    description: "Choose from charities across 9 countries, verified with X accounts or Solana wallets",
+    title: "Verified Charities",
+    description: "Pick a charity from the GoodBags list, or a US nonprofit can register with its EIN, verified through Every.org",
     color: "text-pink-500",
     bgColor: "bg-pink-500/10",
   },
   {
     icon: Trophy,
     title: "Leaderboards & Trending",
-    description: "See top givers, most traded tokens, and what's hot right now",
+    description: "See which coins have earned charities the most, the biggest launches, and what's hot right now",
     color: "text-yellow-500",
     bgColor: "bg-yellow-500/10",
   },
@@ -45,14 +45,14 @@ const features = [
   {
     icon: Shield,
     title: "Charity Approval Portal",
-    description: "Anti-rug pull protection - charities verify via X and approve tokens in their name",
+    description: "Charities verify via X and can approve or reject coins launched in their name",
     color: "text-green-500",
     bgColor: "bg-green-500/10",
   },
   {
-    icon: FlaskConical,
-    title: "Test Mode",
-    description: "Try the full launch flow without spending SOL - risk-free experimentation",
+    icon: ShieldCheck,
+    title: "Verified Fee Claims",
+    description: "Every time a charity claims its share on Bags.fm, the claim is listed with a Solscan link",
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
   },
@@ -64,11 +64,11 @@ export function FeaturesSummary() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-10">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">
-            More Than Just Token Launching
+            More Than a Token Launcher
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            GoodBags is a complete platform for creating impact through memecoins - 
-            with gamification, community features, and transparency built in.
+            GoodBags is charity fundraising infrastructure on Solana, with community features and
+            on-chain transparency built in.
           </p>
         </div>
 

@@ -21,6 +21,16 @@ import {
   ArrowRight
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
+import {
+  NEW_LAUNCH_MAX_CHARITY_PERCENT,
+  NEW_LAUNCH_MIN_CHARITY_PERCENT,
+  NEW_LAUNCH_SPLITS,
+  formatPercent,
+} from "@shared/feeSplit";
+
+const BUYBACK_PERCENT = formatPercent(NEW_LAUNCH_SPLITS[0].buybackPercent);
+const CREATOR_MAX = formatPercent(NEW_LAUNCH_SPLITS[0].creatorPercent);
+const CREATOR_MIN = formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].creatorPercent);
 
 const faqCategories = [
   {
@@ -30,7 +40,7 @@ const faqCategories = [
     questions: [
       {
         question: "What is GoodBags?",
-        answer: "GoodBags is a launch experience and impact layer built on top of Bags. It allows you to create purpose-driven Solana tokens with built-in charitable giving. Every trade automatically routes 1% to your chosen charity, buyback, and creator split — all stored on-chain and verifiable."
+        answer: `GoodBags is charity fundraising infrastructure on Solana, built on Bags.fm. You launch a coin with a charity's share written into its on-chain fee split. On a new coin, at least ${NEW_LAUNCH_MIN_CHARITY_PERCENT}% of the coin's shared trading fees go to the charity, which claims them on-chain.`
       },
       {
         question: "How do I get started?",
@@ -52,24 +62,28 @@ const faqCategories = [
   },
   {
     id: "fees-donations",
-    title: "Fees & Donations",
+    title: "Fees & Charity Share",
     icon: Coins,
     questions: [
       {
         question: "What is the fee split?",
-        answer: "Every token launched on GoodBags has a built-in 1% royalty stream from trading volume. This royalty is split three ways: 0.75% goes to your chosen charity, 0.05% goes to FYI token buybacks, and 0.20% goes to the token creator. Creators can donate 0%, 25%, 50%, 75%, or 100% of their share back to charity at launch, increasing the charity's portion up to 0.95%. This split is configured at launch and enforced on-chain."
+        answer: `On a new coin, Bags.fm pays 25% of the coin's shared trading fees to the wallet that deploys it, which on GoodBags is the creator. The GoodBags split covers the other 75%. The effective split is: at least ${NEW_LAUNCH_MIN_CHARITY_PERCENT}% to the charity (up to ${NEW_LAUNCH_MAX_CHARITY_PERCENT}% if the creator donates their full share), ${BUYBACK_PERCENT} reserved for FYI token buybacks, and ${CREATOR_MAX} down to ${CREATOR_MIN} to the creator, including the deployer share. The split is written into the coin's on-chain fee config at launch.`
       },
       {
-        question: "How do charities receive donations?",
-        answer: "Charities receive donations through their verified Solana wallet address or via X (Twitter) Tips if they have a verified handle. Donations are tracked on-chain and can be verified by anyone on Solscan."
+        question: "Why do coins launched before September 2026 show a different split?",
+        answer: `In September 2026 Bags.fm started paying 25% of a coin's shared fees to the wallet that deploys it, for newly created fee configs. Coins launched before that, such as LEMONAID and CHDOGE, keep their original split of 75% charity, 5% buyback and 20% creator, with no deployer share. New coins get the effective split shown in the launch form, with at least ${NEW_LAUNCH_MIN_CHARITY_PERCENT}% to the charity. Each coin's page shows its own split.`,
       },
       {
-        question: "When do charities get their donations?",
-        answer: "Donations accumulate from trading activity and are available to charities based on their verification status. Charities with verified wallet addresses receive SOL directly. Those using X Tips receive payments when they claim them from their X account."
+        question: "How do charities receive their share?",
+        answer: "The charity's share builds up in the coin's Bags.fm fee config. The charity claims it on Bags.fm, either with its verified Solana wallet or with its X account, which Bags.fm links to a wallet. Every claim is an on-chain transaction anyone can check on Solscan."
       },
       {
-        question: "Can I see where the donations go?",
-        answer: "Yes! All donations are tracked on the Solana blockchain. You can view donation history for any token on its detail page, and click through to Solscan to verify transactions independently."
+        question: "When do charities get their share?",
+        answer: "Whenever they choose to claim. The charity's share keeps building up in the coin's fee config until the charity claims it on Bags.fm."
+      },
+      {
+        question: "Can I see what charities have claimed?",
+        answer: "Yes. Each coin's page shows its on-chain fee config and lists the charity's verified on-chain fee claims, each with a Solscan link."
       }
     ]
   },
@@ -80,15 +94,15 @@ const faqCategories = [
     questions: [
       {
         question: "How are charities verified?",
-        answer: "Charities go through a 3-step verification process: (1) Email verification, (2) Wallet signature verification, and (3) Manual review by our team. We also integrate with Every.org to verify nonprofit status for US-based charities."
+        answer: "Self-serve registration is for US nonprofits. The charity enters its EIN, which we check against Every.org, verifies its email, signs with its Solana wallet or connects its X account, and then our team reviews the application. The GoodBags list also includes charities added by our team, in the US and other countries, which are paid through their X account on Bags.fm."
       },
       {
         question: "Can I launch a token for any charity?",
-        answer: "You can only launch tokens for charities that are in our verified list. This ensures donations reach legitimate organizations. If your preferred charity isn't listed, you can suggest they apply for verification."
+        answer: "You can launch coins for charities on the GoodBags list, or for nonprofits with a Solana wallet found through our charity search. If your preferred charity isn't listed and is a US nonprofit, it can register itself."
       },
       {
         question: "I represent a charity. How do I get verified?",
-        answer: "Visit our 'Register Your Charity' page and complete the application process. You'll need to provide your organization's details, verify your email, and sign with a Solana wallet. Our team reviews all applications to ensure legitimacy."
+        answer: "Visit our 'Register Your Charity' page. Registration currently supports US nonprofits: you'll enter your EIN (checked against Every.org), verify your email, then sign with your Solana wallet or connect your X account. Our team reviews every application."
       },
       {
         question: "What types of charities are supported?",
@@ -96,7 +110,7 @@ const faqCategories = [
       },
       {
         question: "Can charities approve or deny tokens launched in their name?",
-        answer: "Yes! We have an anti-rug pull protection system. When a token is launched for a charity, they can review and either endorse it or deny it through our Charity Approval Portal. Charities verify their identity by signing in with their official X (Twitter) account."
+        answer: "Yes. When a coin is launched for a charity, the charity can review it and endorse or deny it through our Charity Approval Portal. Charities verify their identity by signing in with their official X account. Approval doesn't stop a coin from trading, but only endorsed coins show the endorsement badge."
       },
       {
         question: "How does the Charity Approval Portal work?",
@@ -123,11 +137,11 @@ const faqCategories = [
       },
       {
         question: "What happens to my token after I create it?",
-        answer: "After creation, your token is live on the Solana blockchain. It can be traded by anyone, and every trade generates donations automatically. You can track your token's performance and impact on your dashboard."
+        answer: "After creation, your coin is live on the Solana blockchain. Anyone can trade it, and every trade adds to the coin's shared fees, so the charity's share keeps building up for it to claim. You can track your coin's charity share and fee claims on your dashboard."
       },
       {
         question: "Can I update my token after launching?",
-        answer: "Token details like name and symbol are immutable once created on the blockchain. However, tokens can accumulate trading history and donation statistics over time, which are displayed on the platform."
+        answer: "Token details like name and symbol are immutable once created on the blockchain. Over time a coin builds up charity share and fee claim history, which is displayed on the platform."
       }
     ]
   },
@@ -138,15 +152,15 @@ const faqCategories = [
     questions: [
       {
         question: "Do you custody funds?",
-        answer: "No. GoodBags does not custody funds. Users control their own wallets and permissions. All fee distributions happen automatically on-chain through Bags infrastructure. We never have access to your private keys or the ability to move your funds."
+        answer: "No. GoodBags does not custody funds. Users control their own wallets and permissions. Fees are split by each coin's on-chain fee config and claimed through Bags.fm. We never have access to your private keys or the ability to move your funds."
       },
       {
         question: "Is GoodBags safe to use?",
         answer: "Yes. We use server-side wallet lookups for charities (preventing fund diversion), implement multi-step charity verification, and all transactions are recorded on the Solana blockchain for transparency. Fee settings are stored at launch and enforced on-chain."
       },
       {
-        question: "How do I know donations are real?",
-        answer: "Every donation is recorded on the Solana blockchain and can be verified on Solscan. We provide direct links to transaction records so you can independently verify all charitable contributions."
+        question: "How do I know the charity figures are real?",
+        answer: "Every charity fee claim is an on-chain transaction, and we link each one to Solscan. Each coin's fee split is in its on-chain fee config, also linked from the coin's page."
       },
       {
         question: "What if I lose access to my wallet?",
@@ -157,8 +171,8 @@ const faqCategories = [
         answer: "We collect minimal personal information. Your wallet address is public on the blockchain, but we don't require email registration or other personal details to use the platform. See our Privacy Policy for full details."
       },
       {
-        question: "How does the anti-rug pull protection work?",
-        answer: "Our Charity Approval Portal prevents misuse of charity names. Charities must verify their identity via X (Twitter) OAuth to approve tokens. Only charity representatives with matching X handles can endorse or deny tokens, ensuring no one can falsely claim charity endorsement."
+        question: "How does charity approval work?",
+        answer: "Charities must verify their identity via X OAuth to approve coins. Only charity representatives with matching X handles can endorse or deny a coin, so no one can falsely claim a charity's endorsement. Coins without approval can still trade, but show no endorsement badge."
       }
     ]
   },
@@ -169,15 +183,15 @@ const faqCategories = [
     questions: [
       {
         question: "What is the FYI token?",
-        answer: "FYI is the GoodBags platform token. A portion of trading fees (0.05% of trades) automatically buys FYI tokens, creating constant buy pressure and supporting platform sustainability."
+        answer: `FYI is Food Yoga International's token on Bags.fm. On new coins, ${BUYBACK_PERCENT} of shared trading fees is reserved for FYI token buybacks. None have been executed yet.`
       },
       {
         question: "How does the buyback work?",
-        answer: "The buyback system runs automatically. When accumulated fees reach the threshold (0.015 SOL), the system swaps SOL for FYI tokens via Jupiter. All buybacks are visible on our Buyback Dashboard with links to verify on Solscan."
+        answer: "GoodBags has a buyback service that swaps SOL held in the buyback wallet for FYI through Jupiter once the wallet holds at least 0.015 SOL. The buyback share has not yet been claimed from the coins' fee configs, so the wallet is empty and no buybacks have been executed."
       },
       {
         question: "Can I buy FYI tokens?",
-        answer: "FYI tokens can be traded on Solana DEXs. Check our Buyback Dashboard for the token mint address and trading information."
+        answer: "FYI tokens can be traded on Bags.fm and Solana DEXs. The Buyback page shows the token's mint address."
       }
     ]
   }
@@ -203,8 +217,8 @@ export default function FAQPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Find answers to the most common questions about GoodBags, token creation, 
-            charitable donations, and our platform.
+            Find answers to the most common questions about GoodBags, launching a charity coin,
+            how charities are paid, and our platform.
           </p>
         </div>
 
@@ -267,7 +281,7 @@ export default function FAQPage() {
         <section className="mt-12 text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Make an Impact?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            Launch your impact token today and start generating donations for your chosen cause.
+            Launch a charity coin today and its fee split starts earning for your chosen cause.
           </p>
           <Link href="/launch">
             <Button size="lg" className="gap-2" data-testid="button-launch-cta">

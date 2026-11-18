@@ -115,7 +115,7 @@ export function CommunityImpact({
           <div className="text-center p-3 rounded-lg bg-muted/30" data-testid="stat-donations-made">
             <div className="flex items-center justify-center gap-1 text-2xl font-bold text-blue-500">
               <TrendingUp className="h-5 w-5" />
-              {claimCount ?? "—"}
+              {claimCount ?? "n/a"}
             </div>
             <p className="text-xs text-muted-foreground" data-testid="text-donations-made-label">Fee Claims</p>
           </div>

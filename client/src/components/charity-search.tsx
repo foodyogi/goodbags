@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Search, CheckCircle2, ExternalLink, Building2, Heart, Twitter, MapPin, Wallet, Mail, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Charity } from "@shared/schema";
+import { NEW_LAUNCH_MIN_CHARITY_PERCENT } from "@shared/feeSplit";
 
 interface CharityOption {
   id: string;
@@ -414,7 +415,9 @@ function CharityCard({ charity, isSelected, onSelect, disabled }: CharityCardPro
               <p className="font-medium text-foreground mb-1">Help this charity accept crypto!</p>
               {charity.email ? (
                 <a 
-                  href={`mailto:${charity.email}?subject=Accept%20Crypto%20Donations%20via%20GoodBags&body=Hi%2C%0A%0AI%20wanted%20to%20let%20you%20know%20about%20GoodBags%20(goodbags.tech)%20-%20a%20platform%20that%20helps%20charities%20receive%20crypto%20donations.%0A%0ATo%20receive%20donations%2C%20you%20just%20need%20a%20verified%20X%20(Twitter)%20account%20or%20a%20Solana%20wallet.%0A%0ALearn%20more%20at%20goodbags.tech`}
+                  href={`mailto:${charity.email}?subject=${encodeURIComponent("Raise funds through charity coins on GoodBags")}&body=${encodeURIComponent(
+                    `Hi,\n\nI wanted to let you know about GoodBags (goodbags.tech). People launch Solana coins on Bags.fm with a charity's share written into the fee split: at least ${NEW_LAUNCH_MIN_CHARITY_PERCENT}% of each coin's shared trading fees go to the charity, which claims them on-chain.\n\nTo receive your share, you just need a verified X account or a Solana wallet.\n\nLearn more at goodbags.tech`
+                  )}`}
                   className="text-primary hover:underline inline-flex items-center gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >

@@ -23,6 +23,7 @@ import {
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
 import { FYI_CHARITY_WALLET, solscanUrl } from "@shared/solana";
+import { NEW_LAUNCH_MAX_CHARITY_PERCENT, NEW_LAUNCH_MIN_CHARITY_PERCENT } from "@shared/feeSplit";
 import {
   CHARITY_SHARE_LABEL,
   CHARITY_SHARE_UNAVAILABLE,
@@ -444,7 +445,7 @@ export default function FoodYogaInternational() {
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>Token creators can select FYI to receive up to <strong>0.95%</strong> of all trading royalties (when creator donates their full share)</span>
+                      <span>Coin creators can pick FYI to receive at least <strong>{NEW_LAUNCH_MIN_CHARITY_PERCENT}%</strong> of a new coin's shared trading fees, up to <strong>{NEW_LAUNCH_MAX_CHARITY_PERCENT}%</strong> if they donate their full creator share</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -456,7 +457,7 @@ export default function FoodYogaInternational() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>Every SOL donated helps provide plant-based meals to those in need</span>
+                      <span>Every SOL of charity share helps provide plant-based meals to those in need</span>
                     </li>
                   </ul>
                 </div>

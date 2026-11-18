@@ -15,14 +15,14 @@
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>GoodBags - Launch Memecoins for Good</title>
-    <meta name="description" content="Launch Solana memecoins with built-in charity donations. Choose your cause: 75% of the 1% trading fee (0.75% of every trade, more if the creator donates their share) goes to your selected charity, claimed on-chain through Bags.fm." />
+    <title>GoodBags: Charity fundraising, built into the token</title>
+    <meta name="description" content="Launch a Solana coin on Bags.fm with a charity&#39;s share written into its fee split. At least 56% of the coin&#39;s shared trading fees go to a registered nonprofit, claimed on-chain and checkable by anyone on Solscan." />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://goodbags.tech/" />
-    <meta property="og:title" content="GoodBags - Launch Memecoins for Good" />
-    <meta property="og:description" content="Create and launch your own Solana memecoins with automatic charity donations. Powered by Bags.fm, every trade supports your chosen cause with blockchain-verified transparency." />
+    <meta property="og:title" content="GoodBags: Charity fundraising, built into the token" />
+    <meta property="og:description" content="Launch a Solana coin on Bags.fm with a charity&#39;s share written into its fee split. At least 56% of the coin&#39;s shared trading fees go to a registered nonprofit, claimed on-chain and checkable by anyone on Solscan." />
     <meta property="og:image" content="https://goodbags.tech/og-image.png?v=4" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -31,9 +31,37 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@goodbagstech" />
-    <meta name="twitter:title" content="GoodBags - Launch Memecoins for Good" />
-    <meta name="twitter:description" content="Create and launch your own Solana memecoins with automatic charity donations. Every trade supports your chosen cause." />
+    <meta name="twitter:title" content="GoodBags: Charity fundraising, built into the token" />
+    <meta name="twitter:description" content="Launch a Solana coin on Bags.fm with a charity&#39;s share written into its fee split. At least 56% of shared trading fees go to a registered nonprofit, claimed on-chain." />
     <meta name="twitter:image" content="https://goodbags.tech/og-image.png?v=4" />
+
+    <!-- Structured data: matches the visible homepage copy -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://goodbags.tech/#organization",
+          "name": "GoodBags",
+          "url": "https://goodbags.tech/",
+          "logo": "https://goodbags.tech/favicon.png",
+          "description": "Charity fundraising, built into the token. GoodBags launches Solana coins on Bags.fm with a charity's share written into the fee split, claimed on-chain and checkable on Solscan.",
+          "sameAs": ["https://x.com/goodbagstech"]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://goodbags.tech/#webapp",
+          "name": "GoodBags",
+          "url": "https://goodbags.tech/",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web",
+          "description": "Launch a Solana coin on Bags.fm with a charity's share written into its fee split. At least 56% of the coin's shared trading fees go to a registered nonprofit, claimed on-chain and checkable by anyone on Solscan.",
+          "publisher": { "@id": "https://goodbags.tech/#organization" }
+        }
+      ]
+    }
+    </script>
     
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

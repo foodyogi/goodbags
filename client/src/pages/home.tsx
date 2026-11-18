@@ -1,4 +1,4 @@
-import { HeroSection } from "@/components/hero-section";
+import { HeroSection, HomeNarrative } from "@/components/hero-section";
 import { TokenLaunchForm } from "@/components/token-launch-form";
 import { FeaturedProject } from "@/components/featured-project";
 import { FeeTransparency } from "@/components/fee-transparency";
@@ -21,6 +21,8 @@ export default function Home() {
     <div className="min-h-screen">
       <LoginPromptModal autoOpen={true} delayMs={800} />
       <HeroSection />
+      
+      <HomeNarrative />
       
       <LiveImpactStats />
       
@@ -48,9 +50,9 @@ export default function Home() {
       <section id="launch-form" className="py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">Launch a Purpose-Driven Coin</h2>
+            <h2 className="text-2xl font-bold mb-2">Launch a charity coin</h2>
             <p className="text-muted-foreground">
-              Fill in the details below to create your token with built-in charitable giving
+              Fill in the details below. The charity's share is written into the coin's fee split at launch.
             </p>
           </div>
           <TokenLaunchForm />

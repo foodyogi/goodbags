@@ -39,7 +39,7 @@ export function SocialShare({
       case 'endorsed':
         return `$${tokenSymbol} is now OFFICIALLY ENDORSED by ${charityName}! 
 
-This memecoin is legit - the charity approved it.
+This coin is legit: the charity approved it.
 
 Every trade earns ${charityName} a share of the fees. Verified on-chain fee claims so far: ${claimed} SOL
 
@@ -51,7 +51,7 @@ Trade on Bags: ${bagsUrl}
       case 'milestone':
         return `The $${tokenSymbol} community just hit ${claimed} SOL in verified on-chain fee claims by ${charityName}! 
 
-Memecoins making real impact. Join us:
+Charity fundraising, built into the token. Join us:
 ${goodbagsUrl}
 
 #GoodBags #Solana #CryptoForGood`;
@@ -64,7 +64,7 @@ Every trade earns ${charityName || 'charity'} a share of the fees.
 View impact: ${goodbagsUrl}
 Trade: ${bagsUrl}
 
-#GoodBags #Solana #Memecoin`;
+#GoodBags #Solana #CharityCoin`;
     }
   };
   

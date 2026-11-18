@@ -1,3 +1,4 @@
+import { useTokenFigures, type TokenFigures } from "@/components/charity-share-earned";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -37,14 +38,19 @@ interface AchievementBadgesProps {
   compact?: boolean;
 }
 
-export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: string): Achievement[] {
+// figuresFor gives each coin's live charity share earned and verified on-chain fee claims (useTokenFigures)
+export function calculateAchievements(
+  tokens: LaunchedToken[],
+  walletAddress: string | undefined,
+  figuresFor: (mint: string) => TokenFigures
+): Achievement[] {
   const userTokens = walletAddress 
     ? tokens.filter(t => t.creatorWallet === walletAddress && !t.isTest)
     : tokens.filter(t => !t.isTest);
   
-  const totalDonated = userTokens.reduce((sum, t) => sum + parseFloat(t.charityDonated || "0"), 0);
+  const totalDonated = userTokens.reduce((sum, t) => sum + (figuresFor(t.mintAddress).earnedSol ?? 0), 0);
   const totalVolume = userTokens.reduce((sum, t) => sum + parseFloat(t.tradingVolume || "0"), 0);
-  const totalDonationCount = userTokens.reduce((sum, t) => sum + (t.donationCount || 0), 0);
+  const totalDonationCount = userTokens.reduce((sum, t) => sum + (figuresFor(t.mintAddress).claimCount ?? 0), 0);
   const approvedTokens = userTokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED).length;
   
   return [
@@ -77,12 +83,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "generous-giver",
       name: "Generous Giver",
-      description: "Generate 1 SOL in charity donations",
+      description: "Your coins earn charities 1 SOL in charity share",
       icon: Heart,
       color: "text-pink-500",
       bgColor: "bg-pink-500/10",
       borderColor: "border-pink-500/30",
-      requirement: "1 SOL donated",
+      requirement: "1 SOL charity share earned",
       unlocked: totalDonated >= 1,
       progress: Math.min(totalDonated, 1),
       maxProgress: 1,
@@ -90,12 +96,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "impact-hero",
       name: "Impact Hero",
-      description: "Generate 10 SOL in charity donations",
+      description: "Your coins earn charities 10 SOL in charity share",
       icon: Star,
       color: "text-yellow-500",
       bgColor: "bg-yellow-500/10",
       borderColor: "border-yellow-500/30",
-      requirement: "10 SOL donated",
+      requirement: "10 SOL charity share earned",
       unlocked: totalDonated >= 10,
       progress: Math.min(totalDonated, 10),
       maxProgress: 10,
@@ -103,12 +109,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "legendary-philanthropist",
       name: "Legendary Philanthropist",
-      description: "Generate 100 SOL in charity donations",
+      description: "Your coins earn charities 100 SOL in charity share",
       icon: Crown,
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
       borderColor: "border-amber-500/30",
-      requirement: "100 SOL donated",
+      requirement: "100 SOL charity share earned",
       unlocked: totalDonated >= 100,
       progress: Math.min(totalDonated, 100),
       maxProgress: 100,
@@ -116,12 +122,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "volume-driver",
       name: "Volume Driver",
-      description: "Generate 10 SOL in trading volume",
+      description: "Reach 10 SOL in launch buys across your coins",
       icon: Flame,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
       borderColor: "border-orange-500/30",
-      requirement: "10 SOL volume",
+      requirement: "10 SOL in launch buys",
       unlocked: totalVolume >= 10,
       progress: Math.min(totalVolume, 10),
       maxProgress: 10,
@@ -129,12 +135,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "market-maker",
       name: "Market Maker",
-      description: "Generate 100 SOL in trading volume",
+      description: "Reach 100 SOL in launch buys across your coins",
       icon: Trophy,
       color: "text-emerald-500",
       bgColor: "bg-emerald-500/10",
       borderColor: "border-emerald-500/30",
-      requirement: "100 SOL volume",
+      requirement: "100 SOL in launch buys",
       unlocked: totalVolume >= 100,
       progress: Math.min(totalVolume, 100),
       maxProgress: 100,
@@ -142,12 +148,12 @@ export function calculateAchievements(tokens: LaunchedToken[], walletAddress?: s
     {
       id: "community-builder",
       name: "Community Builder",
-      description: "Receive 10 donations across your tokens",
+      description: "Charities make 10 verified on-chain fee claims across your coins",
       icon: Target,
       color: "text-cyan-500",
       bgColor: "bg-cyan-500/10",
       borderColor: "border-cyan-500/30",
-      requirement: "10 donations received",
+      requirement: "10 verified fee claims",
       unlocked: totalDonationCount >= 10,
       progress: totalDonationCount,
       maxProgress: 10,
@@ -266,7 +272,8 @@ function AchievementBadge({ achievement, compact }: { achievement: Achievement; 
 }
 
 export function AchievementBadges({ tokens, walletAddress, compact = false }: AchievementBadgesProps) {
-  const achievements = calculateAchievements(tokens, walletAddress);
+  const figuresFor = useTokenFigures();
+  const achievements = calculateAchievements(tokens, walletAddress, figuresFor);
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   
   if (compact) {

@@ -43,7 +43,7 @@ const gettingStartedGuides = [
   {
     icon: TrendingUp,
     title: "Track Your Impact",
-    description: "Monitor your token's performance and see real-time donation tracking on your dashboard.",
+    description: "Monitor your coin's charity share earned and the charity's verified on-chain fee claims on your dashboard.",
     link: "/my-impact",
   },
 ];
@@ -71,7 +71,7 @@ const commonIssues = [
     icon: Heart,
     title: "Charity Questions",
     problem: "Questions about charity verification or payouts",
-    solution: "All charities go through a 3-step verification process. Donations are tracked on-chain and can be verified on Solscan. Charities with verified X handles receive payouts via Tips.",
+    solution: "Charities are either added by the GoodBags team or register through our application, which verifies a US nonprofit's EIN through Every.org, its email, and its Solana wallet or X account before manual review. Charities claim their share on Bags.fm, and every claim can be verified on Solscan.",
   },
 ];
 
@@ -256,7 +256,7 @@ export default function HelpPage() {
         <section className="text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Make an Impact?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            Launch your impact token today and start generating donations for your chosen cause.
+            Launch a charity coin today and its fee split starts earning for your chosen cause.
           </p>
           <Link href="/launch">
             <Button size="lg" className="gap-2" data-testid="button-launch-cta">

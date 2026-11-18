@@ -191,3 +191,68 @@ export function getTierLabel(tier: DonationTier | null): string {
 export function bpsToPercent(bps: number): string {
   return (bps / 100).toFixed(2);
 }
+
+/**
+ * Bags.fm, September 2026: newly created SOL fee-share v2 configs pay the config payer
+ * (the deployer) 2,500 BPS of the gross claimers pool, and the configured split divides
+ * the remaining 75%. In GoodBags' launch flow the creator pays for the config, so the
+ * creator is also the deployer. Configs created before the change keep their old terms.
+ */
+export const DEPLOYER_SHARE_BPS = 2500;
+
+// The Bags docs only say "September 2026". No GoodBags token launched between
+// 2026-02-02 and the change, so the exact day doesn't change how any token is classified.
+export const DEPLOYER_SHARE_EFFECTIVE_FROM = "2026-09-01T00:00:00Z";
+
+export function hasDeployerShare(launchedAt: string | Date): boolean {
+  return new Date(launchedAt).getTime() >= new Date(DEPLOYER_SHARE_EFFECTIVE_FROM).getTime();
+}
+
+/**
+ * Effective share of a coin's shared trading fees, in percent.
+ * creatorPercent includes the deployer share when the coin has one.
+ */
+export interface EffectiveSplit {
+  charityPercent: number;
+  buybackPercent: number;
+  creatorPercent: number;
+  deployerPercent: number;
+}
+
+export function effectiveSplitFromBps(
+  charityBps: number,
+  buybackBps: number,
+  creatorBps: number,
+  withDeployerShare: boolean
+): EffectiveSplit {
+  const deployerBps = withDeployerShare ? DEPLOYER_SHARE_BPS : 0;
+  const pool = (bps: number) => ((bps * (TOTAL_FEE_BPS - deployerBps)) / TOTAL_FEE_BPS) / 100;
+  return {
+    charityPercent: pool(charityBps),
+    buybackPercent: pool(buybackBps),
+    creatorPercent: pool(creatorBps) + deployerBps / 100,
+    deployerPercent: deployerBps / 100,
+  };
+}
+
+/** Effective split a NEW launch gets on-chain for each creator donation tier. */
+export function effectiveSplitForNewLaunch(tier: DonationTier): EffectiveSplit {
+  const { charityBps, buybackBps, creatorBps } = computeFeeSplit(tier);
+  return effectiveSplitFromBps(charityBps, buybackBps, creatorBps, true);
+}
+
+export const NEW_LAUNCH_SPLITS = DONATION_TIERS.map((tier) => ({
+  tier,
+  ...effectiveSplitForNewLaunch(tier),
+}));
+
+/** Lowest and highest charity share for new launches, rounded down for copy ("at least 56%"). */
+export const NEW_LAUNCH_MIN_CHARITY_PERCENT = Math.floor(NEW_LAUNCH_SPLITS[0].charityPercent);
+export const NEW_LAUNCH_MAX_CHARITY_PERCENT = Math.floor(
+  NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].charityPercent
+);
+
+/** Format a percentage without trailing zeros: 56.25 -> "56.25%", 40 -> "40%". */
+export function formatPercent(value: number): string {
+  return `${Number(value.toFixed(2))}%`;
+}

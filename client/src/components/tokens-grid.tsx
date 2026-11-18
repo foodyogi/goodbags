@@ -47,7 +47,7 @@ export function TokensGrid({ tokens, isLoading }: TokensGridProps) {
           </div>
           <h3 className="text-lg font-semibold mb-2">No tokens launched yet</h3>
           <p className="text-muted-foreground mb-6 max-w-sm">
-            Be the first to launch a memecoin and support charity through blockchain donations!
+            Be the first to launch a charity coin and earn your chosen cause a share of its fees!
           </p>
           <Link href="/">
             <Button className="gap-2" data-testid="button-empty-launch">

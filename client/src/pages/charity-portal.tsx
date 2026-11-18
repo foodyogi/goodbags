@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { effectiveSplitFromBps, formatPercent, hasDeployerShare } from "@shared/feeSplit";
 import { 
   BadgeCheck, 
   Shield, 
@@ -186,6 +187,11 @@ export default function CharityPortal() {
     );
   }
 
+  // Effective share of shared fees (coins launched from September 2026 also pay the deployer 25%)
+  const charityPercent = formatPercent(
+    effectiveSplitFromBps(tokenData.charityBps, 0, 0, hasDeployerShare(tokenData.launchedAt)).charityPercent
+  );
+
   if (tokenData.charityApprovalStatus !== "pending") {
     return (
       <div className="container max-w-2xl mx-auto py-12 px-4">
@@ -259,7 +265,7 @@ export default function CharityPortal() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Your Share:</span>
-              <p className="font-medium">{(tokenData.charityBps / 100).toFixed(2)}% of trading fees</p>
+              <p className="font-medium">{charityPercent} of the coin's shared trading fees</p>
             </div>
             <div>
               <span className="text-muted-foreground">Payout via:</span>
@@ -284,8 +290,8 @@ export default function CharityPortal() {
           <p>By endorsing this token, you agree to the following:</p>
           <ul className="space-y-2 list-disc list-inside text-muted-foreground">
             <li>Your organization's name and X handle will be publicly associated with this token</li>
-            <li>You will receive {(tokenData.charityBps / 100).toFixed(2)}% of all trading fees as donations</li>
-            <li>Donations are claimable via your X handle (@{tokenData.charityTwitterHandle}) through the Bags.fm platform</li>
+            <li>Your share is {charityPercent} of this coin's shared trading fees, set in its on-chain fee config</li>
+            <li>Your share is claimable via your X handle (@{tokenData.charityTwitterHandle}) through the Bags.fm platform</li>
             <li>You can use the "Charity Endorsed" badge in your communications about this token</li>
             <li>GoodBags is not responsible for the token's market performance or creator actions</li>
             <li>You may request removal of endorsement at any time by contacting GoodBags</li>

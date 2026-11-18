@@ -33,7 +33,7 @@ export function AIAgentsSection() {
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Bags supports agentic authentication flows. Creators can use AI Agents to launch coins 
-            and manage their impact settings — all enforced on-chain.
+            and manage their impact settings, all enforced on-chain.
           </p>
         </div>
 

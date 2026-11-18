@@ -15,7 +15,7 @@ import {
   type Charity,
   users,
 } from "@shared/schema";
-import { isValidSolanaPublicKey } from "@shared/solana";
+import { isValidSolanaPublicKey, isValidTxSignature } from "@shared/solana";
 import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { z } from "zod";
@@ -2513,19 +2513,44 @@ export async function registerRoutes(
         }
       }
 
+      // Same live figures as the home page: charity share earned and verified on-chain fee claims.
+      // getTokenCharityShare never throws; a total is null if any token's data is unavailable.
+      const liveTokens = tokens.filter((t) => isValidTxSignature(t.transactionSignature));
+      const shares = await Promise.all(
+        liveTokens.map((t) => getTokenCharityShare(t.mintAddress, t.creatorWallet))
+      );
+      const shareByMint = new Map(shares.map((share) => [share.mint, share]));
+      const toSol = (lamports: bigint) => (Number(lamports) / 1e9).toFixed(9);
+      const claimsLamports = (claims: { amountLamports: string }[]) =>
+        claims.reduce((sum, c) => sum + BigInt(c.amountLamports), BigInt(0));
+      const earnedAvailable = shares.every((share) => share.available);
+      const claimsAvailable = shares.every((share) => share.claimsAvailable);
+      const earnedLamports = shares.reduce((sum, share) => sum + BigInt(share.charityEarnedLamports ?? "0"), BigInt(0));
+      const claimedLamports = shares.reduce((sum, share) => sum + claimsLamports(share.claims), BigInt(0));
+
       res.json({
         creatorWallet: wallet,
         totalTokens: tokens.length,
         totalDonated: totalDonated.toFixed(9),
         totalDonationCount,
-        tokens: tokenImpacts,
+        charityShareEarnedSol: earnedAvailable ? toSol(earnedLamports) : null,
+        verifiedClaimsSol: claimsAvailable ? toSol(claimedLamports) : null,
+        verifiedClaimCount: claimsAvailable ? shares.reduce((n, share) => n + share.claims.length, 0) : null,
+        tokens: tokenImpacts.map((impact) => {
+          const share = shareByMint.get(impact.token.mintAddress);
+          return {
+            ...impact,
+            charityShareEarnedSol: share?.available ? toSol(BigInt(share.charityEarnedLamports ?? "0")) : null,
+            verifiedClaimsSol: share?.claimsAvailable ? toSol(claimsLamports(share.claims)) : null,
+          };
+        }),
         charities: Array.from(charitiesMap.values()).map(c => ({
           id: c.id,
           name: c.name,
           category: c.category,
           wallet: c.walletAddress,
         })),
-        certified: totalDonated >= 0.001,
+        certified: earnedLamports >= BigInt(1_000_000) || claimedLamports >= BigInt(1_000_000),
       });
     } catch (error) {
       console.error("Get creator impact error:", error);

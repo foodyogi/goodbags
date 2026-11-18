@@ -19,19 +19,25 @@ import {
   Calculator
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
+import { NEW_LAUNCH_SPLITS, formatPercent } from "@shared/feeSplit";
+
+const NO_DONATION = NEW_LAUNCH_SPLITS[0];
+const FULL_DONATION = NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1];
+const EXAMPLE = NEW_LAUNCH_SPLITS.find((s) => s.tier === 75)!;
+const sol = (percent: number) => `${Number((percent / 100).toFixed(4))} SOL`;
 
 const steps = [
   {
     step: 1,
     title: "Choose a Verified Charity",
-    description: "Select from 75+ verified charities across categories like hunger, environment, education, health, and more.",
+    description: "Pick a charity from the GoodBags list, or one registered through our application, which verifies US nonprofits by EIN through Every.org.",
     icon: Heart,
     color: "bg-pink-500 dark:bg-pink-600",
   },
   {
     step: 2,
     title: "Set Your Creator Donation %",
-    description: "Choose how much of your 0.20% creator share to donate back to charity (0%, 25%, 50%, 75%, or 100%).",
+    description: "Choose how much of your creator share to donate to charity: 0%, 25%, 50%, 75% or 100%.",
     icon: User,
     color: "bg-blue-500 dark:bg-blue-600",
   },
@@ -45,25 +51,17 @@ const steps = [
   {
     step: 4,
     title: "Trading Happens",
-    description: "Every trade automatically distributes the built-in 1% royalty using your stored split — no manual work needed.",
+    description: "Each trade adds to the coin's shared fees, which are split by the settings written on-chain at launch. No manual work needed.",
     icon: TrendingUp,
     color: "bg-secondary",
   },
   {
     step: 5,
     title: "Track Your Impact",
-    description: "View proof of donations on-chain. Every transaction is verifiable on Solscan.",
+    description: "See the charity's verified on-chain fee claims, each with a Solscan link.",
     icon: Eye,
     color: "bg-green-500 dark:bg-green-600",
   },
-];
-
-const donationTiers = [
-  { donation: "0%", charity: "0.75%", buyback: "0.05%", creator: "0.20%" },
-  { donation: "25%", charity: "0.80%", buyback: "0.05%", creator: "0.15%" },
-  { donation: "50%", charity: "0.85%", buyback: "0.05%", creator: "0.10%" },
-  { donation: "75%", charity: "0.90%", buyback: "0.05%", creator: "0.05%" },
-  { donation: "100%", charity: "0.95%", buyback: "0.05%", creator: "0.00%" },
 ];
 
 const trustFeatures = [
@@ -84,8 +82,8 @@ const trustFeatures = [
   },
   {
     icon: Shield,
-    title: "Anti-rug pull protection",
-    description: "Charities approve tokens via X verification",
+    title: "Charity endorsement",
+    description: "Charities can approve coins in their name via X",
   },
 ];
 
@@ -134,12 +132,13 @@ export default function HowItWorksPage() {
           <div className="text-center mb-8">
             <Badge className="mb-4 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">
               <Heart className="h-3 w-3 mr-1" />
-              1% Total Fee
+              Fee split for new launches
             </Badge>
             <h2 className="text-2xl font-bold mb-3">Fee Splitting Logic</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              The built-in 1% royalty stream on every trade is split three ways. 
-              This split is configured at launch and enforced on-chain.
+              Bags.fm pays 25% of a coin's shared trading fees to the wallet that deploys it, which on GoodBags
+              is the creator. The GoodBags split, configured at launch and enforced on-chain, covers the other 75%.
+              These are the effective shares of the coin's shared fees.
             </p>
           </div>
           
@@ -153,10 +152,12 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">Charity</p>
-                      <p className="text-sm text-muted-foreground">Goes directly to verified charity chosen at launch</p>
+                      <p className="text-sm text-muted-foreground">Claimed on-chain by the charity chosen at launch</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">0.75%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20">
+                    {formatPercent(NO_DONATION.charityPercent)} to {formatPercent(FULL_DONATION.charityPercent)}
+                  </Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -166,10 +167,12 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">FYI Buyback</p>
-                      <p className="text-sm text-muted-foreground">Used to buy back FYI tokens, supporting the ecosystem</p>
+                      <p className="text-sm text-muted-foreground">Reserved for FYI token buybacks. None have been executed yet.</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">0.05%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+                    {formatPercent(NO_DONATION.buybackPercent)}
+                  </Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
@@ -179,21 +182,26 @@ export default function HowItWorksPage() {
                     </div>
                     <div>
                       <p className="font-medium">Token Creator</p>
-                      <p className="text-sm text-muted-foreground">Creator's share for launching the token</p>
+                      <p className="text-sm text-muted-foreground">Creator's share, including the 25% deployer share</p>
                     </div>
                   </div>
-                  <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">0.20%</Badge>
+                  <Badge className="text-lg px-4 py-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+                    {formatPercent(FULL_DONATION.creatorPercent)} to {formatPercent(NO_DONATION.creatorPercent)}
+                  </Badge>
                 </div>
 
                 <div className="flex items-center justify-center p-3 rounded-lg bg-muted/50">
-                  <p className="text-sm font-medium">Total per trade: <span className="text-primary">1%</span></p>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Coins launched before September 2026 keep their original on-chain split with no deployer share,
+                    for example 75% charity, 5% buyback and 20% creator.
+                  </p>
                 </div>
               </div>
 
               <div className="border-t border-border pt-6">
                 <h3 className="font-semibold mb-4 text-center">Creator Donation Options</h3>
                 <p className="text-sm text-muted-foreground text-center mb-4">
-                  At launch, creators choose how much of their 0.20% share to donate to charity:
+                  At launch, creators choose how much of their share to donate to charity. The creator column includes the 25% deployer share.
                 </p>
                 
                 <div className="overflow-x-auto">
@@ -207,12 +215,12 @@ export default function HowItWorksPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {donationTiers.map((tier, index) => (
-                        <tr key={tier.donation} className={index % 2 === 0 ? "bg-muted/20" : ""}>
-                          <td className="py-2 px-3 font-medium">{tier.donation}</td>
-                          <td className="py-2 px-3 text-center text-pink-600 dark:text-pink-400">{tier.charity}</td>
-                          <td className="py-2 px-3 text-center text-muted-foreground">{tier.buyback}</td>
-                          <td className="py-2 px-3 text-center text-green-600 dark:text-green-400">{tier.creator}</td>
+                      {NEW_LAUNCH_SPLITS.map((tier, index) => (
+                        <tr key={tier.tier} className={index % 2 === 0 ? "bg-muted/20" : ""}>
+                          <td className="py-2 px-3 font-medium">{tier.tier}%</td>
+                          <td className="py-2 px-3 text-center text-pink-600 dark:text-pink-400">{formatPercent(tier.charityPercent)}</td>
+                          <td className="py-2 px-3 text-center text-muted-foreground">{formatPercent(tier.buybackPercent)}</td>
+                          <td className="py-2 px-3 text-center text-green-600 dark:text-green-400">{formatPercent(tier.creatorPercent)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -233,24 +241,24 @@ export default function HowItWorksPage() {
                 <h3 className="text-lg font-bold">Example Calculation</h3>
               </div>
               <p className="text-muted-foreground mb-4">
-                If someone trades 100 SOL worth of a token and the creator donates 75%:
+                If a new coin earns 1 SOL in shared trading fees and the creator donated 75% of their share:
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="p-3 rounded-lg bg-background/50 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Total fee</p>
+                  <p className="text-xs text-muted-foreground mb-1">Shared fees</p>
                   <p className="font-bold text-lg">1 SOL</p>
                 </div>
                 <div className="p-3 rounded-lg bg-pink-500/10 text-center">
                   <p className="text-xs text-pink-600 dark:text-pink-400 mb-1">Charity receives</p>
-                  <p className="font-bold text-lg text-pink-600 dark:text-pink-400">0.90 SOL</p>
+                  <p className="font-bold text-lg text-pink-600 dark:text-pink-400">{sol(EXAMPLE.charityPercent)}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-500/10 text-center">
                   <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">FYI Buyback</p>
-                  <p className="font-bold text-lg text-blue-600 dark:text-blue-400">0.05 SOL</p>
+                  <p className="font-bold text-lg text-blue-600 dark:text-blue-400">{sol(EXAMPLE.buybackPercent)}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-green-500/10 text-center">
-                  <p className="text-xs text-green-600 dark:text-green-400 mb-1">Creator receives</p>
-                  <p className="font-bold text-lg text-green-600 dark:text-green-400">0.05 SOL</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mb-1">Creator receives (incl. deployer share)</p>
+                  <p className="font-bold text-lg text-green-600 dark:text-green-400">{sol(EXAMPLE.creatorPercent)}</p>
                 </div>
               </div>
             </CardContent>
@@ -261,7 +269,7 @@ export default function HowItWorksPage() {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-3">Payout Options</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Charities can receive their donations through two verified methods:
+              The charity's share builds up in the coin's fee config. Charities claim it on Bags.fm in one of two ways:
             </p>
           </div>
           
@@ -275,8 +283,8 @@ export default function HowItWorksPage() {
                   <div>
                     <h3 className="font-semibold mb-1">Direct Wallet</h3>
                     <p className="text-sm text-muted-foreground">
-                      SOL is sent directly to the charity's verified Solana address. 
-                      Funds arrive automatically as trades occur.
+                      The charity's verified Solana address is written into the fee split, and the charity
+                      claims its share on Bags.fm with that wallet.
                     </p>
                   </div>
                 </div>
@@ -292,8 +300,8 @@ export default function HowItWorksPage() {
                   <div>
                     <h3 className="font-semibold mb-1">X/Twitter Claim</h3>
                     <p className="text-sm text-muted-foreground">
-                      Donations are held until the charity verifies via their X account. 
-                      They can then claim accumulated funds.
+                      Bags.fm links the charity's X account to a wallet. The charity logs in with X and
+                      claims its accumulated share.
                     </p>
                   </div>
                 </div>
@@ -339,19 +347,13 @@ export default function HowItWorksPage() {
               <Eye className="h-12 w-12 mx-auto text-primary mb-4" />
               <h2 className="text-2xl font-bold mb-3">Verify Everything Yourself</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-                Don't just take our word for it. Every transaction, donation, and buyback is publicly 
+                Don't just take our word for it. Every fee split and every charity fee claim is publicly
                 verifiable on the Solana blockchain. Click any transaction link to see the proof on Solscan.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link href="/charities">
                   <Button variant="outline" data-testid="link-view-charities">
                     View Verified Charities
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/buyback">
-                  <Button variant="outline" data-testid="link-view-buyback">
-                    View Buyback Dashboard
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
@@ -369,12 +371,12 @@ export default function HowItWorksPage() {
         <section className="text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to Make an Impact?</h2>
           <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-            Launch your purpose-driven coin today and start generating donations for your chosen cause.
+            Launch a charity coin today and its fee split starts earning for your chosen cause on every trade.
           </p>
           <Link href="/launch">
             <Button size="lg" className="gap-2" data-testid="button-launch-cta">
               <Rocket className="h-5 w-5" />
-              Launch a Purpose-Driven Coin
+              Launch a charity coin
             </Button>
           </Link>
           <p className="text-xs text-muted-foreground mt-3">

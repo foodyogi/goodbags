@@ -74,7 +74,7 @@ export function EndorsementCelebration({
                     "{note}"
                   </p>
                   <p className="text-xs text-muted-foreground mt-1" data-testid="text-note-author">
-                    — {charityName}
+                    - {charityName}
                   </p>
                 </div>
               )}

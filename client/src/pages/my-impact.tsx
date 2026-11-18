@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AchievementBadges, calculateAchievements } from "@/components/achievement-badges";
+import { useTokenFigures } from "@/components/charity-share-earned";
 import { TokenCard } from "@/components/token-card";
 import { 
   User, 
@@ -46,14 +47,18 @@ export default function MyImpactPage() {
   });
   
   const myTokens = allTokens?.filter(t => t.creatorWallet === walletAddress && !t.isTest) || [];
-  const achievements = allTokens ? calculateAchievements(allTokens, walletAddress) : [];
+  const figuresFor = useTokenFigures();
+  const achievements = allTokens ? calculateAchievements(allTokens, walletAddress, figuresFor) : [];
   const unlockedAchievements = achievements.filter(a => a.unlocked);
   
   const stats = {
     totalTokens: myTokens.length,
-    totalDonated: myTokens.reduce((sum, t) => sum + parseFloat(t.charityDonated || "0"), 0),
+    // Live charity share earned; null if any coin's live data is unavailable
+    totalDonated: myTokens.every((t) => figuresFor(t.mintAddress).earnedSol !== null)
+      ? myTokens.reduce((sum, t) => sum + (figuresFor(t.mintAddress).earnedSol ?? 0), 0)
+      : null,
     totalVolume: myTokens.reduce((sum, t) => sum + parseFloat(t.tradingVolume || "0"), 0),
-    totalDonations: myTokens.reduce((sum, t) => sum + (t.donationCount || 0), 0),
+    totalDonations: myTokens.reduce((sum, t) => sum + (figuresFor(t.mintAddress).claimCount ?? 0), 0),
     endorsedTokens: myTokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED).length,
   };
   
@@ -68,7 +73,8 @@ export default function MyImpactPage() {
   };
   
   const handleShareTwitter = () => {
-    const text = `I've launched ${stats.totalTokens} tokens on @goodbagstech and generated ${formatSol(stats.totalDonated)} SOL in charity donations! Check out my impact profile:`;
+    const earned = stats.totalDonated !== null ? ` that have earned charities ${formatSol(stats.totalDonated)} SOL` : "";
+    const text = `I've launched ${stats.totalTokens} charity coins on @goodbagstech${earned}! Check out my impact profile:`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(profileUrl)}`;
     window.open(url, "_blank");
   };
@@ -191,8 +197,12 @@ export default function MyImpactPage() {
                 <Heart className="h-6 w-6 text-pink-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold" data-testid="value-total-donated">{formatSol(stats.totalDonated)}</p>
-                <p className="text-sm text-muted-foreground">SOL Donated (verified)</p>
+                <p className="text-2xl font-bold" data-testid="value-total-donated">
+                  {stats.totalDonated !== null ? formatSol(stats.totalDonated) : "Unavailable"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {stats.totalDonated !== null ? "SOL charity share earned" : "Charity share: live data temporarily unavailable"}
+                </p>
               </div>
             </div>
           </CardContent>

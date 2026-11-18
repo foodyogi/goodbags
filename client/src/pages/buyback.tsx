@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { FyiCoin } from "@/components/fyi-coin";
 import { ThemedLogo } from "@/components/themed-logo";
 import { FYI_TOKEN_MINT, solscanUrl } from "@shared/solana";
+import { NEW_LAUNCH_SPLITS, formatPercent } from "@shared/feeSplit";
 
 interface BuybackStats {
   totalSolSpent: string;
@@ -82,15 +83,15 @@ export default function BuybackPage() {
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1.5 mb-4" data-testid="badge-buyback">
             <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Automated Buyback</span>
+            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Reserved Buyback Share</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="heading-buyback">
             FYI Token Buyback Dashboard
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            0.05% of all trading fees on GoodBags automatically buy FYI tokens. 
-            This creates constant buy pressure and supports the ecosystem. 
-            Every transaction is publicly verifiable.
+            On new coins, {formatPercent(NEW_LAUNCH_SPLITS[0].buybackPercent)} of shared trading fees is reserved for FYI
+            token buybacks. No buybacks have been executed yet: the buyback share has not been claimed from the
+            coins' fee configs. Once buybacks happen, each one will be listed here with its Solscan transaction.
           </p>
         </div>
 
@@ -102,30 +103,30 @@ export default function BuybackPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
               <Coins className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">0.05% Buyback Fee</span>
+              <span className="text-sm font-medium">{formatPercent(NEW_LAUNCH_SPLITS[0].buybackPercent)} buyback share</span>
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
               <Wallet className="h-5 w-5 text-blue-500" />
-              <span className="text-sm font-medium">Buyback Wallet</span>
+              <span className="text-sm font-medium">Claimed to the buyback wallet</span>
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
               <Clock className="h-5 w-5 text-secondary" />
-              <span className="text-sm font-medium">Auto-Swap Every Hour</span>
+              <span className="text-sm font-medium">Swapped for FYI</span>
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground hidden sm:block" />
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background">
               <FyiCoin size="sm" />
-              <span className="text-sm font-medium">FYI Buy Pressure</span>
+              <span className="text-sm font-medium">FYI tokens bought</span>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 sm:grid-cols-3 mb-8">
           {statsLoading ? (
             <>
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3].map((i) => (
                 <Card key={i}>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
@@ -144,26 +145,20 @@ export default function BuybackPage() {
               <StatCard
                 icon={Coins}
                 label="Total SOL Spent"
-                value={`${parseFloat(stats?.totalSolSpent ?? "0").toFixed(4)} SOL`}
+                value={stats ? `${parseFloat(stats.totalSolSpent).toFixed(4)} SOL` : "Unavailable"}
                 color="bg-primary"
               />
               <StatCard
                 label="Total FYI Bought"
-                value={`${parseFloat(stats?.totalFyiBought ?? "0").toFixed(2)} FYI`}
+                value={stats ? `${parseFloat(stats.totalFyiBought).toFixed(2)} FYI` : "Unavailable"}
                 color=""
                 useFyiCoin={true}
               />
               <StatCard
                 icon={RefreshCw}
-                label="Total Buybacks"
-                value={String(stats?.totalTransactions ?? 0)}
+                label="Buybacks Executed"
+                value={stats ? String(stats.totalTransactions) : "Unavailable"}
                 color="bg-secondary"
-              />
-              <StatCard
-                icon={Clock}
-                label="Next Check"
-                value="~60 min"
-                color="bg-blue-500 dark:bg-blue-600"
               />
             </>
           )}
@@ -172,20 +167,10 @@ export default function BuybackPage() {
         <div className="mb-8 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20" data-testid="section-wallet-info">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Buyback Wallet Address</p>
+              <p className="text-sm text-muted-foreground mb-1">Buyback Wallet Address (no buybacks executed yet)</p>
               <p className="font-mono text-sm" data-testid="text-buyback-wallet">{BUYBACK_WALLET}</p>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button variant="outline" size="sm" asChild data-testid="link-view-wallet">
-                <a 
-                  href={solscanUrl("account", BUYBACK_WALLET)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View Wallet on Solscan
-                </a>
-              </Button>
               <Button variant="outline" size="sm" asChild data-testid="link-view-fyi">
                 <a 
                   href={solscanUrl("token", FYI_TOKEN_MINT)}
@@ -224,7 +209,8 @@ export default function BuybackPage() {
                 <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Buybacks Yet</h3>
                 <p className="text-muted-foreground">
-                  Buybacks will appear here once the wallet accumulates enough SOL (minimum 0.015 SOL).
+                  No buybacks have been executed yet. They will appear here, each with its Solscan transaction,
+                  once the buyback share is claimed and swapped for FYI.
                 </p>
               </div>
             ) : (

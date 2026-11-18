@@ -1,43 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { Heart, Coins, TrendingUp, User, Plus } from "lucide-react";
-import { 
-  BASE_CHARITY_BPS, 
-  BASE_BUYBACK_BPS,
-  BASE_CREATOR_BPS,
-  TOTAL_FEE_BPS,
-  bpsToPercent
-} from "@shared/feeSplit";
-
-// Derive percentages from BPS (single source of truth)
-const CHARITY_FEE_PERCENTAGE = bpsToPercent(BASE_CHARITY_BPS);
-const BUYBACK_FEE_PERCENTAGE = bpsToPercent(BASE_BUYBACK_BPS);
-const CREATOR_FEE_PERCENTAGE = bpsToPercent(BASE_CREATOR_BPS);
-const TOTAL_FEE_PERCENTAGE = bpsToPercent(TOTAL_FEE_BPS);
-
-interface FeeRowProps {
-  percentage: string;
-  recipient: string;
-  description: string;
-  icon: React.ElementType;
-  color: string;
-}
-
-function FeeRow({ percentage, recipient, description, icon: Icon, color, testId }: FeeRowProps & { testId: string }) {
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30" data-testid={testId}>
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${color}`}>
-        <Icon className="h-6 w-6 text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-2xl font-bold" data-testid={`${testId}-percentage`}>{percentage}</span>
-          <span className="font-medium text-foreground" data-testid={`${testId}-recipient`}>{recipient}</span>
-        </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  );
-}
+import { Heart } from "lucide-react";
+import { NEW_LAUNCH_SPLITS, formatPercent } from "@shared/feeSplit";
 
 export function FeeTransparency() {
   return (
@@ -46,68 +9,52 @@ export function FeeTransparency() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5 mb-4" data-testid="badge-transparency">
             <Heart className="h-4 w-4 text-pink-500" />
-            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">1% Royalty Stream</span>
+            <span className="text-sm font-medium text-pink-600 dark:text-pink-400">Fee split for new launches</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold mb-3" data-testid="heading-fee-breakdown">
-            Every Trade Supports Your Cause
+            Where a coin's shared trading fees go
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Unlike other platforms where creators keep trading royalties, tokens launched on 
-            GoodBags direct most of the 1% royalty stream to your chosen charity.
+            Bags.fm pays 25% of a coin's shared fees to the wallet that deploys it, which on GoodBags is the
+            creator. The GoodBags split covers the other 75%. This is the effective split a new coin gets
+            on-chain for each creator donation choice.
           </p>
         </div>
 
         <Card className="max-w-2xl mx-auto p-6">
-          <div className="mb-6 p-4 rounded-lg bg-pink-500/5 border border-pink-500/20">
-            <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
-              <span className="font-semibold text-pink-600 dark:text-pink-400">{CHARITY_FEE_PERCENTAGE}% charity</span>
-              <Plus className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{BUYBACK_FEE_PERCENTAGE}% buyback</span>
-              <Plus className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{CREATOR_FEE_PERCENTAGE}% creator</span>
-              <span className="text-muted-foreground">=</span>
-              <span className="font-bold">{TOTAL_FEE_PERCENTAGE}% total per trade</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <FeeRow
-              percentage={`${CHARITY_FEE_PERCENTAGE}%`}
-              recipient="to Your Chosen Charity"
-              description="Majority of trading fees go directly to verified charities you choose"
-              icon={Heart}
-              color="bg-pink-500 dark:bg-pink-600"
-              testId="fee-row-charity"
-            />
-            <FeeRow
-              percentage={`${BUYBACK_FEE_PERCENTAGE}%`}
-              recipient="to FYI Buyback"
-              description="Automatically buys FYI tokens, supporting the ecosystem"
-              icon={TrendingUp}
-              color="bg-secondary"
-              testId="fee-row-buyback"
-            />
-            <FeeRow
-              percentage={`${CREATOR_FEE_PERCENTAGE}%`}
-              recipient="to Token Creator"
-              description="Your reward for launching — donate 0-100% to charity at launch"
-              icon={User}
-              color="bg-blue-500 dark:bg-blue-600"
-              testId="fee-row-creator"
-            />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="table-new-launch-split">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-3 font-medium">Creator donates</th>
+                  <th className="text-center py-2 px-3 font-medium">Charity</th>
+                  <th className="text-center py-2 px-3 font-medium">Creator</th>
+                  <th className="text-center py-2 px-3 font-medium">FYI buyback</th>
+                </tr>
+              </thead>
+              <tbody>
+                {NEW_LAUNCH_SPLITS.map((split) => (
+                  <tr key={split.tier} className="border-b last:border-0" data-testid={`fee-row-tier-${split.tier}`}>
+                    <td className="py-2 px-3">{split.tier}% of their share</td>
+                    <td className="py-2 px-3 text-center font-semibold text-pink-600 dark:text-pink-400">
+                      {formatPercent(split.charityPercent)}
+                    </td>
+                    <td className="py-2 px-3 text-center">{formatPercent(split.creatorPercent)}</td>
+                    <td className="py-2 px-3 text-center">{formatPercent(split.buybackPercent)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-border" data-testid="section-referral-credits">
-            <div className="flex items-start gap-3 flex-wrap">
-              <Coins className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Bags.fm Referral Credits</p>
-                <p className="text-sm text-muted-foreground">
-                  All token launches also earn Bags.fm referral credits, which automatically 
-                  buy FYI tokens to support platform growth and sustainability.
-                </p>
-              </div>
-            </div>
+          <div className="mt-6 pt-6 border-t border-border space-y-2 text-sm text-muted-foreground">
+            <p>
+              The creator column includes the 25% deployer share. The buyback share is reserved for FYI token
+              buybacks. None have been executed yet.
+            </p>
+            <p>
+              Coins launched before September 2026 keep their original on-chain split, shown on each coin's page.
+            </p>
           </div>
         </Card>
       </div>

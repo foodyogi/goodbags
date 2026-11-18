@@ -270,8 +270,9 @@ export default function CharitiesPage() {
             Our Verified Partner Charities
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-            Every charity on GoodBags is verified via their official X account and nonprofit registration records. 
-            Charities claim donations through the Bags.fm app using their verified X account.
+            Charities here were added by the GoodBags team or registered through our application, which verifies a
+            US nonprofit's EIN through Every.org. Charities claim their share of fees on Bags.fm with their X account
+            or Solana wallet.
           </p>
           <Link href="/charities/apply">
             <Button variant="outline" data-testid="button-apply-charity">
@@ -439,8 +440,8 @@ export default function CharitiesPage() {
         <div className="mt-12 text-center p-6 rounded-lg bg-muted/20 border border-border" data-testid="section-blockchain-note">
           <h3 className="font-semibold mb-2">Blockchain-Verified Transparency</h3>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-            Every donation sent to these charities is recorded on the Solana blockchain. 
-            Click "Verify" on any charity wallet to see all incoming transactions on Solscan.
+            Every fee claim by these charities is recorded on the Solana blockchain.
+            Click "Verify" on any charity wallet to see its transactions on Solscan.
           </p>
         </div>
       </div>

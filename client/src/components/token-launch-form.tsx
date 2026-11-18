@@ -33,23 +33,18 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, FlaskConical, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
+import { Rocket, Wallet, CheckCircle2, Loader2, ExternalLink, Heart, AlertTriangle, Shield, Upload, Link as LinkIcon, Info, Coins, LayoutDashboard, CheckCircle, XCircle } from "lucide-react";
 import { SiX } from "react-icons/si";
 import { Link } from "wouter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { 
-  CREATOR_DONATION_PRESETS,
-} from "@shared/schema";
 import {
-  computeFeeSplit,
-  BASE_CHARITY_BPS,
-  BASE_BUYBACK_BPS,
-  BASE_CREATOR_BPS,
   DONATION_TIERS,
   type DonationTier,
-  bpsToPercent,
+  NEW_LAUNCH_MIN_CHARITY_PERCENT,
+  NEW_LAUNCH_SPLITS,
+  effectiveSplitForNewLaunch,
+  formatPercent,
 } from "@shared/feeSplit";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useRef } from "react";
@@ -234,9 +229,6 @@ export function TokenLaunchForm() {
   const [launchStep, setLaunchStep] = useState<LaunchStep>("idle");
   const [selectedCharity, setSelectedCharity] = useState<SelectedCharity | null>(null);
   const [imageSource, setImageSource] = useState<ImageSourceType>("url");
-  
-  // Test Mode - allows testing the full flow without real transactions
-  const [testMode, setTestMode] = useState(false);
   
   // Creator donation percent - can donate 0%, 25%, 50%, 75%, or 100% of their 20% share
   const [donateCreatorPercent, setDonateCreatorPercent] = useState<number>(0);
@@ -479,46 +471,6 @@ export function TokenLaunchForm() {
     mutationFn: async (data: TokenLaunchFormData) => {
       if (!selectedCharity) throw new Error("Please select a charity");
       
-      // Test Mode: Simulate the flow and save test token to database
-      if (testMode) {
-        setLaunchStep("preparing");
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        setLaunchStep("signing-config");
-        await new Promise(resolve => setTimeout(resolve, 600));
-        
-        setLaunchStep("signing-launch");
-        await new Promise(resolve => setTimeout(resolve, 600));
-        
-        setLaunchStep("recording");
-        
-        // Generate mock addresses for test token
-        const mockMintAddress = `TEST${Math.random().toString(36).substring(2, 10).toUpperCase()}${Date.now()}`;
-        const mockTxSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-        // Use connected wallet or generate a valid-length test wallet address
-        const testCreatorWallet = publicKey?.toBase58() || `TEST_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-        
-        // Save test token to database
-        const launchResponse = await apiRequest("POST", "/api/tokens/launch", {
-          ...data,
-          charityId: selectedCharity.id,
-          charitySource: selectedCharity.source,
-          charitySolanaAddress: selectedCharity.solanaAddress,
-          creatorWallet: testCreatorWallet,
-          mintAddress: mockMintAddress,
-          transactionSignature: mockTxSignature,
-          isTest: true,
-          donateCreatorPercent,
-        });
-        const launchResult = await launchResponse.json();
-        
-        if (!launchResult.success) {
-          throw new Error(launchResult.error || "Failed to save test token");
-        }
-        
-        return launchResult as LaunchResult;
-      }
-      
       // Real Mode: Requires wallet connection
       if (!publicKey) throw new Error("Wallet not connected");
       
@@ -650,21 +602,6 @@ export function TokenLaunchForm() {
   });
 
   const getStepMessage = () => {
-    if (testMode) {
-      // Test mode messages (no wallet signing)
-      switch (launchStep) {
-        case "preparing":
-          return "Simulating token creation...";
-        case "signing-config":
-          return "Simulating configuration...";
-        case "signing-launch":
-          return "Simulating launch...";
-        case "recording":
-          return "Finalizing test...";
-        default:
-          return "Running test...";
-      }
-    }
     // Real mode messages
     switch (launchStep) {
       case "preparing":
@@ -713,20 +650,11 @@ export function TokenLaunchForm() {
             <CheckCircle2 className="h-8 w-8 text-secondary" />
           </div>
           <CardTitle className="text-2xl">
-            {launchResult.isTest ? "Test Launch Complete!" : "Token Launched!"}
+            Token Launched!
           </CardTitle>
           <CardDescription>
-            {launchResult.isTest 
-              ? "This was a test - no real token was created"
-              : "Your token is now live on Solana"
-            }
+            Your token is now live on Solana
           </CardDescription>
-          {launchResult.isTest && (
-            <Badge variant="secondary" className="mt-2 gap-1" data-testid="badge-test-mode">
-              <FlaskConical className="h-3 w-3" />
-              Test Mode
-            </Badge>
-          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-muted/50 p-4 space-y-3">
@@ -804,7 +732,7 @@ export function TokenLaunchForm() {
               className="w-full"
               data-testid="button-launch-another"
             >
-              {launchResult.isTest ? "Try Another Test" : "Launch Another Token"}
+              Launch Another Token
             </Button>
           </div>
         </CardContent>
@@ -822,7 +750,7 @@ export function TokenLaunchForm() {
           Launch New Token
         </CardTitle>
         <CardDescription>
-          Create your memecoin with {bpsToPercent(BASE_CHARITY_BPS)}% to charity + {bpsToPercent(BASE_BUYBACK_BPS)}% buyback + {bpsToPercent(BASE_CREATOR_BPS)}% to you
+          Launch a charity coin. At least {NEW_LAUNCH_MIN_CHARITY_PERCENT}% of its shared trading fees go to the charity you pick.
         </CardDescription>
         {bagsStatus?.configured === false && (
           <div className="mt-2 rounded-md bg-yellow-500/10 border border-yellow-500/30 p-2 text-xs text-yellow-600 dark:text-yellow-400">
@@ -832,7 +760,7 @@ export function TokenLaunchForm() {
       </CardHeader>
       <CardContent>
         {/* Ready to Launch Status - shows when form is pre-filled from mobile deep link */}
-        {prefilledFromUrl && hasWalletForSigning && !testMode && (
+        {prefilledFromUrl && hasWalletForSigning && (
           <div className="mb-4 rounded-lg border border-primary/50 bg-primary/10 p-4" data-testid="ready-to-launch-status">
             <div className="flex items-center gap-3 mb-2">
               <div className="h-3 w-3 rounded-full bg-primary animate-pulse" />
@@ -847,7 +775,7 @@ export function TokenLaunchForm() {
         )}
 
         {/* Waiting for wallet connection - shows when form pre-filled but wallet not yet connected */}
-        {prefilledFromUrl && !hasWalletForSigning && !testMode && connecting && (
+        {prefilledFromUrl && !hasWalletForSigning && connecting && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="connecting-wallet-status">
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
@@ -862,7 +790,7 @@ export function TokenLaunchForm() {
         )}
 
         {/* Form pre-filled but wallet not connected (and not currently connecting) */}
-        {prefilledFromUrl && !isAuthenticated && !testMode && (
+        {prefilledFromUrl && !isAuthenticated && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="login-needed-status">
             <div className="flex items-center gap-3 mb-2">
               <SiX className="h-4 w-4 text-amber-600" />
@@ -887,7 +815,7 @@ export function TokenLaunchForm() {
           </div>
         )}
         
-        {prefilledFromUrl && isAuthenticated && !hasWalletForSigning && !testMode && !connecting && (
+        {prefilledFromUrl && isAuthenticated && !hasWalletForSigning && !connecting && (
           <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4" data-testid="wallet-needed-status">
             <div className="flex items-center gap-3 mb-2">
               <Wallet className="h-4 w-4 text-amber-600" />
@@ -907,7 +835,7 @@ export function TokenLaunchForm() {
         )}
         
         {/* Wallet Status Indicator */}
-        {hasWalletForSigning && !testMode && !prefilledFromUrl && (
+        {hasWalletForSigning && !prefilledFromUrl && (
           <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 p-3 flex items-center gap-3" data-testid="wallet-connected-status">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <div className="flex-1">
@@ -1286,32 +1214,35 @@ export function TokenLaunchForm() {
                 const validTier = DONATION_TIERS.includes(donateCreatorPercent as DonationTier)
                   ? (donateCreatorPercent as DonationTier)
                   : 0;
-                const feeSplit = computeFeeSplit(validTier);
+                const split = effectiveSplitForNewLaunch(validTier);
                 return (
                   <>
+                    <p className="text-xs text-muted-foreground">Share of this coin's shared trading fees:</p>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Charity Donation</span>
-                      <span className="font-medium">{bpsToPercent(feeSplit.charityBps)}% of trades</span>
+                      <span className="text-muted-foreground">Charity</span>
+                      <span className="font-medium" data-testid="text-split-charity">{formatPercent(split.charityPercent)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">FYI Buyback</span>
-                      <span className="font-medium">{bpsToPercent(feeSplit.buybackBps)}% of trades</span>
+                      <span className="text-muted-foreground">You (creator, including the 25% deployer share)</span>
+                      <span className="font-medium" data-testid="text-split-creator">{formatPercent(split.creatorPercent)}</span>
                     </div>
-                    {feeSplit.creatorBps > 0 && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Creator Share</span>
-                        <span className="font-medium">{bpsToPercent(feeSplit.creatorBps)}% of trades</span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">FYI buyback (reserved, none executed yet)</span>
+                      <span className="font-medium" data-testid="text-split-buyback">{formatPercent(split.buybackPercent)}</span>
+                    </div>
                   </>
                 );
               })()}
-              <div className="pt-2 border-t border-muted">
+              <div className="pt-2 border-t border-muted space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">How donations work:</span>{" "}
-                  Charities with an X account claim donations via{" "}
-                  <a href="https://bags.fm" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Bags.fm</a>. 
-                  Charities with Solana wallets receive instant transfers.
+                  Bags.fm pays 25% of a coin's shared fees to the wallet that deploys it, which is you, and the
+                  GoodBags split covers the other 75%.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">How the charity gets paid:</span>{" "}
+                  the charity's share builds up in the coin's fee config and the charity claims it on{" "}
+                  <a href="https://bags.fm" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Bags.fm</a>{" "}
+                  with its X account or Solana wallet. Every claim is public on Solscan.
                 </p>
               </div>
             </div>
@@ -1355,73 +1286,43 @@ export function TokenLaunchForm() {
                 <div>
                   <p className="text-sm font-medium">Donate My Creator Share</p>
                   <p className="text-xs text-muted-foreground">
-                    Give some or all of your 20% share to charity
+                    Give some or all of your creator share to charity. Each option shows the split this coin gets on-chain.
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {CREATOR_DONATION_PRESETS.map((preset) => (
-                  <Button
-                    key={preset}
-                    type="button"
-                    size="sm"
-                    variant={donateCreatorPercent === preset ? "default" : "outline"}
-                    className={donateCreatorPercent === preset ? "bg-pink-500 hover:bg-pink-600 border-pink-500" : ""}
-                    onClick={() => setDonateCreatorPercent(preset)}
-                    data-testid={`btn-donate-${preset}`}
-                  >
-                    {preset}%
-                  </Button>
-                ))}
+              <div className="grid gap-2" role="radiogroup" aria-label="Creator donation">
+                {NEW_LAUNCH_SPLITS.map((split) => {
+                  const selected = donateCreatorPercent === split.tier;
+                  return (
+                    <Button
+                      key={split.tier}
+                      type="button"
+                      size="sm"
+                      role="radio"
+                      aria-checked={selected}
+                      variant={selected ? "default" : "outline"}
+                      className={`h-auto justify-between gap-3 py-2 text-left ${selected ? "bg-pink-500 hover:bg-pink-600 border-pink-500" : ""}`}
+                      onClick={() => setDonateCreatorPercent(split.tier)}
+                      data-testid={`btn-donate-${split.tier}`}
+                    >
+                      <span className="font-semibold">Donate {split.tier}%</span>
+                      <span className="text-xs font-normal">
+                        Charity {formatPercent(split.charityPercent)} · You {formatPercent(split.creatorPercent)} · Buyback {formatPercent(split.buybackPercent)}
+                      </span>
+                    </Button>
+                  );
+                })}
               </div>
-              <div className="pt-3 border-t border-pink-500/20 text-xs">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-muted-foreground">Default Split:</span>
-                  <span>75% Charity · 5% Buyback · 20% You</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Your Split:</span>
-                  <span className={donateCreatorPercent > 0 ? "text-pink-600 dark:text-pink-400 font-medium" : ""}>
-                    {Math.round(75 + (20 * donateCreatorPercent / 100))}% Charity · 5% Buyback · {Math.round(20 - (20 * donateCreatorPercent / 100))}% You
-                  </span>
-                </div>
-                {donateCreatorPercent === 100 && (
-                  <p className="text-pink-600 dark:text-pink-400 mt-2">
-                    Maximum impact! 100% of fees support good causes.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Test Mode Toggle */}
-            <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-4" data-testid="section-test-mode">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FlaskConical className="h-4 w-4 text-purple-500" />
-                  <div>
-                    <p className="text-sm font-medium">Test Mode</p>
-                    <p className="text-xs text-muted-foreground">
-                      Simulate a launch without real transactions
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={testMode}
-                  onCheckedChange={setTestMode}
-                  data-testid="switch-test-mode"
-                />
-              </div>
-              {testMode && (
-                <div className="mt-3 pt-3 border-t border-purple-500/20">
-                  <p className="text-xs text-purple-600 dark:text-purple-400">
-                    No wallet required. No SOL spent. No real token created. Perfect for testing the flow.
-                  </p>
-                </div>
+              {donateCreatorPercent === 100 && (
+                <p className="text-xs text-pink-600 dark:text-pink-400 mt-3">
+                  Maximum impact: {formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].charityPercent)} of this coin's shared fees go to the charity.
+                  You keep only the 25% deployer share that Bags.fm pays to every deployer.
+                </p>
               )}
             </div>
 
             <div ref={launchButtonRef}>
-              {!isAuthenticated && !testMode ? (
+              {!isAuthenticated ? (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                   <SiX className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1459,7 +1360,7 @@ export function TokenLaunchForm() {
                     Login with X
                   </Button>
                 </div>
-              ) : !hasWalletForSigning && !testMode ? (
+              ) : !hasWalletForSigning ? (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                   <Wallet className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mb-3">
@@ -1509,11 +1410,6 @@ export function TokenLaunchForm() {
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {getStepMessage()}
-                    </>
-                  ) : testMode ? (
-                    <>
-                      <FlaskConical className="h-4 w-4" />
-                      Test Launch
                     </>
                   ) : (
                     <>

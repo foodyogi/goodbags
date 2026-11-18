@@ -496,7 +496,7 @@ export default function CharityApply() {
               name="payoutMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How would you like to receive donations?</FormLabel>
+                  <FormLabel>How would you like to receive your share?</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-payout-method">
@@ -520,8 +520,8 @@ export default function CharityApply() {
                   </Select>
                   <FormDescription>
                     {field.value === "twitter" 
-                      ? "Donations accumulate and you claim them via the Bags.fm app when ready"
-                      : "Donations go directly to your Solana wallet"}
+                      ? "Your share accumulates and you claim it via the Bags.fm app when ready"
+                      : "Your Solana wallet is written into each coin's fee split, and you claim your share on Bags.fm"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -559,7 +559,7 @@ export default function CharityApply() {
                       </div>
                     </FormControl>
                     <FormDescription>
-                      This is where donations will be sent. You'll verify ownership in step 4.
+                      This wallet is written into the fee split of coins launched for you, and claims your share. You'll verify ownership in step 4.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -708,7 +708,7 @@ export default function CharityApply() {
         </div>
         <CardTitle>Verify Wallet Ownership</CardTitle>
         <CardDescription>
-          Sign a message with your charity's Solana wallet to prove you control where donations will be sent.
+          Sign a message with your charity's Solana wallet to prove you control the wallet that will claim your share.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -874,7 +874,7 @@ export default function CharityApply() {
             <Alert className="mt-4 bg-blue-500/10 border-blue-500/20">
               <Twitter className="h-4 w-4 text-blue-500" />
               <AlertDescription className="text-blue-600">
-                Donations will accumulate and you can claim them anytime via the Bags.fm app by logging in with your X account.
+                Your share will accumulate and you can claim it anytime via the Bags.fm app by logging in with your X account.
               </AlertDescription>
             </Alert>
           )}
@@ -903,7 +903,7 @@ export default function CharityApply() {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Register Your Charity</h1>
         <p className="text-muted-foreground">
-          Join GoodBags and receive donations from token creators who care about your cause.
+          Join GoodBags and receive a share of the trading fees of coins launched for your cause.
         </p>
       </div>
 

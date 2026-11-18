@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Shield, AlertTriangle } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
+import { NEW_LAUNCH_SPLITS, formatPercent } from "@shared/feeSplit";
 
 export default function TermsPage() {
   useEffect(() => {
@@ -156,10 +157,12 @@ export default function TermsPage() {
                 The Platform operates on a transparent fee structure:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-2 mb-4">
-                <li>A 1% trading royalty is applied to all token trades</li>
-                <li>0.75% goes directly to the token's designated charity</li>
-                <li>0.05% is used for FYI token buybacks to support the platform</li>
-                <li>0.20% goes to the token creator (can donate some/all to charity at launch)</li>
+                <li>Each coin's shared trading fees are split by the fee config written on-chain at launch</li>
+                <li>On coins launched from September 2026, Bags.fm pays 25% of shared fees to the wallet that deploys the coin (the creator), and the GoodBags split covers the other 75%</li>
+                <li>The token's designated charity receives {formatPercent(NEW_LAUNCH_SPLITS[0].charityPercent)} of shared fees, up to {formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].charityPercent)} if the creator donates their full share</li>
+                <li>{formatPercent(NEW_LAUNCH_SPLITS[0].buybackPercent)} is reserved for FYI token buybacks</li>
+                <li>The token creator receives {formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].creatorPercent)} to {formatPercent(NEW_LAUNCH_SPLITS[0].creatorPercent)}, including the deployer share</li>
+                <li>Coins launched before September 2026 keep their original split (for example 75% charity, 5% buyback, 20% creator)</li>
                 <li>Additional blockchain transaction fees (gas) apply and are paid to the Solana network</li>
                 <li>Fee structures may be updated with notice to users</li>
               </ul>

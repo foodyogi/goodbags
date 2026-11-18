@@ -7,6 +7,8 @@ interface CreatorImpactData {
   totalTokens: number;
   totalDonated: string;
   totalDonationCount: number;
+  charityShareEarnedSol: string | null;
+  verifiedClaimCount: number | null;
   certified: boolean;
 }
 
@@ -50,7 +52,7 @@ export default function WidgetBadge() {
             </h3>
             <p className="text-xs text-gray-400 mt-1">
               {impactData?.certified 
-                ? `Donated ${formatSol(impactData.totalDonated)} through ${impactData.totalDonationCount} transactions.`
+                ? `Coins have earned charities ${impactData.charityShareEarnedSol != null ? formatSol(impactData.charityShareEarnedSol) : "a share of fees"}, with ${impactData.verifiedClaimCount ?? 0} verified on-chain fee claims.`
                 : "Supporting charity through Solana tokens."}
             </p>
           </div>

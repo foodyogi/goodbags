@@ -30,8 +30,10 @@ import { TOKEN_APPROVAL_STATUS } from "@shared/schema";
 import {
   deriveTierFromBps,
   getTierLabel,
-  bpsToPercent,
   isBpsAnomaly,
+  effectiveSplitFromBps,
+  formatPercent,
+  hasDeployerShare,
   BASE_CHARITY_BPS,
   BASE_BUYBACK_BPS,
   BASE_CREATOR_BPS,
@@ -382,7 +384,7 @@ export default function TokenDetailPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Number of fee claims</span>
-                  <span className="text-lg font-semibold">{claimCount ?? "—"}</span>
+                  <span className="text-lg font-semibold">{claimCount ?? "n/a"}</span>
                 </div>
                 {token.tradingVolume && parseFloat(token.tradingVolume) > 0 && (
                   <div className="flex justify-between items-center">
@@ -400,7 +402,7 @@ export default function TokenDetailPage() {
                     </p>
                     {share?.charityBps != null && (
                       <p className="text-xs text-muted-foreground">
-                        The charity receives {share.charityBps / 100}% of this token's Bags.fm fees, set in its on-chain fee config
+                        The charity receives {formatPercent(effectiveSplitFromBps(share.charityBps, 0, 0, hasDeployerShare(token.launchedAt)).charityPercent)} of this token's shared Bags.fm fees, set in its on-chain fee config
                       </p>
                     )}
                     {share?.feeConfigAddress && (
@@ -450,6 +452,9 @@ export default function TokenDetailPage() {
                   const derivedTier = deriveTierFromBps(charityBps, buybackBps, creatorBps);
                   const hasAnomaly = isBpsAnomaly(charityBps, buybackBps, creatorBps);
                   const tierLabel = getTierLabel(derivedTier);
+                  // Coins launched after Bags.fm's September 2026 change also pay the deployer (the creator) 25%
+                  const withDeployerShare = hasDeployerShare(token.launchedAt);
+                  const split = effectiveSplitFromBps(charityBps, buybackBps, creatorBps, withDeployerShare);
                   
                   return (
                     <>
@@ -469,7 +474,7 @@ export default function TokenDetailPage() {
                           <span className="text-sm">To Charity</span>
                         </div>
                         <Badge className="bg-pink-500/10 text-pink-600 border-pink-500/20">
-                          {bpsToPercent(charityBps)}%
+                          {formatPercent(split.charityPercent)}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
@@ -478,31 +483,29 @@ export default function TokenDetailPage() {
                           <span className="text-sm">FYI Buyback</span>
                         </div>
                         <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-                          {bpsToPercent(buybackBps)}%
+                          {formatPercent(split.buybackPercent)}
                         </Badge>
                       </div>
-                      {creatorBps > 0 && (
+                      {split.creatorPercent > 0 && (
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-green-500" />
-                            <span className="text-sm">Token Creator</span>
+                            <span className="text-sm">
+                              Token Creator{withDeployerShare && " (including the 25% deployer share)"}
+                            </span>
                           </div>
                           <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                            {bpsToPercent(creatorBps)}%
+                            {formatPercent(split.creatorPercent)}
                           </Badge>
                         </div>
                       )}
                       <div className="pt-3 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Total Fee</span>
-                          <Badge variant="outline" className="font-bold">
-                            1%
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {derivedTier === 100
-                            ? "Creator donated their share — 95% of fees go to charity!" 
-                            : "This 1% royalty split was configured at launch and is enforced on-chain."}
+                        <p className="text-xs text-muted-foreground">
+                          Shares of this coin's shared trading fees, set in its on-chain fee config at launch.
+                          {withDeployerShare
+                            ? " Bags.fm pays 25% of shared fees to the wallet that deployed the coin, and the GoodBags split covers the other 75%."
+                            : " This coin launched before Bags.fm's September 2026 change, so it has no separate deployer share."}
+                          {derivedTier === 100 && " The creator donated their full share to the charity."}
                         </p>
                         {hasAnomaly && (
                           <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">

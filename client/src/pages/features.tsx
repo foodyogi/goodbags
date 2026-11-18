@@ -8,7 +8,6 @@ import {
   Award, 
   Users, 
   Shield, 
-  FlaskConical,
   Share2,
   Globe,
   TrendingUp,
@@ -23,12 +22,18 @@ import {
   Sparkles
 } from "lucide-react";
 import { ThemedLogo } from "@/components/themed-logo";
+import {
+  NEW_LAUNCH_MAX_CHARITY_PERCENT,
+  NEW_LAUNCH_MIN_CHARITY_PERCENT,
+  NEW_LAUNCH_SPLITS,
+  formatPercent,
+} from "@shared/feeSplit";
 
 const coreFeatures = [
   {
     icon: Rocket,
     title: "Easy Token Launching",
-    description: "Create and launch your own Solana memecoin in minutes. Just provide a name, symbol, and image - we handle all the blockchain complexity.",
+    description: "Create and launch your own Solana charity coin in minutes. Just provide a name, symbol and image, and we handle the blockchain complexity.",
     details: [
       "No coding required",
       "Automatic metadata creation",
@@ -39,25 +44,25 @@ const coreFeatures = [
   },
   {
     icon: Heart,
-    title: "75+ Verified Charities",
-    description: "Choose from over 75 verified charities across 9 countries. Every charity is vetted to ensure donations reach real causes.",
+    title: "Verified Charities",
+    description: "Pick a charity from the GoodBags list, or register a US nonprofit. Registration verifies the organization's EIN through Every.org, then its email and its Solana wallet or X account, before manual approval.",
     details: [
       "Categories: hunger, education, health, animals, environment, and more",
-      "Charities from USA, UK, India, and 6 more countries",
-      "Filter by X account or Solana wallet availability",
-      "Real-time charity search with 1.3M+ nonprofits via Change API"
+      "The GoodBags list includes charities in the US and other countries, paid through their X account on Bags.fm",
+      "Self-serve registration is for US nonprofits with an EIN listed on Every.org",
+      "Search more nonprofits with Solana wallets through the Change API"
     ],
     color: "bg-pink-500",
   },
   {
     icon: Coins,
-    title: "Transparent 1% Fee",
-    description: "The lowest fee structure in the space. Just 1% per trade, with 75% going directly to your chosen charity.",
+    title: "Transparent Fee Split",
+    description: `On a new coin, at least ${NEW_LAUNCH_MIN_CHARITY_PERCENT}% of shared trading fees go to your chosen charity, up to ${NEW_LAUNCH_MAX_CHARITY_PERCENT}% if you donate your full creator share.`,
     details: [
-      "0.75% goes directly to charity",
-      "0.05% funds automatic FYI token buybacks",
-      "0.20% to token creator (can donate some/all to charity)",
-      "All transactions verifiable on blockchain"
+      `Charity: ${formatPercent(NEW_LAUNCH_SPLITS[0].charityPercent)} to ${formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].charityPercent)} of shared fees`,
+      `FYI buyback: ${formatPercent(NEW_LAUNCH_SPLITS[0].buybackPercent)}, reserved for FYI token buybacks (none executed yet)`,
+      `Creator: ${formatPercent(NEW_LAUNCH_SPLITS[NEW_LAUNCH_SPLITS.length - 1].creatorPercent)} to ${formatPercent(NEW_LAUNCH_SPLITS[0].creatorPercent)}, including the 25% Bags.fm pays the deployer`,
+      "The split is written into the coin's on-chain fee config at launch"
     ],
     color: "bg-green-500",
   },
@@ -69,7 +74,7 @@ const gamificationFeatures = [
     title: "Leaderboards",
     description: "Compete and track top performers across multiple categories.",
     details: [
-      "Top Givers: Tokens ranked by total charity donations",
+      "Top Charity Share: coins ranked by charity share earned",
       "Most Traded: Highest volume tokens",
       "Hot Now: Trending based on recent activity",
       "Real-time updates as trades happen"
@@ -82,9 +87,9 @@ const gamificationFeatures = [
     badges: [
       { name: "First Launch", desc: "Launch your first token" },
       { name: "Serial Launcher", desc: "Launch 5+ tokens" },
-      { name: "Generous Giver", desc: "Donate 1+ SOL to charity" },
-      { name: "Impact Hero", desc: "Donate 10+ SOL total" },
-      { name: "Legendary Philanthropist", desc: "Donate 100+ SOL" },
+      { name: "Generous Giver", desc: "Your coins earn charities 1+ SOL" },
+      { name: "Impact Hero", desc: "Your coins earn charities 10+ SOL" },
+      { name: "Legendary Philanthropist", desc: "Your coins earn charities 100+ SOL" },
       { name: "Volume Driver", desc: "Generate 10+ SOL in trading volume" },
       { name: "Market Maker", desc: "Generate 100+ SOL volume" },
       { name: "Community Builder", desc: "Have tokens with 10+ unique traders" },
@@ -112,7 +117,7 @@ const personalFeatures = [
     description: "Your personal dashboard showing everything you've accomplished on GoodBags.",
     details: [
       "All your launched tokens in one place",
-      "Aggregate stats: SOL donated, volume generated",
+      "Aggregate stats: charity share earned, launch buy volume",
       "Your earned achievement badges",
       "Personal impact score"
     ],
@@ -145,7 +150,7 @@ const securityFeatures = [
   {
     icon: Shield,
     title: "Charity Approval Portal",
-    description: "Our anti-rug pull protection lets charities approve tokens launched in their name via secure X verification.",
+    description: "Charities can approve or deny coins launched in their name after verifying with their official X account.",
     details: [
       "Charities verify identity via X (Twitter) OAuth",
       "Dedicated portal for reviewing token details",
@@ -160,8 +165,8 @@ const securityFeatures = [
     title: "Full Transparency",
     description: "Everything is verifiable on the Solana blockchain.",
     details: [
-      "All donations tracked with transaction signatures",
-      "Buyback history visible on dashboard",
+      "Every charity fee claim listed with its Solscan transaction",
+      "Buyback page shows that no buybacks have been executed yet",
       "Every charity wallet verified server-side",
       "Audit logs for all platform actions"
     ],
@@ -170,30 +175,23 @@ const securityFeatures = [
 
 const advancedFeatures = [
   {
-    icon: FlaskConical,
-    title: "Test Mode",
-    description: "Try the entire token launch flow without connecting a wallet or spending SOL. Perfect for learning how the platform works.",
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
-  },
-  {
     icon: Twitter,
     title: "X Account Payouts",
-    description: "Charities can claim donations via their Twitter/X handle through the Bags.fm claim system - no wallet setup required.",
+    description: "Charities can claim their share with their X account through the Bags.fm claim system, no wallet setup required.",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
   },
   {
     icon: Zap,
-    title: "Automatic FYI Buybacks",
-    description: "Platform fees automatically purchase FYI tokens every hour, creating continuous buy pressure and platform sustainability.",
+    title: "FYI Buyback Share",
+    description: "A share of each coin's fees is reserved for FYI token buybacks. None have been executed yet.",
     color: "text-yellow-500",
     bgColor: "bg-yellow-500/10",
   },
   {
     icon: Code,
     title: "Embeddable Widgets",
-    description: "Add impact badges and donation tickers to your own website. Show off your impact anywhere.",
+    description: "Add impact badges and tickers to your own website. Show off your impact anywhere.",
     color: "text-purple-500",
     bgColor: "bg-purple-500/10",
   },
@@ -223,7 +221,7 @@ export default function FeaturesPage() {
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             From token launching to gamification, transparency to community building - 
-            discover all the features that make GoodBags the best platform for impactful memecoins.
+            discover the features that make GoodBags charity fundraising infrastructure on Solana.
           </p>
         </div>
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.5
+
+- New homepage narrative: "Charity fundraising, built into the token.", a live proof strip (charity share earned, verified fee claims by Food Yoga International), "Why GoodBags exists" and a 3-step "How it works". Page title, meta description, Open Graph and Twitter tags updated, and JSON-LD (Organization and WebApplication) added.
+- Fee figures corrected everywhere for Bags.fm's September 2026 deployer share: on new coins the charity gets 56.25% to 71.25% of shared trading fees, the creator 40% to 25% (including the 25% deployer share) and the FYI buyback 3.75%. The tier table lives in `shared/feeSplit.ts` with tests. Coins launched before the change keep showing their real on-chain split. Percentages are of the coin's shared fees, never "of every trade".
+- Launch form shows the effective on-chain split for every donation tier and explains the deployer share. New FAQ entry on coins launched before and after September 2026.
+- Removed false or outdated claims: Test Mode (removed from copy and the launch form), "75+ charities across 9 countries" (registration supports US nonprofits verified by EIN through Every.org), automatic FYI buybacks (a share is reserved, none executed yet), referral credits buying FYI, "anti-rug pull protection", instant wallet transfers to charities, and the home "Estimated Buyback Fees" card.
+- Achievements, the impact report, My Impact, public profiles, embeddable widgets and the charity approval page now use the live charity share earned and verified fee claims instead of launch-time donation records.
+- README: new fee figures, Food Yoga International linked to ffl.org, removed the reference to a missing LICENSE file.
+- Removed the unused donation tracker component and all em dashes from site copy.
+
 ## 1.0.4
 
 - New "Verified on-chain fee claims": each transaction in which a charity's wallet claimed its share of a token's Bags.fm fees, with exact amount, date and a Solscan "View TX" link. Source is the Bags `GET /fee-share/token/claim-events` endpoint, with a Solana RPC fallback that counts only transactions signed by the charity wallet that run the Bags fee-share ClaimUser instruction, using the amount from the program's claim event. Cached server-side for 10 minutes; nothing is stored in the database.

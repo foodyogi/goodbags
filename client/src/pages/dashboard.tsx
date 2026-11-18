@@ -232,7 +232,7 @@ export default function Dashboard() {
                     </div>
                     <h3 className="text-lg font-semibold mb-2">No tokens launched yet</h3>
                     <p className="text-muted-foreground mb-6 max-w-sm">
-                      Launch your first memecoin to support charities and see your impact here!
+                      Launch your first charity coin to support a charity and see your impact here!
                     </p>
                     <Link href="/">
                       <Button className="gap-2" data-testid="button-empty-launch">

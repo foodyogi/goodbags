@@ -60,7 +60,7 @@ export function LoginPromptModal({ autoOpen = true, delayMs = 500 }: LoginPrompt
           </div>
           <DialogTitle className="text-xl">Welcome to GoodBags</DialogTitle>
           <DialogDescription className="text-center">
-            Login with X to launch memecoins that donate to charity on every trade.
+            Login with X to launch charity coins with a charity's share written into the fee split.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 pt-4">

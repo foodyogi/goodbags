@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 
 interface CreatorImpactData {
   totalDonated: string;
+  charityShareEarnedSol: string | null;
   certified: boolean;
 }
 
@@ -35,7 +36,9 @@ export default function WidgetTicker() {
       <div className="flex items-center gap-2 text-white">
         <Heart className="h-4 w-4 text-pink-400" />
         <span className="text-sm font-medium">
-          {formatSol(impactData?.totalDonated || "0")} SOL donated
+          {impactData?.charityShareEarnedSol != null
+            ? `${formatSol(impactData.charityShareEarnedSol)} SOL charity share earned`
+            : "Charity share: live data unavailable"}
         </span>
         {impactData?.certified && (
           <span className="px-1.5 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400 font-medium">

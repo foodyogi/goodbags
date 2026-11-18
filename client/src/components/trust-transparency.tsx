@@ -21,8 +21,8 @@ const trustFeatures = [
   },
   {
     icon: Shield,
-    title: "Anti-rug pull protection",
-    description: "Charities approve tokens via X verification",
+    title: "Charity endorsement",
+    description: "Charities can approve coins in their name via X",
   },
 ];
 

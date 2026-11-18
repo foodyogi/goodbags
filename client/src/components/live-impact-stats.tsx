@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Coins, Heart, Rocket, TrendingUp, RefreshCw, ShieldCheck } from "lucide-react";
+import { Heart, Rocket, TrendingUp, RefreshCw, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, FEE_CLAIMS_LABEL, useCharityShare } from "@/components/charity-share-earned";
 
@@ -65,7 +65,7 @@ export function LiveImpactStats() {
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
   return (
-    <section className="py-12 md:py-16" data-testid="section-live-impact">
+    <section id="proof" className="py-12 md:py-16 scroll-mt-20" data-testid="section-live-impact">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-1.5 mb-4" data-testid="badge-live-stats">
@@ -82,10 +82,9 @@ export function LiveImpactStats() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading || charityShare.isLoading ? (
             <>
-              <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -116,7 +115,8 @@ export function LiveImpactStats() {
               <StatCard
                 icon={Rocket}
                 label="Tokens Launched"
-                value={String(stats?.totalTokens ?? 0)}
+                value={stats ? String(stats.totalTokens) : CHARITY_SHARE_UNAVAILABLE}
+                valueClassName={stats ? undefined : "text-base"}
                 subtext="Live tokens with an on-chain launch transaction"
                 color="bg-primary"
                 testId="stat-tokens-launched"
@@ -124,18 +124,11 @@ export function LiveImpactStats() {
               <StatCard
                 icon={TrendingUp}
                 label="Launch Buy Volume"
-                value={`${formattedVolume} SOL`}
+                value={stats ? `${formattedVolume} SOL` : CHARITY_SHARE_UNAVAILABLE}
+                valueClassName={stats ? undefined : "text-base"}
                 subtext="Initial buys recorded at launch, later trading not tracked"
                 color="bg-secondary"
                 testId="stat-trading-volume"
-              />
-              <StatCard
-                icon={Coins}
-                label="Estimated Buyback Fees"
-                value={`${parseFloat(stats?.totalPlatformFees ?? "0").toFixed(4)} SOL`}
-                subtext="Estimate from launch buys, not verified on-chain"
-                color="bg-blue-500 dark:bg-blue-600"
-                testId="stat-buyback-pool"
               />
             </>
           )}

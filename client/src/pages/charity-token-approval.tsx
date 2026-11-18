@@ -25,6 +25,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TOKEN_APPROVAL_STATUS, type LaunchedToken } from "@shared/schema";
+import { formatFigureSol, useTokenFigures } from "@/components/charity-share-earned";
 
 interface TokensResponse {
   tokens: LaunchedToken[];
@@ -37,6 +38,7 @@ interface TokensResponse {
 }
 
 export default function CharityTokenApproval() {
+  const figuresFor = useTokenFigures();
   const [charityEmail, setCharityEmail] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [selectedToken, setSelectedToken] = useState<LaunchedToken | null>(null);
@@ -315,8 +317,8 @@ export default function CharityTokenApproval() {
                               <div className="font-mono text-xs truncate">{token.creatorWallet?.slice(0, 8)}...</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Verified donated:</span>
-                              <div className="text-green-600">{parseFloat(token.charityDonated || "0").toFixed(4)} SOL</div>
+                              <span className="text-muted-foreground">Charity share earned:</span>
+                              <div className="text-green-600">{formatFigureSol(figuresFor(token.mintAddress).earnedSol)}</div>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Launch buy:</span>
@@ -380,8 +382,8 @@ export default function CharityTokenApproval() {
                               <div>{token.charityNotifiedAt ? new Date(token.charityNotifiedAt).toLocaleDateString() : "N/A"}</div>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Verified donated:</span>
-                              <div className="text-green-600">{parseFloat(token.charityDonated || "0").toFixed(4)} SOL</div>
+                              <span className="text-muted-foreground">Charity share earned:</span>
+                              <div className="text-green-600">{formatFigureSol(figuresFor(token.mintAddress).earnedSol)}</div>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Launch buy:</span>

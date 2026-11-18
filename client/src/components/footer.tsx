@@ -14,7 +14,7 @@ export function Footer() {
               <span className="font-semibold text-foreground">GoodBags</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Launch memecoins that make a difference. Every trade supports verified charities.
+              Charity fundraising, built into the token. Every trade earns a verified charity its share of the fees.
             </p>
             <div className="flex flex-col gap-1.5">
               <a
