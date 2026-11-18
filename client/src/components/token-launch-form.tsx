@@ -1114,7 +1114,7 @@ export function TokenLaunchForm() {
                     <FormItem>
                       <FormControl>
                         <Input 
-                          placeholder="https://example.com/token-logo.png" 
+                          placeholder="https://..." 
                           {...field}
                           data-testid="input-token-image"
                         />

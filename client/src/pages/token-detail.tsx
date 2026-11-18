@@ -39,8 +39,14 @@ import {
 import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
-import { isValidTxSignature, solscanUrl } from "@shared/solana";
-import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
+import { solscanUrl } from "@shared/solana";
+import {
+  CHARITY_SHARE_LABEL,
+  CHARITY_SHARE_UNAVAILABLE,
+  FEE_CLAIMS_LABEL,
+  FeeClaimsList,
+  useCharityShare,
+} from "@/components/charity-share-earned";
 
 interface TokenImpactData {
   token: {
@@ -186,6 +192,9 @@ export default function TokenDetailPage() {
   });
   const charityShare = useCharityShare((t) => t.mint === mint);
   const share = charityShare.tokens[0];
+  // Verified on-chain fee claims by the charity for this token; null = live data unavailable
+  const claimedSol = charityShare.claimedSol;
+  const claimCount = claimedSol !== null ? charityShare.claims.length : null;
 
   if (isLoading) {
     return (
@@ -340,8 +349,8 @@ export default function TokenDetailPage() {
             tokenName={token.name}
             tokenSymbol={token.symbol}
             charityName={token.charityName || charityInfo?.name || null}
-            totalDonated={impact.totalDonated}
-            donationCount={impact.donationCount}
+            claimedSol={claimedSol}
+            claimCount={claimCount}
             isApproved={token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED}
           />
           
@@ -350,7 +359,7 @@ export default function TokenDetailPage() {
             tokenSymbol={token.symbol}
             mintAddress={token.mintAddress}
             charityName={token.charityName || charityInfo?.name || null}
-            totalDonated={impact.totalDonated}
+            claimedSol={claimedSol}
             isApproved={token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED}
           />
         </div>
@@ -360,20 +369,20 @@ export default function TokenDetailPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Heart className="h-5 w-5 text-pink-500" />
-                Donation Details
+                Charity Impact
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Verified Donated</span>
-                  <span className="text-2xl font-bold text-pink-600" data-testid="text-total-donated">
-                    {formatSol(impact.totalDonated)} SOL
+                  <span className="text-muted-foreground">{FEE_CLAIMS_LABEL}</span>
+                  <span className={`${claimedSol !== null ? "text-2xl" : "text-sm"} font-bold text-pink-600`} data-testid="text-fee-claims-total">
+                    {claimedSol !== null ? `${claimedSol} SOL` : CHARITY_SHARE_UNAVAILABLE}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Verified Donations</span>
-                  <span className="text-lg font-semibold">{impact.donationCount}</span>
+                  <span className="text-muted-foreground">Number of fee claims</span>
+                  <span className="text-lg font-semibold">{claimCount ?? "—"}</span>
                 </div>
                 {token.tradingVolume && parseFloat(token.tradingVolume) > 0 && (
                   <div className="flex justify-between items-center">
@@ -675,53 +684,19 @@ export default function TokenDetailPage() {
           </CardContent>
         </Card>
 
-        {impact.recentDonations.length > 0 && (
-          <Card className="mt-6" data-testid="card-recent-donations">
+        {!charityShare.isLoading && (share || !charityShare.listAvailable) && (
+          <Card className="mt-6" data-testid="card-fee-claims">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Heart className="h-5 w-5 text-pink-500" />
-                Recent Donations
+                {FEE_CLAIMS_LABEL}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {impact.recentDonations.slice(0, 5).map((donation) => (
-                  <div 
-                    key={donation.id} 
-                    className="flex flex-wrap justify-between items-center p-3 rounded-lg bg-muted/30 gap-2"
-                    data-testid={`donation-${donation.id}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-500/10">
-                        <Heart className="h-4 w-4 text-pink-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{formatSol(donation.amount)} SOL</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(donation.donatedAt), "MMM d, yyyy")}
-                        </p>
-                      </div>
-                    </div>
-                    {isValidTxSignature(donation.transactionSignature) ? (
-                      <a
-                        href={solscanUrl("tx", donation.transactionSignature)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-testid={`link-donation-tx-${donation.id}`}
-                      >
-                        <Button variant="ghost" size="sm" className="gap-1" data-testid={`button-view-tx-${donation.id}`}>
-                          <ExternalLink className="h-3 w-3" />
-                          View TX
-                        </Button>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground" data-testid={`text-donation-pending-${donation.id}`}>
-                        Pending on-chain confirmation
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Transactions in which the charity's wallet claimed its share of this token's Bags.fm fees.
+              </p>
+              <FeeClaimsList claims={charityShare.claims} available={charityShare.claimsAvailable} />
             </CardContent>
           </Card>
         )}

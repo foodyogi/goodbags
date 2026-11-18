@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4
+
+- New "Verified on-chain fee claims": each transaction in which a charity's wallet claimed its share of a token's Bags.fm fees, with exact amount, date and a Solscan "View TX" link. Source is the Bags `GET /fee-share/token/claim-events` endpoint, with a Solana RPC fallback that counts only transactions signed by the charity wallet that run the Bags fee-share ClaimUser instruction, using the amount from the program's claim event. Cached server-side for 10 minutes; nothing is stored in the database.
+- Shown on the home stats (next to "Charity share earned"), token pages, the FYI page and the dashboard. Trending, Token Leaderboard, token cards, the dashboard and token-page impact cards now use the same live figures as the home page instead of launch-time "donated" records.
+- Removed a hardcoded SOL-to-USD estimate from the token-page impact card.
+- Copy: the charity share is now described accurately (75% of the 1% fee, 0.75% of every trade, more if the creator donates their share). The FYI wallet box explains that the charity's share is claimed on-chain through Bags.fm. The hero example charity is now Food Yoga International. goodbags.io and old X handles replaced with goodbags.tech and @goodbagstech.
+- 404 page rewritten in the site theme with a link home (removed the developer "add the page to the router" message).
+
 ## 1.0.3
 
 - Creator donation tier now reaches the chain: the launch form sends the selected tier to `/api/tokens/config`, which builds the on-chain fee split from it (previously every token launched at 7500/500/2000). Invalid tiers are rejected. Splits always total 10000 BPS and buyback stays 500 BPS. Existing tokens are unchanged.

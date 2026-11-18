@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { StatsCards } from "@/components/stats-cards";
 import { TokensGrid } from "@/components/tokens-grid";
-import { DonationTracker } from "@/components/donation-tracker";
+import {
+  CHARITY_SHARE_LABEL,
+  CHARITY_SHARE_UNAVAILABLE,
+  FEE_CLAIMS_LABEL,
+  FeeClaimsList,
+  useCharityShare,
+} from "@/components/charity-share-earned";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,13 +74,14 @@ export default function Dashboard() {
   const liveTokenCount = myTokens?.filter(t => !t.isTest).length ?? 0;
   const testTokenCount = myTokens?.filter(t => t.isTest).length ?? 0;
 
-  const myDonations = globalData?.donations?.filter(d => 
-    myTokens?.some(t => t.mintAddress === d.tokenMint)
-  ) ?? [];
+  // Same live figures as the home page: charity share earned and verified on-chain fee claims
+  const allCharityShare = useCharityShare();
+  const myCharityShare = useCharityShare(
+    (t) => filteredMyTokens?.some((m) => m.mintAddress === t.mint) ?? false
+  );
 
   const myStats = filteredMyTokens ? {
     totalTokens: filteredMyTokens.length,
-    totalDonated: filteredMyTokens.reduce((sum, t) => sum + parseFloat(t.charityDonated || "0"), 0).toFixed(4),
     totalVolume: filteredMyTokens.reduce((sum, t) => sum + parseFloat(t.tradingVolume || "0"), 0).toFixed(4),
   } : null;
 
@@ -85,7 +92,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold mb-2" data-testid="heading-dashboard">Dashboard</h1>
             <p className="text-muted-foreground">
-              Track your launched tokens, launch buys, and blockchain-verified donations
+              Track your launched tokens, launch buys, charity share earned and verified on-chain fee claims
             </p>
           </div>
           <Link href="/">
@@ -186,8 +193,10 @@ export default function Dashboard() {
                             <Heart className="h-6 w-6 text-pink-500" />
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Verified Donated</p>
-                            <p className="text-2xl font-bold">{myStats?.totalDonated} SOL</p>
+                            <p className="text-sm text-muted-foreground">{CHARITY_SHARE_LABEL}</p>
+                            <p className={`${myCharityShare.earnedSol !== null ? "text-2xl" : "text-base"} font-bold`}>
+                              {myCharityShare.earnedSol !== null ? `${myCharityShare.earnedSol} SOL` : CHARITY_SHARE_UNAVAILABLE}
+                            </p>
                           </div>
                         </div>
                       </CardContent>
@@ -205,8 +214,13 @@ export default function Dashboard() {
                       <TokensGrid tokens={filteredMyTokens} isLoading={myTokensLoading} />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold mb-4">My Donations</h2>
-                      <DonationTracker donations={myDonations} isLoading={globalLoading} />
+                      <h2 className="text-xl font-semibold mb-4">{FEE_CLAIMS_LABEL}</h2>
+                      <FeeClaimsList
+                        claims={myCharityShare.claims}
+                        available={myCharityShare.claimsAvailable}
+                        isLoading={myCharityShare.isLoading}
+                        showToken
+                      />
                     </div>
                   </div>
                 </>
@@ -240,8 +254,14 @@ export default function Dashboard() {
                   <TokensGrid tokens={filteredGlobalTokens} isLoading={globalLoading} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Recent Donations</h2>
-                  <DonationTracker donations={globalData?.donations} isLoading={globalLoading} />
+                  <h2 className="text-xl font-semibold mb-4">{FEE_CLAIMS_LABEL}</h2>
+                  <FeeClaimsList
+                    claims={allCharityShare.claims}
+                    available={allCharityShare.claimsAvailable}
+                    isLoading={allCharityShare.isLoading}
+                    showToken
+                    limit={10}
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -272,8 +292,14 @@ export default function Dashboard() {
                 <TokensGrid tokens={globalData?.tokens} isLoading={globalLoading} />
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-4">Recent Donations</h2>
-                <DonationTracker donations={globalData?.donations} isLoading={globalLoading} />
+                <h2 className="text-xl font-semibold mb-4">{FEE_CLAIMS_LABEL}</h2>
+                <FeeClaimsList
+                  claims={allCharityShare.claims}
+                  available={allCharityShare.claimsAvailable}
+                  isLoading={allCharityShare.isLoading}
+                  showToken
+                  limit={10}
+                />
               </div>
             </div>
           </>

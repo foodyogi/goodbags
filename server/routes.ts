@@ -2352,7 +2352,12 @@ export async function registerRoutes(
       );
       res.json({
         available: true,
-        tokens: shares.map((share, i) => ({ ...share, charityId: tokens[i].charityId })),
+        tokens: shares.map((share, i) => ({
+          ...share,
+          charityId: tokens[i].charityId,
+          symbol: tokens[i].symbol,
+          name: tokens[i].name,
+        })),
       });
     } catch (error) {
       console.error("Charity share error:", error);

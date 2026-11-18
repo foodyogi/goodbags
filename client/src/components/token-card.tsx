@@ -6,12 +6,15 @@ import { ExternalLink, Heart, TrendingUp, Clock, ArrowRight, BadgeCheck, AlertCi
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { type LaunchedToken, TOKEN_APPROVAL_STATUS } from "@shared/schema";
+import { formatFigureSol, useTokenFigures } from "@/components/charity-share-earned";
 
 interface TokenCardProps {
   token: LaunchedToken;
 }
 
 export function TokenCard({ token }: TokenCardProps) {
+  const figures = useTokenFigures()(token.mintAddress);
+
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
@@ -103,8 +106,10 @@ export function TokenCard({ token }: TokenCardProps) {
               <Heart className="h-3.5 w-3.5 text-pink-500" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Verified donated</p>
-              <p className="text-sm font-medium">{formatSol(token.charityDonated)} SOL</p>
+              <p className="text-xs text-muted-foreground">Charity share earned</p>
+              <p className="text-sm font-medium" data-testid={`text-charity-share-${token.id}`}>
+                {token.isTest ? "Not applicable (test token)" : formatFigureSol(figures.earnedSol)}
+              </p>
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ interface SocialShareProps {
   tokenSymbol: string;
   mintAddress: string;
   charityName: string | null;
-  totalDonated?: string;
+  claimedSol?: string | null; // Verified on-chain fee claims
   isApproved?: boolean;
 }
 
@@ -26,14 +26,14 @@ export function SocialShare({
   tokenSymbol, 
   mintAddress, 
   charityName, 
-  totalDonated,
+  claimedSol,
   isApproved 
 }: SocialShareProps) {
   const goodbagsUrl = `https://goodbags.tech/tokens/${mintAddress}`;
   const bagsUrl = `https://bags.fm/${mintAddress}`;
   
   const getShareText = (type: 'launch' | 'milestone' | 'endorsed') => {
-    const donated = formatSol(totalDonated);
+    const claimed = formatSol(claimedSol);
     
     switch (type) {
       case 'endorsed':
@@ -41,7 +41,7 @@ export function SocialShare({
 
 This memecoin is legit - the charity approved it.
 
-Every trade donates to ${charityName}. Already donated: ${donated} SOL
+Every trade earns ${charityName} a share of the fees. Verified on-chain fee claims so far: ${claimed} SOL
 
 View on GoodBags: ${goodbagsUrl}
 Trade on Bags: ${bagsUrl}
@@ -49,7 +49,7 @@ Trade on Bags: ${bagsUrl}
 #GoodBags #Solana #CharityMeme`;
       
       case 'milestone':
-        return `The $${tokenSymbol} community just hit ${donated} SOL donated to ${charityName}! 
+        return `The $${tokenSymbol} community just hit ${claimed} SOL in verified on-chain fee claims by ${charityName}! 
 
 Memecoins making real impact. Join us:
 ${goodbagsUrl}
@@ -57,9 +57,9 @@ ${goodbagsUrl}
 #GoodBags #Solana #CryptoForGood`;
       
       default:
-        return `Check out $${tokenSymbol} on @GoodBagsIO!
+        return `Check out $${tokenSymbol} on @goodbagstech!
 
-Every trade automatically donates to ${charityName || 'charity'}.
+Every trade earns ${charityName || 'charity'} a share of the fees.
 
 View impact: ${goodbagsUrl}
 Trade: ${bagsUrl}
@@ -139,7 +139,7 @@ Trade: ${bagsUrl}
           </Button>
         )}
 
-        {parseFloat(totalDonated || "0") > 0 && (
+        {parseFloat(claimedSol || "0") > 0 && (
           <Button 
             variant="secondary"
             className="w-full gap-2"
@@ -153,7 +153,7 @@ Trade: ${bagsUrl}
 
         <div className="pt-3 border-t" data-testid="section-share-footer">
           <p className="text-xs text-muted-foreground text-center" data-testid="text-share-footer">
-            Community growth drives trading volume, which means more donations!
+            Community growth drives trading volume, which grows the charity's share of fees.
           </p>
         </div>
       </CardContent>

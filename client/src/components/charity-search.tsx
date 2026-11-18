@@ -414,7 +414,7 @@ function CharityCard({ charity, isSelected, onSelect, disabled }: CharityCardPro
               <p className="font-medium text-foreground mb-1">Help this charity accept crypto!</p>
               {charity.email ? (
                 <a 
-                  href={`mailto:${charity.email}?subject=Accept%20Crypto%20Donations%20via%20GoodBags&body=Hi%2C%0A%0AI%20wanted%20to%20let%20you%20know%20about%20GoodBags%20(goodbags.io)%20-%20a%20platform%20that%20helps%20charities%20receive%20crypto%20donations.%0A%0ATo%20receive%20donations%2C%20you%20just%20need%20a%20verified%20X%20(Twitter)%20account%20or%20a%20Solana%20wallet.%0A%0ALearn%20more%20at%20goodbags.io`}
+                  href={`mailto:${charity.email}?subject=Accept%20Crypto%20Donations%20via%20GoodBags&body=Hi%2C%0A%0AI%20wanted%20to%20let%20you%20know%20about%20GoodBags%20(goodbags.tech)%20-%20a%20platform%20that%20helps%20charities%20receive%20crypto%20donations.%0A%0ATo%20receive%20donations%2C%20you%20just%20need%20a%20verified%20X%20(Twitter)%20account%20or%20a%20Solana%20wallet.%0A%0ALearn%20more%20at%20goodbags.tech`}
                   className="text-primary hover:underline inline-flex items-center gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >

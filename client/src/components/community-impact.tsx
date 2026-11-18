@@ -2,13 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Heart, Users, TrendingUp, Trophy, Sparkles, Target } from "lucide-react";
+import { CHARITY_SHARE_UNAVAILABLE, FEE_CLAIMS_LABEL } from "@/components/charity-share-earned";
 
 interface CommunityImpactProps {
   tokenName: string;
   tokenSymbol: string;
   charityName: string | null;
-  totalDonated: string;
-  donationCount: number;
+  claimedSol: string | null; // Verified on-chain fee claims; null = live data unavailable
+  claimCount: number | null;
   isApproved?: boolean;
 }
 
@@ -19,14 +20,6 @@ function formatSol(value: string | null | undefined): string {
   if (num < 0.001) return "< 0.001";
   if (num < 1) return num.toFixed(4);
   return num.toFixed(2);
-}
-
-function formatUsd(solAmount: string): string {
-  const sol = parseFloat(solAmount) || 0;
-  const usdValue = sol * 150;
-  if (usdValue < 1) return "< $1";
-  if (usdValue < 1000) return `~$${usdValue.toFixed(0)}`;
-  return `~$${(usdValue / 1000).toFixed(1)}K`;
 }
 
 function getMilestoneProgress(donated: number): { current: number; next: number; label: string } {
@@ -62,11 +55,11 @@ export function CommunityImpact({
   tokenName, 
   tokenSymbol, 
   charityName, 
-  totalDonated, 
-  donationCount,
+  claimedSol, 
+  claimCount,
   isApproved 
 }: CommunityImpactProps) {
-  const donatedNum = parseFloat(totalDonated) || 0;
+  const donatedNum = parseFloat(claimedSol ?? "0") || 0;
   const milestone = getMilestoneProgress(donatedNum);
   const progress = milestone.next > 0 ? Math.min((milestone.current / milestone.next) * 100, 100) : 100;
 
@@ -89,20 +82,17 @@ export function CommunityImpact({
       <CardContent className="pt-4 space-y-6">
         <div className="text-center py-4 rounded-lg bg-gradient-to-br from-pink-500/5 to-purple-500/5 border border-pink-500/10" data-testid="section-donation-summary">
           <p className="text-sm text-muted-foreground mb-1" data-testid="text-donation-intro">
-            Together, the ${tokenSymbol} community has donated
+            {FEE_CLAIMS_LABEL} from ${tokenSymbol}
           </p>
           <div className="flex items-center justify-center gap-2 mb-1">
             <Heart className="h-6 w-6 text-pink-500 animate-pulse" />
-            <span className="text-4xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent" data-testid="text-community-donated">
-              {formatSol(totalDonated)} SOL
+            <span className={`${claimedSol !== null ? "text-4xl" : "text-lg"} font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent`} data-testid="text-community-donated">
+              {claimedSol !== null ? `${formatSol(claimedSol)} SOL` : CHARITY_SHARE_UNAVAILABLE}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground" data-testid="text-usd-equivalent">
-            {formatUsd(totalDonated)} USD equivalent
-          </p>
           {charityName && (
             <p className="text-sm font-medium mt-2" data-testid="text-charity-name">
-              to <span className="text-pink-600">{charityName}</span>
+              claimed by <span className="text-pink-600">{charityName}</span>
             </p>
           )}
         </div>
@@ -125,9 +115,9 @@ export function CommunityImpact({
           <div className="text-center p-3 rounded-lg bg-muted/30" data-testid="stat-donations-made">
             <div className="flex items-center justify-center gap-1 text-2xl font-bold text-blue-500">
               <TrendingUp className="h-5 w-5" />
-              {donationCount}
+              {claimCount ?? "—"}
             </div>
-            <p className="text-xs text-muted-foreground" data-testid="text-donations-made-label">Donations Made</p>
+            <p className="text-xs text-muted-foreground" data-testid="text-donations-made-label">Fee Claims</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-muted/30" data-testid="stat-milestone-status">
             <div className="flex items-center justify-center gap-1 text-2xl font-bold text-purple-500">
@@ -138,13 +128,13 @@ export function CommunityImpact({
           </div>
         </div>
 
-        {donationCount > 0 && (
+        {(claimCount ?? 0) > 0 && (
           <div className="text-center pt-2 border-t" data-testid="section-donation-cta">
             <p className="text-sm text-muted-foreground" data-testid="text-donation-cta">
-              Every trade with ${tokenSymbol} automatically donates to charity.
+              Every ${tokenSymbol} trade earns the charity its share of the token's fees.
             </p>
             <p className="text-xs text-muted-foreground mt-1" data-testid="text-donation-cta-secondary">
-              Be part of the movement. Trade to donate more!
+              Be part of the movement. More trading grows the charity's share.
             </p>
           </div>
         )}

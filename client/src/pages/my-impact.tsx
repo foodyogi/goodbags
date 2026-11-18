@@ -68,7 +68,7 @@ export default function MyImpactPage() {
   };
   
   const handleShareTwitter = () => {
-    const text = `I've launched ${stats.totalTokens} tokens on @GoodBagsIO and generated ${formatSol(stats.totalDonated)} SOL in charity donations! Check out my impact profile:`;
+    const text = `I've launched ${stats.totalTokens} tokens on @goodbagstech and generated ${formatSol(stats.totalDonated)} SOL in charity donations! Check out my impact profile:`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(profileUrl)}`;
     window.open(url, "_blank");
   };

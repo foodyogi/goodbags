@@ -30,7 +30,7 @@ export function HeroSection() {
               <div className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-4 py-1.5">
                 <Heart className="h-4 w-4 text-pink-500" />
                 <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
-                  1% of every trade goes to charity
+                  At least 0.75% of every trade goes to charity
                 </span>
               </div>
             </div>
@@ -45,7 +45,7 @@ export function HeroSection() {
             
             <p className="text-lg text-muted-foreground max-w-lg">
               Create and launch your own Solana memecoins with built-in charity donations. 
-              Support verified charities like Juliana's Animal Sanctuary with every trade — 
+              Support verified charities like Food Yoga International with every trade — 
               transparent, verifiable, and stored on-chain.
             </p>
             
@@ -105,8 +105,8 @@ export function HeroSection() {
               />
               <FeatureCard
                 icon={Heart}
-                title="1% For Charity"
-                description="The full trading royalty benefits your chosen cause"
+                title="0.75%+ For Charity"
+                description="75% of the 1% trading fee goes to your chosen cause, up to 95% if you donate your creator share"
                 gradient="from-pink-500/20 to-pink-500/5"
               />
               <FeatureCard

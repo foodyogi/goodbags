@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Flame, Heart, TrendingUp, ArrowRight, Clock, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { type LaunchedToken, TOKEN_APPROVAL_STATUS } from "@shared/schema";
+import { formatFigureSol, useTokenFigures, type TokenFigures } from "@/components/charity-share-earned";
 
 interface TrendingTokensProps {
   tokens: LaunchedToken[];
@@ -12,15 +13,16 @@ interface TrendingTokensProps {
 }
 
 interface TrendingToken extends LaunchedToken {
+  figures: TokenFigures;
   trendScore: number;
   isNew: boolean;
   isHot: boolean;
 }
 
-function calculateTrendScore(token: LaunchedToken): number {
-  const donations = parseFloat(token.charityDonated || "0");
+function calculateTrendScore(token: LaunchedToken, figures: TokenFigures): number {
+  const charityShare = figures.earnedSol ?? 0;
   const volume = parseFloat(token.tradingVolume || "0");
-  const donationCount = token.donationCount || 0;
+  const claimCount = figures.claimCount ?? 0;
   
   const launchDate = new Date(token.launchedAt);
   const now = new Date();
@@ -28,7 +30,7 @@ function calculateTrendScore(token: LaunchedToken): number {
   
   const recencyMultiplier = Math.max(0.1, 1 - (hoursAgo / (24 * 7)));
   
-  const activityScore = (donationCount * 15) + (donations * 100) + (volume * 20);
+  const activityScore = (claimCount * 15) + (charityShare * 100) + (volume * 20);
   
   const endorsementBonus = token.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED ? 50 : 0;
   
@@ -42,10 +44,10 @@ function isNewToken(token: LaunchedToken): boolean {
   return hoursAgo < 24;
 }
 
-function isHotToken(token: LaunchedToken): boolean {
-  const donationCount = token.donationCount || 0;
+function isHotToken(token: LaunchedToken, figures: TokenFigures): boolean {
+  const claimCount = figures.claimCount ?? 0;
   const volume = parseFloat(token.tradingVolume || "0");
-  return donationCount >= 3 || volume >= 1;
+  return claimCount >= 3 || volume >= 1;
 }
 
 function formatSol(value: string | null): string {
@@ -110,7 +112,9 @@ function TrendingTokenRow({ token, rank }: { token: TrendingToken; rank: number 
         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
           <span className="flex items-center gap-1">
             <Heart className="h-3 w-3 text-pink-500" />
-            {formatSol(token.charityDonated)} SOL verified
+            {token.figures.earnedSol !== null
+              ? `${formatFigureSol(token.figures.earnedSol)} charity share`
+              : formatFigureSol(null)}
           </span>
           <span className="flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-green-500" />
@@ -130,15 +134,20 @@ function TrendingTokenRow({ token, rank }: { token: TrendingToken; rank: number 
 }
 
 export function TrendingTokens({ tokens, limit = 5 }: TrendingTokensProps) {
+  const figuresFor = useTokenFigures();
   const liveTokens = tokens.filter(t => !t.isTest);
   
   const trendingTokens: TrendingToken[] = liveTokens
-    .map(token => ({
-      ...token,
-      trendScore: calculateTrendScore(token),
-      isNew: isNewToken(token),
-      isHot: isHotToken(token),
-    }))
+    .map(token => {
+      const figures = figuresFor(token.mintAddress);
+      return {
+        ...token,
+        figures,
+        trendScore: calculateTrendScore(token, figures),
+        isNew: isNewToken(token),
+        isHot: isHotToken(token, figures),
+      };
+    })
     .sort((a, b) => b.trendScore - a.trendScore)
     .slice(0, limit);
   

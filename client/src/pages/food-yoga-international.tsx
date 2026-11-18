@@ -23,7 +23,13 @@ import {
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
 import { FYI_CHARITY_WALLET, solscanUrl } from "@shared/solana";
-import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
+import {
+  CHARITY_SHARE_LABEL,
+  CHARITY_SHARE_UNAVAILABLE,
+  FEE_CLAIMS_LABEL,
+  FeeClaimsList,
+  useCharityShare,
+} from "@/components/charity-share-earned";
 
 const PARTNER_WALLET = FYI_CHARITY_WALLET;
 
@@ -347,13 +353,35 @@ export default function FoodYogaInternational() {
                   </a>
                 </div>
 
+                <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20" data-testid="section-fee-claims">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{FEE_CLAIMS_LABEL}</p>
+                  <p className="text-2xl font-bold mb-1" data-testid="text-fee-claims-total">
+                    {charityShare.isLoading
+                      ? "…"
+                      : charityShare.claimedSol !== null
+                        ? `${charityShare.claimedSol} SOL`
+                        : CHARITY_SHARE_UNAVAILABLE}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Each claim is a transaction signed by this wallet that claims Food Yoga International's
+                    share of a token's fees through Bags.fm.
+                  </p>
+                  <FeeClaimsList
+                    claims={charityShare.claims}
+                    available={charityShare.claimsAvailable}
+                    isLoading={charityShare.isLoading}
+                    showToken
+                  />
+                </div>
+
                 <div className="flex items-start gap-2 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
                   <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Verified Wallet</p>
                     <p className="text-sm text-muted-foreground">
-                      This wallet address has been verified as the official Food Yoga International donation wallet. 
-                      All GoodBags token royalties are sent directly to this address.
+                      This is Food Yoga International's official Bags.fm wallet (@fflglobal). The charity's share of
+                      fees from GoodBags tokens supporting Food Yoga International goes to this wallet. It builds up in
+                      each token's Bags.fm fee config and is claimed on-chain through Bags.fm.
                     </p>
                   </div>
                 </div>
@@ -420,7 +448,7 @@ export default function FoodYogaInternational() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>Donations are sent directly to FYI's verified Solana wallet</span>
+                      <span>FYI's share of fees is claimed on-chain to its Solana wallet through Bags.fm</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />

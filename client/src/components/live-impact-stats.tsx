@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Coins, Heart, Rocket, TrendingUp, RefreshCw } from "lucide-react";
+import { Coins, Heart, Rocket, TrendingUp, RefreshCw, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, FEE_CLAIMS_LABEL, useCharityShare } from "@/components/charity-share-earned";
 
 interface DashboardStats {
   totalTokens: number;
@@ -77,13 +77,15 @@ export function LiveImpactStats() {
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Token and launch figures come from GoodBags launch records. 
-            Charity share comes from Bags.fm lifetime fees and each token's on-chain fee split.
+            Charity share comes from Bags.fm lifetime fees and each token's on-chain fee split. Fee claims are
+            on-chain transactions in which a charity's wallet claimed its share.
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {isLoading || charityShare.isLoading ? (
             <>
+              <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -99,6 +101,17 @@ export function LiveImpactStats() {
                 subtext="Bags.fm lifetime fees x each token's on-chain charity share. Verify on each token page."
                 color="bg-pink-500 dark:bg-pink-600"
                 testId="stat-charity-share"
+              />
+              <StatCard
+                icon={ShieldCheck}
+                label={FEE_CLAIMS_LABEL}
+                value={charityShare.claimedSol !== null ? `${charityShare.claimedSol} SOL` : CHARITY_SHARE_UNAVAILABLE}
+                valueClassName={charityShare.claimedSol !== null ? undefined : "text-base"}
+                subtext={charityShare.claimedSol !== null
+                  ? `${charityShare.claims.length} claims by charity wallets, each with a Solscan link on its token page`
+                  : undefined}
+                color="bg-green-600 dark:bg-green-700"
+                testId="stat-fee-claims"
               />
               <StatCard
                 icon={Rocket}

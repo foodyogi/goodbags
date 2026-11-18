@@ -122,7 +122,7 @@ const personalFeatures = [
     title: "Shareable Public Profiles",
     description: "Share your impact with the world. Every creator gets a public profile page.",
     details: [
-      "Unique profile URL: goodbags.io/profile/[wallet]",
+      "Unique profile URL: goodbags.tech/profile/[wallet]",
       "Shows all your tokens and achievements",
       "One-click sharing to Twitter/X",
       "Perfect for building social proof"

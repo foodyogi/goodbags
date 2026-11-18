@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Coins, Heart, TrendingUp, Rocket } from "lucide-react";
+import { Coins, Heart, TrendingUp, Rocket, ShieldCheck } from "lucide-react";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, FEE_CLAIMS_LABEL, useCharityShare } from "@/components/charity-share-earned";
 
 interface StatsData {
   totalTokens: number;
@@ -14,6 +15,7 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ stats, isLoading }: StatsCardsProps) {
+  const charityShare = useCharityShare();
   const cards = [
     {
       title: "Tokens Launched",
@@ -24,12 +26,20 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
       iconColor: "text-primary",
     },
     {
-      title: "Verified Donated",
-      value: stats?.totalDonated ?? "0",
+      title: CHARITY_SHARE_LABEL,
+      value: charityShare.earnedSol ?? CHARITY_SHARE_UNAVAILABLE,
       icon: Heart,
-      suffix: " SOL",
+      suffix: charityShare.earnedSol !== null ? " SOL" : "",
       gradient: "from-pink-500/20 to-pink-500/5",
       iconColor: "text-pink-500",
+    },
+    {
+      title: FEE_CLAIMS_LABEL,
+      value: charityShare.claimedSol ?? CHARITY_SHARE_UNAVAILABLE,
+      icon: ShieldCheck,
+      suffix: charityShare.claimedSol !== null ? " SOL" : "",
+      gradient: "from-green-500/20 to-green-500/5",
+      iconColor: "text-green-600",
     },
     {
       title: "Launch Buy Volume",
@@ -41,10 +51,10 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     },
   ];
 
-  if (isLoading) {
+  if (isLoading || charityShare.isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <Skeleton className="h-4 w-24" />
@@ -60,7 +70,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -74,7 +84,10 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold" data-testid={`stat-${card.title.toLowerCase().replace(/\s+/g, '-')}`}>
+              <p
+                className={`${card.value === CHARITY_SHARE_UNAVAILABLE ? "text-base" : "text-2xl"} font-bold`}
+                data-testid={`stat-${card.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+              >
                 {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
                 <span className="text-lg font-normal text-muted-foreground">{card.suffix}</span>
               </p>

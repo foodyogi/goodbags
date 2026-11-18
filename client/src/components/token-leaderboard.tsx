@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Heart, TrendingUp, Medal, Crown, Award, Flame, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { type LaunchedToken } from "@shared/schema";
+import { FEE_CLAIMS_LABEL, formatFigureSol, useTokenFigures, type TokenFigures } from "@/components/charity-share-earned";
 
 interface TokenLeaderboardProps {
   tokens: LaunchedToken[];
@@ -15,6 +16,7 @@ interface TokenLeaderboardProps {
 type LeaderboardType = "donations" | "volume" | "hot";
 
 interface RankedToken extends LaunchedToken {
+  figures: TokenFigures;
   rank: number;
   score: number;
 }
@@ -53,18 +55,18 @@ function formatSol(value: string | null): string {
   return num.toFixed(3);
 }
 
-function calculateHotScore(token: LaunchedToken): number {
-  const donations = parseFloat(token.charityDonated || "0");
+function calculateHotScore(token: LaunchedToken, figures: TokenFigures): number {
+  const charityShare = figures.earnedSol ?? 0;
   const volume = parseFloat(token.tradingVolume || "0");
-  const donationCount = token.donationCount || 0;
+  const claimCount = figures.claimCount ?? 0;
   
   const launchDate = new Date(token.launchedAt);
   const now = new Date();
   const hoursAgo = (now.getTime() - launchDate.getTime()) / (1000 * 60 * 60);
   
   const recencyBonus = Math.max(0, 100 - hoursAgo);
-  const activityScore = donationCount * 10;
-  const valueScore = (donations * 100) + (volume * 10);
+  const activityScore = claimCount * 10;
+  const valueScore = (charityShare * 100) + (volume * 10);
   
   return recencyBonus + activityScore + valueScore;
 }
@@ -112,13 +114,18 @@ function LeaderboardRow({ token, type }: { token: RankedToken; type: Leaderboard
           <span className="font-bold" data-testid={`leaderboard-score-${token.id}`}>
             {type === "hot" 
               ? Math.round(token.score).toLocaleString()
-              : `${formatSol(type === "donations" ? token.charityDonated : token.tradingVolume)} SOL`
+              : type === "donations"
+                ? formatFigureSol(token.figures.earnedSol)
+                : `${formatSol(token.tradingVolume)} SOL`
             }
           </span>
         </div>
         {type === "donations" && (
           <p className="text-xs text-muted-foreground">
-            {token.donationCount || 0} verified donations
+            {token.figures.earnedSol !== null && "charity share · "}
+            {token.figures.claimCount !== null
+              ? `${token.figures.claimCount} ${FEE_CLAIMS_LABEL.toLowerCase()}`
+              : `${FEE_CLAIMS_LABEL}: unavailable`}
           </p>
         )}
       </div>
@@ -133,7 +140,9 @@ function LeaderboardRow({ token, type }: { token: RankedToken; type: Leaderboard
 }
 
 export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) {
+  const figuresFor = useTokenFigures();
   const liveTokens = tokens.filter(t => !t.isTest);
+  const hotScore = (token: LaunchedToken) => calculateHotScore(token, figuresFor(token.mintAddress));
   
   const getRankedTokens = (type: LeaderboardType): RankedToken[] => {
     let sorted: LaunchedToken[];
@@ -141,7 +150,7 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
     switch (type) {
       case "donations":
         sorted = [...liveTokens].sort((a, b) => 
-          parseFloat(b.charityDonated || "0") - parseFloat(a.charityDonated || "0")
+          (figuresFor(b.mintAddress).earnedSol ?? 0) - (figuresFor(a.mintAddress).earnedSol ?? 0)
         );
         break;
       case "volume":
@@ -150,16 +159,15 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
         );
         break;
       case "hot":
-        sorted = [...liveTokens].sort((a, b) => 
-          calculateHotScore(b) - calculateHotScore(a)
-        );
+        sorted = [...liveTokens].sort((a, b) => hotScore(b) - hotScore(a));
         break;
     }
     
     return sorted.slice(0, limit).map((token, index) => ({
       ...token,
+      figures: figuresFor(token.mintAddress),
       rank: index + 1,
-      score: type === "hot" ? calculateHotScore(token) : 0,
+      score: type === "hot" ? hotScore(token) : 0,
     }));
   };
 
@@ -180,7 +188,7 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="donations" className="gap-1" data-testid="tab-donations">
               <Heart className="h-3 w-3" />
-              Top Givers
+              Top Charity Share
             </TabsTrigger>
             <TabsTrigger value="volume" className="gap-1" data-testid="tab-volume">
               <TrendingUp className="h-3 w-3" />
@@ -209,7 +217,7 @@ export function TokenLeaderboard({ tokens, limit = 10 }: TokenLeaderboardProps) 
               <LeaderboardRow key={token.id} token={token} type="hot" />
             ))}
             <p className="text-xs text-center text-muted-foreground pt-2" data-testid="text-hot-explanation">
-              Hot score combines recency, verified donations, and launch buy size
+              Hot score combines recency, charity share earned, verified on-chain fee claims, and launch buy size
             </p>
           </TabsContent>
         </Tabs>
