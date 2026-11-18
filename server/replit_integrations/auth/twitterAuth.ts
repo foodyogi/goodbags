@@ -5,6 +5,8 @@ import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 import crypto from "crypto";
 import OAuth from "oauth-1.0a";
+import { logXFailure, logXStep } from "./x-diagnostics";
+import { safeReturnTo } from "./return-to";
 
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID!;
 const TWITTER_CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET!;
@@ -121,10 +123,10 @@ export async function setupAuth(app: Express) {
 
   // Twitter OAuth 2.0 login endpoint
   app.get("/api/login", (req, res) => {
-    const returnTo = req.query.returnTo as string;
-    console.log(`[Twitter Auth] Login initiated, returnTo: ${returnTo || '/'}`);
+    const returnTo = safeReturnTo(req.query.returnTo);
+    console.log(`[Twitter Auth] Login initiated, returnTo: ${returnTo}`);
     
-    if (returnTo && req.session) {
+    if (req.session) {
       (req.session as any).returnTo = returnTo;
     }
 
@@ -151,7 +153,8 @@ export async function setupAuth(app: Express) {
         response_type: "code",
         client_id: TWITTER_CLIENT_ID,
         redirect_uri: callbackUrl,
-        scope: "tweet.read users.read offline.access",
+        // Minimum for GET /2/users/me (users.read with tweet.read); no refresh token is used
+        scope: "tweet.read users.read",
         state: state,
         code_challenge: codeChallenge,
         code_challenge_method: "S256",
@@ -168,7 +171,7 @@ export async function setupAuth(app: Express) {
       console.log(`[Twitter Auth] Callback received, has code: ${!!code}, state: ${state?.toString().substring(0, 8)}...`);
 
       if (error) {
-        console.error("[Twitter Auth] OAuth error:", error, error_description);
+        logXStep("Authorization", `X returned error=${error} description=${error_description ?? "none"}`);
         return res.redirect(`/?error=${encodeURIComponent(error as string)}`);
       }
 
@@ -178,7 +181,7 @@ export async function setupAuth(app: Express) {
       console.log(`[Twitter Auth] Session data - has savedState: ${!!savedState}, has codeVerifier: ${!!codeVerifier}, returnTo: ${returnTo || '/'}`);
 
       if (!code || state !== savedState) {
-        console.error(`[Twitter Auth] State mismatch - received: ${state}, saved: ${savedState}`);
+        logXStep("State check", `has code: ${!!code}, has saved state: ${!!savedState}, state matches: false`);
         return res.redirect("/?error=invalid_state");
       }
 
@@ -201,28 +204,35 @@ export async function setupAuth(app: Express) {
       });
 
       if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error("Token exchange failed:", tokenResponse.status, errorText);
+        await logXFailure("Token exchange (POST /2/oauth2/token)", tokenResponse);
         return res.redirect("/?error=token_exchange_failed");
       }
 
       const tokens: TwitterTokenResponse = await tokenResponse.json();
+      if (!tokens.access_token) {
+        logXStep("Token exchange (POST /2/oauth2/token)", "response had no access token");
+        return res.redirect("/?error=token_exchange_failed");
+      }
 
-      // Fetch user info from Twitter
-      const userResponse = await fetch(`${TWITTER_USER_URL}?user.fields=profile_image_url,name,username`, {
+      // Fetch user info from X: id, name and username are returned by default,
+      // profile_image_url is the only extra field we need
+      const userResponse = await fetch(`${TWITTER_USER_URL}?user.fields=profile_image_url`, {
         headers: {
           Authorization: `Bearer ${tokens.access_token}`,
         },
       });
 
       if (!userResponse.ok) {
-        const errorText = await userResponse.text();
-        console.error("User fetch failed:", userResponse.status, errorText);
+        await logXFailure("User lookup (GET /2/users/me)", userResponse);
         return res.redirect("/?error=user_fetch_failed");
       }
 
       const userData = await userResponse.json();
-      const twitterUser: TwitterUser = userData.data;
+      const twitterUser: TwitterUser | undefined = userData?.data;
+      if (!twitterUser?.id || !twitterUser.username) {
+        logXStep("User lookup (GET /2/users/me)", `200 response without user data (has errors: ${Array.isArray(userData?.errors)})`);
+        return res.redirect("/?error=user_fetch_failed");
+      }
 
       // Upsert user in database
       const user = await authStorage.upsertUserByTwitter({
@@ -249,17 +259,18 @@ export async function setupAuth(app: Express) {
 
       req.login(sessionUser, (err) => {
         if (err) {
-          console.error("Login error:", err);
+          logXStep("Session login", err instanceof Error ? err.message : String(err));
           return res.redirect("/?error=login_failed");
         }
 
-        // Redirect to saved URL or home
-        const returnTo = (req.session as any).returnTo || "/";
+        // Redirect to saved URL or home (relative paths only, no error parameter)
+        const returnTo = safeReturnTo((req.session as any).returnTo);
         delete (req.session as any).returnTo;
+        console.log(`[X Login] Login succeeded for @${twitterUser.username}`);
         res.redirect(returnTo);
       });
     } catch (error) {
-      console.error("Twitter callback error:", error);
+      logXStep("Callback", error instanceof Error ? error.message : String(error));
       res.redirect("/?error=callback_failed");
     }
   });
@@ -336,8 +347,7 @@ export async function setupAuth(app: Express) {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Twitter OAuth 1.0a] Request token failed:", response.status, errorText);
+        await logXFailure("Request token (POST /oauth/request_token)", response);
         return res.redirect(`/?error=oauth_request_token_failed`);
       }
 
@@ -347,7 +357,8 @@ export async function setupAuth(app: Express) {
       const oauthTokenSecret = params.get("oauth_token_secret");
 
       if (!oauthToken || !oauthTokenSecret) {
-        console.error("[Twitter OAuth 1.0a] Missing tokens in response:", responseText);
+        // Don't log the response: it can contain the token secret
+        logXStep("Request token (POST /oauth/request_token)", `response missing token fields (has token: ${!!oauthToken}, has secret: ${!!oauthTokenSecret})`);
         return res.redirect(`/?error=oauth_missing_tokens`);
       }
 
@@ -391,7 +402,7 @@ export async function setupAuth(app: Express) {
       // Verify oauth_token matches what we stored (CSRF protection)
       const savedOauthToken = (req.session as any).oauth1aToken;
       if (oauth_token !== savedOauthToken) {
-        console.error(`[Twitter OAuth 1.0a] Token mismatch - received: ${oauth_token}, saved: ${savedOauthToken}`);
+        logXStep("Token check", `oauth_token doesn't match the session (has saved token: ${!!savedOauthToken})`);
         return res.redirect("/?error=oauth_token_mismatch");
       }
 
@@ -428,8 +439,7 @@ export async function setupAuth(app: Express) {
       });
 
       if (!accessResponse.ok) {
-        const errorText = await accessResponse.text();
-        console.error("[Twitter OAuth 1.0a] Access token failed:", accessResponse.status, errorText);
+        await logXFailure("Access token (POST /oauth/access_token)", accessResponse);
         return res.redirect("/?error=oauth_access_token_failed");
       }
 
@@ -441,7 +451,8 @@ export async function setupAuth(app: Express) {
       const screenName = accessParams.get("screen_name");
 
       if (!accessToken || !accessTokenSecret || !userId || !screenName) {
-        console.error("[Twitter OAuth 1.0a] Missing access token data:", accessResponseText);
+        // Don't log the response: it contains the user's access token and secret
+        logXStep("Access token (POST /oauth/access_token)", `response missing fields (token: ${!!accessToken}, secret: ${!!accessTokenSecret}, user id: ${!!userId}, screen name: ${!!screenName})`);
         return res.redirect("/?error=oauth_incomplete_response");
       }
 
@@ -471,6 +482,9 @@ export async function setupAuth(app: Express) {
         const userData = await userResponse.json();
         profileImageUrl = userData.profile_image_url_https?.replace("_normal", "_400x400");
         displayName = userData.name || screenName;
+      } else {
+        // Login still completes with the screen name from the access token response
+        await logXFailure("Profile lookup (GET /1.1/account/verify_credentials.json)", userResponse);
       }
 
       // Upsert user in database
@@ -498,23 +512,20 @@ export async function setupAuth(app: Express) {
 
       req.login(sessionUser, (err) => {
         if (err) {
-          console.error("[Twitter OAuth 1.0a] Login error:", err);
+          logXStep("Session login (OAuth 1.0a)", err instanceof Error ? err.message : String(err));
           return res.redirect("/?error=login_failed");
         }
 
         // Validate returnTo to prevent open redirect attacks
         // Only allow relative paths that start with / and don't start with //
-        let redirectTo = "/";
-        if (returnTo && typeof returnTo === "string" && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
-          redirectTo = returnTo;
-        }
+        const redirectTo = safeReturnTo(returnTo);
         
         delete (req.session as any).returnTo;
-        console.log(`[Twitter OAuth 1.0a] Login successful, redirecting to: ${redirectTo}`);
+        console.log(`[X Login] Login succeeded for @${screenName} (OAuth 1.0a), redirecting to: ${redirectTo}`);
         res.redirect(redirectTo);
       });
     } catch (error) {
-      console.error("[Twitter OAuth 1.0a] Callback error:", error);
+      logXStep("Callback (OAuth 1.0a)", error instanceof Error ? error.message : String(error));
       res.redirect("/?error=callback_failed");
     }
   });

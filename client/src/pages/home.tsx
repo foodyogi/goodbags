@@ -9,17 +9,22 @@ import { FeaturesSummary } from "@/components/features-summary";
 import { AIAgentsSection } from "@/components/ai-agents-section";
 import { TrustTransparency } from "@/components/trust-transparency";
 import { LoginPromptModal } from "@/components/login-prompt-modal";
+import { AuthErrorBanner } from "@/components/auth-error-banner";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type LaunchedToken } from "@shared/schema";
 
 export default function Home() {
+  const [hadAuthError] = useState(() => new URLSearchParams(window.location.search).has("error"));
   const { data: tokens } = useQuery<LaunchedToken[]>({
     queryKey: ["/api/tokens"],
   });
 
   return (
     <div className="min-h-screen">
-      <LoginPromptModal autoOpen={true} delayMs={800} />
+      <AuthErrorBanner />
+      {/* Don't pop the login prompt over a login error message */}
+      <LoginPromptModal autoOpen={!hadAuthError} delayMs={800} />
       <HeroSection />
       
       <HomeNarrative />

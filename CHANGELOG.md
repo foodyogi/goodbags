@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.10
+
+- X login diagnostics: every failure point in both X login flows logs the step, HTTP status, X's error fields (title, detail, type, errors, OAuth error and description) and the x-rate-limit-* headers, and a successful login logs the X username. Nothing secret is logged; three existing log lines that could print token secrets, access tokens or state values were replaced.
+- X login requests only what GET /2/users/me needs: scopes `tweet.read users.read` (removed the unused `offline.access`) and `user.fields=profile_image_url` (id, name and username are returned by default).
+- Login return addresses must be relative paths on this site and never carry an `error` parameter (also closes an open redirect in the OAuth 2.0 callback).
+- The home page shows a dismissible message for each X login error code and removes `?error=` from the URL, and the login prompt no longer pops up over it.
+
 ## 1.0.9
 
 - Security: approving or denying coins by charity email address is retired. `/api/charity/tokens`, `/api/charity/tokens/pending` and `/api/charity/tokens/:id/approve|deny` now return 410, and the X-verified charity portal is the only way a charity approves or denies a coin. The old `/charity/tokens` page explains the portal instead. Admin approval is unchanged.
