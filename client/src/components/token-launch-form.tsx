@@ -558,6 +558,7 @@ export function TokenLaunchForm() {
           charityId: selectedCharity.id,
           charitySource: selectedCharity.source,
           charitySolanaAddress: selectedCharity.solanaAddress,
+          donateCreatorPercent,
         });
         const configResult = await configResponse.json();
         

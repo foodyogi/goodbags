@@ -23,10 +23,13 @@ import {
 import fyiLogo from "@assets/FYIlogo250x250_1768951459327.png";
 import fyiHeroImage from "@assets/IMG_1071_1768954416987.jpeg";
 import { FYI_CHARITY_WALLET, solscanUrl } from "@shared/solana";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
 
 const PARTNER_WALLET = FYI_CHARITY_WALLET;
 
 export default function FoodYogaInternational() {
+  const charityShare = useCharityShare((t) => t.charityId === "food-yoga-international");
+
   return (
     <div className="min-h-screen bg-background">
       <div className="relative overflow-hidden text-white">
@@ -316,6 +319,32 @@ export default function FoodYogaInternational() {
                       </a>
                     </div>
                   </div>
+                </div>
+
+                <div className="p-4 bg-pink-500/10 rounded-lg border border-pink-500/20" data-testid="section-charity-share">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{CHARITY_SHARE_LABEL}</p>
+                  <p className="text-2xl font-bold" data-testid="text-charity-share">
+                    {charityShare.isLoading
+                      ? "…"
+                      : charityShare.earnedSol !== null
+                        ? `${charityShare.earnedSol} SOL`
+                        : CHARITY_SHARE_UNAVAILABLE}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {charityShare.listAvailable &&
+                      `Across ${charityShare.tokens.length} GoodBags ${charityShare.tokens.length === 1 ? "token" : "tokens"} supporting Food Yoga International. `}
+                    Fees build up in each token's Bags.fm fee config until they are claimed to this wallet.
+                  </p>
+                  <a
+                    href={solscanUrl("account", PARTNER_WALLET)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1 text-sm mt-2"
+                    data-testid="link-charity-share-wallet"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Verify the charity wallet on Solscan
+                  </a>
                 </div>
 
                 <div className="flex items-start gap-2 p-4 bg-green-500/10 rounded-lg border border-green-500/20">

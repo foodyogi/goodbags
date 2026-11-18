@@ -3,7 +3,7 @@ import { pgTable, text, varchar, decimal, timestamp, integer, boolean } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
-import { FYI_CHARITY_WALLET } from "./solana";
+import { FYI_CHARITY_WALLET, isValidSolanaPublicKey } from "./solana";
 
 // Export auth models (sessions and users tables)
 export * from "./models/auth";
@@ -386,7 +386,7 @@ export const VETTED_CHARITIES = [
   {
     id: "julianas-animal-sanctuary",
     name: "Juliana's Animal Sanctuary",
-    wallet: "JULSxvKLfEDpMqR7ePNvXxGGcNAPtYvWqmCjXhKBVPZ",
+    wallet: null, // Previous seed wallet had no on-chain history; payout via X handle
     twitterHandle: "julianasfarm",
     payoutMethod: "twitter" as const,
     category: "animals",
@@ -460,7 +460,7 @@ export const VETTED_CHARITIES = [
   {
     id: "the-water-project",
     name: "The Water Project",
-    wallet: "WATERpVLQx4fGjFqJmqSqU1Jc7gU7eSdF8xvRtNsK9zP",
+    wallet: null, // Previous seed wallet was not a valid public key (decodes to 33 bytes); payout via X handle
     twitterHandle: "thewaterproject",
     payoutMethod: "twitter" as const,
     category: "community",
@@ -3875,7 +3875,7 @@ export const charityApplicationSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   website: z.string().url("Please provide a valid website URL"),
   email: z.string().email("Please provide a valid official email address"),
-  walletAddress: z.string().min(32, "Please provide a valid Solana wallet address").max(44).optional(),
+  walletAddress: z.string().refine(isValidSolanaPublicKey, "Please provide a valid Solana wallet address").optional(),
   twitterHandle: z.string().min(1, "Please provide your X account handle").max(50).optional(),
   payoutMethod: z.enum(["wallet", "twitter"]).default("wallet"),
   registrationNumber: z.string().optional(),

@@ -10,10 +10,10 @@ import {
 } from "@shared/schema";
 import {
   computeFeeSplit,
+  resolveDonationTier,
   TOTAL_FEE_BPS,
-  DONATION_TIERS,
-  type DonationTier,
 } from "@shared/feeSplit";
+import { isValidSolanaPublicKey } from "@shared/solana";
 
 const BAGS_API_KEY = process.env.BAGS_API_KEY;
 const BAGS_API_BASE_URL = "https://public-api-v2.bags.fm/api/v1";
@@ -440,6 +440,9 @@ const BAGS_FEE_SHARE_V2_PROGRAM_ID = new PublicKey("FEE2tBhCKAt7shrod19QttSVREUY
 
 // Validate platform wallet on startup
 function validatePublicKey(address: string, name: string): PublicKey {
+  if (!isValidSolanaPublicKey(address)) {
+    throw new Error(`Invalid ${name} address: ${address}`);
+  }
   try {
     return new PublicKey(address);
   } catch {
@@ -488,6 +491,11 @@ export function getBagsSDK(): BagsSDK {
     sdk = new BagsSDK(BAGS_API_KEY, connection, "confirmed");
   }
   return sdk;
+}
+
+// Buyback wallet that receives the 500 BPS buyback share in each fee split
+export function getPlatformWallet(): string {
+  return EFFECTIVE_PLATFORM_WALLET;
 }
 
 export function getConnection(): Connection {
@@ -760,17 +768,14 @@ export async function createFeeShareConfig(
   
   // Calculate BPS split based on creator donation percentage
   // Support both new donateCreatorPercent (0-100) and legacy donateCreatorShare (boolean)
-  let donateCreatorPercent = params.donateCreatorPercent ?? 0;
-  if (params.donateCreatorShare === true && donateCreatorPercent === 0) {
-    donateCreatorPercent = 100; // Legacy toggle was ON = 100% donation
+  // Reject anything that isn't a tier rather than launching with a split the creator didn't pick
+  const donateCreatorPercent = resolveDonationTier(params.donateCreatorPercent, params.donateCreatorShare);
+  if (donateCreatorPercent === null) {
+    throw new Error(`Invalid creator donation percent: ${params.donateCreatorPercent}`);
   }
   
   // Use shared computeFeeSplit function for single source of truth
-  // Snap to valid tier to ensure we use only supported values
-  const validTier = DONATION_TIERS.includes(donateCreatorPercent as DonationTier)
-    ? (donateCreatorPercent as DonationTier)
-    : 0;
-  const feeSplit = computeFeeSplit(validTier);
+  const feeSplit = computeFeeSplit(donateCreatorPercent);
   const { charityBps, buybackBps, creatorBps, donatedCreatorBps } = feeSplit;
   
   // Validate BPS sum equals 10000

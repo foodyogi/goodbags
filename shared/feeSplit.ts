@@ -50,6 +50,73 @@ export function computeFeeSplit(donatePercent: DonationTier): FeeSplit {
 }
 
 /**
+ * Resolve the creator's donation tier from a launch request.
+ * Missing percent falls back to the legacy donateCreatorShare flag (true = 100%).
+ * Returns null for any value that isn't one of DONATION_TIERS, so callers reject it
+ * instead of launching with a split the creator didn't pick.
+ */
+export function resolveDonationTier(
+  donatePercent: unknown,
+  legacyDonateShare?: unknown
+): DonationTier | null {
+  if (donatePercent === undefined || donatePercent === null) {
+    return legacyDonateShare === true ? 100 : 0;
+  }
+  if (!DONATION_TIERS.includes(donatePercent as DonationTier)) {
+    return null;
+  }
+  if (donatePercent === 0 && legacyDonateShare === true) {
+    return 100; // Legacy toggle was ON = 100% donation
+  }
+  return donatePercent as DonationTier;
+}
+
+export interface FeeClaimer {
+  wallet: string;
+  bps: number;
+}
+
+export interface ClaimerSplit {
+  charityWallet: string;
+  charityBps: number;
+  buybackBps: number;
+  creatorBps: number;
+}
+
+/**
+ * Map the claimers in a token's on-chain Bags fee config back to roles.
+ * Launches add the creator, charity and buyback wallets (claimers with 0 BPS are left out),
+ * so the charity is the one claimer that is neither the creator nor the buyback wallet.
+ * Returns null if the config doesn't have that shape or doesn't total 10000 BPS.
+ */
+export function splitFromClaimers(
+  claimers: FeeClaimer[],
+  creatorWallet: string,
+  buybackWallet: string
+): ClaimerSplit | null {
+  const charity = claimers.filter((c) => c.wallet !== creatorWallet && c.wallet !== buybackWallet);
+  if (charity.length !== 1) return null;
+
+  const bpsOf = (wallet: string) =>
+    claimers.filter((c) => c.wallet === wallet).reduce((sum, c) => sum + c.bps, 0);
+  const split = {
+    charityWallet: charity[0].wallet,
+    charityBps: charity[0].bps,
+    buybackBps: bpsOf(buybackWallet),
+    creatorBps: bpsOf(creatorWallet),
+  };
+  const total = split.charityBps + split.buybackBps + split.creatorBps;
+  return total === TOTAL_FEE_BPS ? split : null;
+}
+
+/**
+ * Charity's share of a token's Bags.fm lifetime fees (lamports in, lamports out).
+ */
+export function charityShareLamports(lifetimeFeesLamports: bigint, charityBps: number): bigint {
+  return (lifetimeFeesLamports * BigInt(charityBps)) / BigInt(TOTAL_FEE_BPS);
+}
+
+/**
  * Derive the donation tier from stored BPS values.
  * Used for backward compatibility and display purposes.
  * 

@@ -5,6 +5,10 @@
  * solscanUrl() so the cluster is never hardcoded per page.
  */
 
+import bs58Pkg from "bs58";
+// Handle ESM/CommonJS interop for bs58
+const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
+
 export type SolanaCluster = "mainnet-beta" | "devnet" | "testnet";
 
 export const SOLANA_CLUSTER = "mainnet-beta" as SolanaCluster;
@@ -25,6 +29,19 @@ export const FYI_CHARITY_WALLET = "3psK7Pga1yoEhiMVdEjHrpNvEZiLvHwytrntFqRwwsUr"
 // Bags.fm wallet managed by founder Paul Rodney Turner. Receives creator fees
 // and the fees of the separate $FYI coin. NOT the charity recipient.
 export const FYI_COIN_FEE_WALLET = "8UjmkVVLqBrrMsRkcBWQadQWCzWgWaHnxztwhJ1c8RTP";
+
+// A Solana public key: base58 that decodes to exactly 32 bytes.
+// Use this wherever a wallet is saved or written into a fee split.
+export function isValidSolanaPublicKey(value: unknown): value is string {
+  if (typeof value !== "string" || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) {
+    return false;
+  }
+  try {
+    return bs58.decode(value).length === 32;
+  } catch {
+    return false;
+  }
+}
 
 // A real Solana transaction signature: base58, 87 or 88 characters.
 // This checks the format only, it does not prove the transaction exists on-chain.

@@ -40,6 +40,7 @@ import { CommunityImpact } from "@/components/community-impact";
 import { SocialShare } from "@/components/social-share";
 import { EndorsementCelebration } from "@/components/endorsement-celebration";
 import { isValidTxSignature, solscanUrl } from "@shared/solana";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
 
 interface TokenImpactData {
   token: {
@@ -183,6 +184,8 @@ export default function TokenDetailPage() {
     },
     enabled: !!mint,
   });
+  const charityShare = useCharityShare((t) => t.mint === mint);
+  const share = charityShare.tokens[0];
 
   if (isLoading) {
     return (
@@ -378,6 +381,31 @@ export default function TokenDetailPage() {
                     <span className="text-lg font-semibold" data-testid="text-trading-volume">
                       {formatSol(token.tradingVolume)} SOL
                     </span>
+                  </div>
+                )}
+                {!charityShare.isLoading && (share || !charityShare.listAvailable) && (
+                  <div className="pt-3 border-t" data-testid="section-charity-share">
+                    <p className="text-sm text-muted-foreground mb-1">{CHARITY_SHARE_LABEL}</p>
+                    <p className="text-lg font-semibold" data-testid="text-charity-share">
+                      {share && charityShare.earnedSol !== null ? `${charityShare.earnedSol} SOL` : CHARITY_SHARE_UNAVAILABLE}
+                    </p>
+                    {share?.charityBps != null && (
+                      <p className="text-xs text-muted-foreground">
+                        The charity receives {share.charityBps / 100}% of this token's Bags.fm fees, set in its on-chain fee config
+                      </p>
+                    )}
+                    {share?.feeConfigAddress && (
+                      <a
+                        href={solscanUrl("account", share.feeConfigAddress)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1 text-sm mt-1"
+                        data-testid="link-fee-config"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Verify fee config on Solscan
+                      </a>
+                    )}
                   </div>
                 )}
                 {charityInfo && (

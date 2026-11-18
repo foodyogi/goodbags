@@ -15,6 +15,9 @@ import {
   type Charity,
   users,
 } from "@shared/schema";
+import { isValidSolanaPublicKey } from "@shared/solana";
+import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
+import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { z } from "zod";
 import { randomUUID, randomBytes, timingSafeEqual } from "crypto";
 import * as bagsSDK from "./bags-sdk";
@@ -119,28 +122,8 @@ function generateToken(): string {
   return randomBytes(32).toString("hex");
 }
 
-// SECURITY: Strict Solana public key validation
-// Validates base58 encoding AND correct length (32 bytes = 44 chars typically)
-function isValidSolanaAddress(address: string): boolean {
-  if (!address || typeof address !== 'string') {
-    return false;
-  }
-  
-  // Basic regex check for base58 characters (no 0, O, I, l)
-  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-  if (!base58Regex.test(address)) {
-    return false;
-  }
-  
-  // Try to decode the base58 address to verify it's valid
-  try {
-    const decoded = bs58.decode(address);
-    // Solana public keys are exactly 32 bytes
-    return decoded.length === 32;
-  } catch {
-    return false;
-  }
-}
+// SECURITY: Strict Solana public key validation (base58, exactly 32 bytes), shared with client and seed
+const isValidSolanaAddress = isValidSolanaPublicKey;
 
 // Extend the shared schema with creatorWallet and charity source info
 // Uses same validation rules as tokenLaunchFormSchema for consistency
@@ -237,8 +220,13 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
   
-  // Seed default charities on startup
-  await storage.seedDefaultCharities();
+  // Seed default charities on startup. A database outage must not stop the server
+  // from starting, or "/" (the deploy health check) goes down with it.
+  try {
+    await storage.seedDefaultCharities();
+  } catch (error) {
+    console.error("Charity seed failed on startup; continuing without it:", error);
+  }
   
   // Initialize buyback service (auto-buys FYI with platform fees)
   buybackService.initBuybackService();
@@ -1756,12 +1744,21 @@ export async function registerRoutes(
   // Rate limited: 10 requests per minute
   app.post("/api/tokens/config", rateLimitMiddleware(10), async (req, res) => {
     try {
-      const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress, donateCreatorShare } = req.body;
-      
+      const { tokenMint, creatorWallet, charityId, charitySource, charitySolanaAddress, donateCreatorPercent, donateCreatorShare } = req.body;
+
       if (!tokenMint || !creatorWallet || !charityId) {
         return res.status(400).json({
           success: false,
           error: "tokenMint, creatorWallet, and charityId are required",
+        });
+      }
+
+      // The creator's chosen tier is written into the on-chain fee split
+      const donationTier = resolveDonationTier(donateCreatorPercent, donateCreatorShare);
+      if (donationTier === null) {
+        return res.status(400).json({
+          success: false,
+          error: "donateCreatorPercent must be 0, 25, 50, 75, or 100",
         });
       }
 
@@ -1872,7 +1869,7 @@ export async function registerRoutes(
         charityWallet,
         charityTwitterHandle,
         payoutMethod,
-        donateCreatorShare: donateCreatorShare ?? false,
+        donateCreatorPercent: donationTier,
       });
 
       res.json({
@@ -2062,24 +2059,41 @@ export async function registerRoutes(
       const initialBuy = parseFloat(validated.initialBuyAmount) || 0;
       
       // Support both new donateCreatorPercent (0-100) and legacy donateCreatorShare (boolean)
-      let donateCreatorPercent = validated.donateCreatorPercent ?? 0;
-      if (validated.donateCreatorShare === true && donateCreatorPercent === 0) {
-        donateCreatorPercent = 100; // Legacy toggle was ON = 100% donation
+      const donationTier = resolveDonationTier(validated.donateCreatorPercent, validated.donateCreatorShare);
+      if (donationTier === null) {
+        return res.status(400).json({
+          success: false,
+          error: "donateCreatorPercent must be 0, 25, 50, 75, or 100",
+        });
       }
-      
-      // Calculate BPS split: creator can donate 0-100% of their 20% (2000 BPS) share
-      // donated_creator_bps = round(CREATOR_FEE_BPS * donate_pct / 100)
-      const donatedCreatorBps = Math.round(CREATOR_FEE_BPS * donateCreatorPercent / 100);
-      const charityBps = CHARITY_FEE_BPS + donatedCreatorBps;
-      const buybackBps = BUYBACK_FEE_BPS; // Always 500 BPS (5%)
-      const creatorBps = CREATOR_FEE_BPS - donatedCreatorBps;
-      
+
+      // Check if this is a test mode launch
+      const isTestLaunch = validated.isTest === true;
+
+      // Same shared split used to build the on-chain fee config in /api/tokens/config
+      let { charityBps, buybackBps, creatorBps } = computeFeeSplit(donationTier);
+
+      // Store exactly the split written on-chain: read it back from the token's fee config
+      if (!isTestLaunch) {
+        try {
+          const onChain = await readOnChainSplit(mintAddress, validated.creatorWallet);
+          if (onChain) {
+            if (onChain.charityBps !== charityBps || onChain.buybackBps !== buybackBps || onChain.creatorBps !== creatorBps) {
+              console.warn(`On-chain fee split for ${mintAddress} differs from requested tier ${donationTier}; storing on-chain split`);
+            }
+            ({ charityBps, buybackBps, creatorBps } = onChain);
+          } else {
+            console.warn(`No on-chain fee config found for ${mintAddress}; storing split for tier ${donationTier}`);
+          }
+        } catch (error) {
+          console.error(`Could not read on-chain fee config for ${mintAddress}; storing split for tier ${donationTier}:`, error);
+        }
+      }
+      const storedTier = deriveTierFromBps(charityBps, buybackBps, creatorBps);
+
       // Calculate actual fee amounts based on BPS (for the 1% royalty stream)
       const charityDonation = (initialBuy * (charityBps / 10000) / 100).toFixed(9);
       const platformFee = (initialBuy * (buybackBps / 10000) / 100).toFixed(9);
-      
-      // Check if this is a test mode launch
-      const isTestLaunch = validated.isTest === true;
       
       // Create the token record with charity approval tracking and fee split
       const token = await storage.createLaunchedToken({
@@ -2110,7 +2124,8 @@ export async function registerRoutes(
         charityBps,
         buybackBps,
         creatorBps,
-        donateCreatorShare: donateCreatorPercent > 0, // Legacy boolean field (true if any % donated)
+        donateCreatorPercent: storedTier,
+        donateCreatorShare: creatorBps < CREATOR_FEE_BPS, // Legacy boolean field (true if any % donated)
       });
 
       // Log the launch with fee split info
@@ -2126,7 +2141,7 @@ export async function registerRoutes(
           charitySource: charityInfo.source,
           initialBuy,
           isTest: isTestLaunch,
-          feeSplit: { charityBps, buybackBps, creatorBps, donateCreatorPercent },
+          feeSplit: { charityBps, buybackBps, creatorBps, donateCreatorPercent: storedTier },
         }),
       });
       
@@ -2327,6 +2342,24 @@ export async function registerRoutes(
     }
   });
   
+  // Charity share of each live token's Bags.fm fees (lifetime fees x on-chain charity BPS).
+  // Never returns 500: failures come back as available: false so the UI can say so.
+  app.get("/api/charity-share", async (_req, res) => {
+    try {
+      const tokens = await storage.getLaunchedTokens();
+      const shares = await Promise.all(
+        tokens.map((t) => getTokenCharityShare(t.mintAddress, t.creatorWallet))
+      );
+      res.json({
+        available: true,
+        tokens: shares.map((share, i) => ({ ...share, charityId: tokens[i].charityId })),
+      });
+    } catch (error) {
+      console.error("Charity share error:", error);
+      res.json({ available: false, tokens: [] });
+    }
+  });
+
   // Get donations
   app.get("/api/donations", async (req, res) => {
     try {

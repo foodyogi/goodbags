@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Coins, Heart, Rocket, TrendingUp, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CHARITY_SHARE_LABEL, CHARITY_SHARE_UNAVAILABLE, useCharityShare } from "@/components/charity-share-earned";
 
 interface DashboardStats {
   totalTokens: number;
@@ -17,9 +18,10 @@ interface StatCardProps {
   subtext?: string;
   color: string;
   testId: string;
+  valueClassName?: string;
 }
 
-function StatCard({ icon: Icon, label, value, subtext, color, testId }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, subtext, color, testId, valueClassName = "text-2xl md:text-3xl truncate" }: StatCardProps) {
   return (
     <Card className="p-4 md:p-6" data-testid={testId}>
       <div className="flex items-start gap-4">
@@ -28,7 +30,7 @@ function StatCard({ icon: Icon, label, value, subtext, color, testId }: StatCard
         </div>
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl md:text-3xl font-bold truncate" data-testid={`${testId}-value`}>{value}</p>
+          <p className={`${valueClassName} font-bold`} data-testid={`${testId}-value`}>{value}</p>
           {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
         </div>
       </div>
@@ -56,8 +58,9 @@ export function LiveImpactStats() {
     refetchInterval: 30000,
   });
 
+  const charityShare = useCharityShare();
+
   const stats = data?.stats;
-  const formattedDonated = stats ? parseFloat(stats.totalDonated).toFixed(4) : "0";
   const formattedVolume = stats ? parseFloat(stats.totalVolume).toFixed(2) : "0";
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : null;
 
@@ -74,12 +77,12 @@ export function LiveImpactStats() {
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Token and launch figures come from GoodBags launch records. 
-            Donations are only counted once they have an on-chain transaction signature.
+            Charity share comes from Bags.fm lifetime fees and each token's on-chain fee split.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading ? (
+          {isLoading || charityShare.isLoading ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
@@ -90,11 +93,12 @@ export function LiveImpactStats() {
             <>
               <StatCard
                 icon={Heart}
-                label="Total Donated to Charity"
-                value={`${formattedDonated} SOL`}
-                subtext="Only donations with an on-chain transaction signature"
+                label={CHARITY_SHARE_LABEL}
+                value={charityShare.earnedSol !== null ? `${charityShare.earnedSol} SOL` : CHARITY_SHARE_UNAVAILABLE}
+                valueClassName={charityShare.earnedSol !== null ? undefined : "text-base"}
+                subtext="Bags.fm lifetime fees x each token's on-chain charity share. Verify on each token page."
                 color="bg-pink-500 dark:bg-pink-600"
-                testId="stat-total-donated"
+                testId="stat-charity-share"
               />
               <StatCard
                 icon={Rocket}

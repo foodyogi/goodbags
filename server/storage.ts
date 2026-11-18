@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { isValidTxSignature, verifiedDonationTotals } from "@shared/solana";
+import { isValidSolanaPublicKey, isValidTxSignature, verifiedDonationTotals } from "@shared/solana";
 
 export interface IStorage {
   // Charity methods
@@ -288,7 +288,7 @@ export class DatabaseStorage implements IStorage {
           description: charity.description,
           category: charity.category,
           website: charity.website,
-          walletAddress: charity.wallet,
+          walletAddress: isValidSolanaPublicKey(charity.wallet) ? charity.wallet : null,
           twitterHandle: charity.twitterHandle,
           payoutMethod: charity.payoutMethod,
           countryCode: charity.countryCode,

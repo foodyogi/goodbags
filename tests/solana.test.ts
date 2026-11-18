@@ -5,6 +5,7 @@ import {
   FYI_COIN_FEE_WALLET,
   FYI_TOKEN_MINT,
   SOLANA_CLUSTER,
+  isValidSolanaPublicKey,
   isValidTxSignature,
   solscanUrl,
   verifiedDonationTotals,
@@ -29,6 +30,27 @@ test("FYI wallets: charity wallet and founder-managed $FYI coin fee wallet are d
   assert.equal(fyi?.wallet, FYI_CHARITY_WALLET);
   assert.equal(fyi?.twitterHandle, "fflglobal");
   assert.equal(fyi?.payoutMethod, "twitter");
+});
+
+test("isValidSolanaPublicKey requires base58 that decodes to exactly 32 bytes", () => {
+  assert.equal(isValidSolanaPublicKey(FYI_CHARITY_WALLET), true);
+  assert.equal(isValidSolanaPublicKey("8pgMzffWjeuYvjYQkyfvWpzKWQDvjXAm4iQB1auvQZH8"), true);
+  // Old Water Project seed wallet: base58 but decodes to 33 bytes
+  assert.equal(isValidSolanaPublicKey("WATERpVLQx4fGjFqJmqSqU1Jc7gU7eSdF8xvRtNsK9zP"), false);
+  for (const bad of ["", "abc", "0".repeat(44), `${FYI_CHARITY_WALLET} `, "twitter:@fflglobal", null, undefined, 42]) {
+    assert.equal(isValidSolanaPublicKey(bad), false, String(bad));
+  }
+});
+
+test("every seeded charity wallet is null or a valid public key", () => {
+  for (const charity of VETTED_CHARITIES) {
+    assert.ok(charity.wallet === null || isValidSolanaPublicKey(charity.wallet), charity.id);
+  }
+  for (const id of ["julianas-animal-sanctuary", "the-water-project"]) {
+    const charity = VETTED_CHARITIES.find((c) => c.id === id);
+    assert.equal(charity?.wallet, null, id);
+    assert.equal(charity?.payoutMethod, "twitter", id);
+  }
 });
 
 // Real mainnet launch signatures (87 and 88 chars)
