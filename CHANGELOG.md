@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.9
+
+- Security: approving or denying coins by charity email address is retired. `/api/charity/tokens`, `/api/charity/tokens/pending` and `/api/charity/tokens/:id/approve|deny` now return 410, and the X-verified charity portal is the only way a charity approves or denies a coin. The old `/charity/tokens` page explains the portal instead. Admin approval is unchanged.
+- Security: charity email verification now proves access to the email address. The verification link is emailed through Resend and is never returned by the API or shown in the UI. Links expire after 24 hours (expiry is stored inside the token, no schema change), links issued before this release no longer work, and a rate-limited `POST /api/charities/:id/resend-verification` sends a new one. If the email can't be sent, the application is still saved and the applicant is told to use resend later. The application only continues once the server has recorded the verification.
+- New `/verify/email/:token` page for the emailed link.
+- The server no longer crashes at startup when `RESEND_API_KEY` is not set (the Resend client is created on first use).
+- Security: `POST /api/uploads/request-url` requires a signed-in session and is rate limited, and only accepts PNG, JPG, GIF or WebP images up to 10MB. Stored objects are only served if they are one of those image types within the size limit, with `nosniff` and a sandbox Content-Security-Policy, so an upload can't be served as HTML from our domain.
+- Security: `/api/auth/debug` returns 404 in production. `/api/charities/verify-ein` no longer reveals an existing application's ID or status. The EIN check, email and wallet verification and status routes are rate limited, and rate limits now count per route instead of sharing one counter per IP across all routes. Wallet verification requires the email to be verified first.
+- The coin-approval email describes a charity coin, the charity's share building up in the coin's Bags.fm fee config and being claimed on Bags.fm with its X account, and links to the X-verified charity portal. Coin details are escaped in the HTML email.
+
 ## 1.0.8
 
 - Security: public API responses are built from explicit allowlists in one shared module (`shared/public.ts`). Charity responses no longer include email verification tokens, wallet verification nonces, applicant emails, EINs, submitter wallets or internal verification fields; token responses no longer include the charity email or admin anomaly notes; buyback history no longer includes error details.

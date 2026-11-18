@@ -73,6 +73,12 @@ const commonIssues = [
     problem: "Questions about charity verification or payouts",
     solution: "A charity can be chosen for a coin only after it completes onboarding through our application, which checks a US nonprofit's EIN through Every.org, its email, and its Solana wallet or X account before manual review. Other nonprofits in the directory are listed from public records and have not joined GoodBags. Charities claim their share on Bags.fm, and every claim can be verified on Solscan.",
   },
+  {
+    icon: Shield,
+    title: "Approving a Coin as a Charity",
+    problem: "I represent a charity and want to approve or deny a coin launched in our name",
+    solution: "Open the charity portal link GoodBags sent you for that coin and sign in with your charity's official X account. Only the X account on file for your charity can approve or deny its coins. Approval by email address is not possible.",
+  },
 ];
 
 export default function HelpPage() {

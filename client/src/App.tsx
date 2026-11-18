@@ -38,6 +38,7 @@ import WidgetBadge from "@/pages/widget-badge";
 import WidgetTicker from "@/pages/widget-ticker";
 import TokenDetailPage from "@/pages/token-detail";
 import CharityPortal from "@/pages/charity-portal";
+import VerifyEmailPage from "@/pages/verify-email";
 import NotFound from "@/pages/not-found";
 
 function MainRouter() {
@@ -51,6 +52,7 @@ function MainRouter() {
       <Route path="/impact" component={ImpactPage} />
       <Route path="/charities" component={CharitiesPage} />
       <Route path="/charities/apply" component={CharityApply} />
+      <Route path="/verify/email/:token" component={VerifyEmailPage} />
       <Route path="/buyback" component={BuybackPage} />
       <Route path="/how-it-works" component={HowItWorksPage} />
       <Route path="/features" component={FeaturesPage} />

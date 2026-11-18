@@ -19,6 +19,7 @@ import { isValidSolanaPublicKey, isValidTxSignature } from "@shared/solana";
 import { computeFeeSplit, deriveTierFromBps, resolveDonationTier } from "@shared/feeSplit";
 import { getTokenCharityShare, readOnChainSplit } from "./charity-fees";
 import { registerSeoRoutes } from "./seo";
+import { registerRetiredCharityEmailRoutes } from "./retired-routes";
 import { isCharityOnboarded } from "@shared/charities";
 import { toPublicBuyback, toPublicCharity, toPublicToken } from "@shared/public";
 import { z } from "zod";
@@ -30,7 +31,13 @@ import bs58Pkg from "bs58";
 const bs58 = (bs58Pkg as any).default ?? bs58Pkg;
 import nacl from "tweetnacl";
 import * as buybackService from "./buyback-service";
-import { sendCharityApprovalEmail, generateApprovalLink } from "./email-service";
+import { sendCharityApprovalEmail, generateApprovalLink, sendCharityVerificationEmail } from "./email-service";
+import {
+  EMAIL_NOT_SENT_MESSAGE,
+  isEmailVerificationTokenExpired,
+  issueEmailVerification,
+  registerResendVerificationRoute,
+} from "./charity-verification";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated, authStorage } from "./replit_integrations/auth";
 import { db } from "./db";
@@ -103,7 +110,8 @@ function checkRateLimit(key: string, maxRequests: number = RATE_LIMIT_MAX_REQUES
 // Rate limiting middleware factory
 function rateLimitMiddleware(maxRequests: number = RATE_LIMIT_MAX_REQUESTS) {
   return (req: any, res: any, next: any) => {
-    const key = getRateLimitKey(req);
+    // Count per IP and per route, so each limit applies to its own route
+    const key = `${getRateLimitKey(req)}:${req.method}:${req.route?.path ?? req.path}`;
     const result = checkRateLimit(key, maxRequests);
     
     res.setHeader('X-RateLimit-Remaining', result.remaining);
@@ -241,7 +249,7 @@ export async function registerRoutes(
   buybackService.initBuybackService();
   
   // Register object storage routes for image uploads
-  registerObjectStorageRoutes(app);
+  registerObjectStorageRoutes(app, { rateLimit: rateLimitMiddleware(10) });
 
   // === USER WALLET CONNECTION ENDPOINTS ===
   
@@ -431,7 +439,7 @@ export async function registerRoutes(
   // === CHARITY VERIFICATION ENDPOINTS ===
 
   // Verify EIN against Every.org API
-  app.post("/api/charities/verify-ein", async (req, res) => {
+  app.post("/api/charities/verify-ein", rateLimitMiddleware(10), async (req, res) => {
     try {
       const { ein } = req.body;
       
@@ -456,14 +464,10 @@ export async function registerRoutes(
       // Check if a charity with this EIN already exists
       const existingByEin = await storage.getCharityByEin(cleanEin);
       if (existingByEin) {
+        // Don't reveal the existing application's ID or status to whoever enters the EIN
         return res.status(400).json({
           success: false,
           error: "A charity with this EIN has already been registered",
-          existingCharity: {
-            id: existingByEin.id,
-            name: existingByEin.name,
-            status: existingByEin.status,
-          },
         });
       }
 
@@ -617,10 +621,16 @@ export async function registerRoutes(
         everyOrgVerifiedAt: verifiedEveryOrgData ? new Date() : null,
       });
 
-      // Generate verification tokens
-      const emailToken = generateToken();
+      // Generate the wallet nonce, and an expiring email token that is only ever emailed
       const walletNonce = generateToken().slice(0, 32); // Shorter nonce for wallet signing
-      await storage.setCharityVerificationTokens(charity.id, emailToken, walletNonce);
+      const { emailSent } = await issueEmailVerification({
+        saveToken: (emailToken) => storage.setCharityVerificationTokens(charity.id, emailToken, walletNonce),
+        sendEmail: (link) => sendCharityVerificationEmail({
+          charityName: charity.name,
+          charityEmail: validated.email,
+          verificationLink: link,
+        }),
+      });
 
       // Log the submission
       await storage.createAuditLog({
@@ -635,11 +645,14 @@ export async function registerRoutes(
         }),
       });
 
+      // The verification link is never returned here: it only goes to the charity's email address
       res.json({
         success: true,
         charityId: charity.id,
-        message: "Application submitted successfully. Please verify your email and wallet.",
-        verificationUrl: `/verify/email/${emailToken}`,
+        emailSent,
+        message: emailSent
+          ? "Application submitted. We sent a verification link to your email address."
+          : EMAIL_NOT_SENT_MESSAGE,
         walletNonce: walletNonce,
       });
     } catch (error) {
@@ -658,8 +671,20 @@ export async function registerRoutes(
     }
   });
 
+  // Resend the verification email (rate limited; the link only goes to the application's email)
+  registerResendVerificationRoute(app, {
+    getCharity: (id) => storage.getCharityById(id),
+    saveToken: (charityId, token) => storage.setCharityEmailVerificationToken(charityId, token),
+    sendEmail: (to, link) => sendCharityVerificationEmail({
+      charityName: to.name,
+      charityEmail: to.email,
+      verificationLink: link,
+    }),
+    rateLimit: rateLimitMiddleware(3),
+  });
+
   // Verify charity email
-  app.get("/api/charities/verify/email/:token", async (req, res) => {
+  app.get("/api/charities/verify/email/:token", rateLimitMiddleware(10), async (req, res) => {
     try {
       const { token } = req.params;
       const charity = await storage.getCharityByEmailToken(token);
@@ -675,6 +700,14 @@ export async function registerRoutes(
         return res.json({
           success: true,
           message: "Email already verified",
+          charityId: charity.id,
+        });
+      }
+
+      if (isEmailVerificationTokenExpired(token)) {
+        return res.status(410).json({
+          success: false,
+          error: "This verification link has expired. Request a new one from your application page.",
           charityId: charity.id,
         });
       }
@@ -704,7 +737,7 @@ export async function registerRoutes(
   });
 
   // Verify wallet ownership via signature
-  app.post("/api/charities/verify/wallet", async (req, res) => {
+  app.post("/api/charities/verify/wallet", rateLimitMiddleware(10), async (req, res) => {
     try {
       const { charityId, signature, publicKey } = req.body;
       
@@ -720,6 +753,14 @@ export async function registerRoutes(
         return res.status(404).json({
           success: false,
           error: "Charity not found",
+        });
+      }
+
+      // Steps run in order: the email address must be verified before the wallet
+      if (!charity.emailVerifiedAt) {
+        return res.status(400).json({
+          success: false,
+          error: "Please verify your email address before verifying your wallet.",
         });
       }
 
@@ -779,7 +820,7 @@ export async function registerRoutes(
   });
 
   // Get charity verification status
-  app.get("/api/charities/:id/status", async (req, res) => {
+  app.get("/api/charities/:id/status", rateLimitMiddleware(30), async (req, res) => {
     try {
       const charity = await storage.getCharityById(req.params.id);
       if (!charity) {
@@ -1014,181 +1055,8 @@ export async function registerRoutes(
   });
 
   // === TOKEN APPROVAL ENDPOINTS ===
-  // Charities can approve/deny tokens created in their name
-  
-  // Get tokens pending approval for a charity (by email verification)
-  app.get("/api/charity/tokens/pending", async (req, res) => {
-    try {
-      const charityEmail = req.query.email as string;
-      const verificationToken = req.headers["x-charity-token"] as string;
-      
-      if (!charityEmail) {
-        return res.status(400).json({ error: "Charity email is required" });
-      }
-      
-      // Verify the charity exists and the token matches
-      const charity = await storage.getCharityByEmail(charityEmail);
-      if (!charity) {
-        return res.status(404).json({ error: "Charity not found" });
-      }
-      
-      // Simple verification: check if email is verified (charity has access)
-      if (!charity.emailVerifiedAt) {
-        return res.status(401).json({ error: "Charity email not verified" });
-      }
-      
-      // Get all tokens for this charity
-      const tokens = await storage.getTokensByCharityEmail(charityEmail);
-      const pendingTokens = tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING);
-      
-      res.json({
-        tokens: pendingTokens.map(toPublicToken),
-        totalPending: pendingTokens.length,
-      });
-    } catch (error) {
-      console.error("Get pending tokens error:", error);
-      res.status(500).json({ error: "Failed to fetch pending tokens" });
-    }
-  });
-  
-  // Get all tokens for a charity (for their dashboard)
-  app.get("/api/charity/tokens", async (req, res) => {
-    try {
-      const charityEmail = req.query.email as string;
-      
-      if (!charityEmail) {
-        return res.status(400).json({ error: "Charity email is required" });
-      }
-      
-      const charity = await storage.getCharityByEmail(charityEmail);
-      if (!charity || !charity.emailVerifiedAt) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      const tokens = await storage.getTokensByCharityEmail(charityEmail);
-      
-      res.json({
-        tokens: tokens.map(toPublicToken),
-        stats: {
-          total: tokens.length,
-          pending: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.PENDING).length,
-          approved: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.APPROVED).length,
-          denied: tokens.filter(t => t.charityApprovalStatus === TOKEN_APPROVAL_STATUS.DENIED).length,
-        },
-      });
-    } catch (error) {
-      console.error("Get charity tokens error:", error);
-      res.status(500).json({ error: "Failed to fetch tokens" });
-    }
-  });
-  
-  // Approve a token (charity action)
-  app.post("/api/charity/tokens/:id/approve", async (req, res) => {
-    try {
-      const { charityEmail, note } = req.body;
-      const tokenId = req.params.id;
-      
-      if (!charityEmail) {
-        return res.status(400).json({ error: "Charity email is required" });
-      }
-      
-      // Verify charity owns this token
-      const charity = await storage.getCharityByEmail(charityEmail);
-      if (!charity || !charity.emailVerifiedAt) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      // Get the token and verify it belongs to this charity
-      const tokens = await storage.getTokensByCharityEmail(charityEmail);
-      const token = tokens.find(t => t.id === tokenId);
-      
-      if (!token) {
-        return res.status(404).json({ error: "Token not found or not associated with this charity" });
-      }
-      
-      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
-        return res.status(400).json({ error: "Token has already been reviewed" });
-      }
-      
-      // Approve the token
-      const updated = await storage.updateTokenApprovalStatus(tokenId, TOKEN_APPROVAL_STATUS.APPROVED, note);
-      
-      await storage.createAuditLog({
-        action: "TOKEN_APPROVED_BY_CHARITY",
-        entityType: "token",
-        entityId: tokenId,
-        details: JSON.stringify({ 
-          charityEmail,
-          charityName: charity.name,
-          tokenName: token.name,
-          note,
-        }),
-      });
-      
-      res.json({
-        success: true,
-        message: "Token officially endorsed by charity",
-        token: updated ? toPublicToken(updated) : null,
-      });
-    } catch (error) {
-      console.error("Token approval error:", error);
-      res.status(500).json({ error: "Failed to approve token" });
-    }
-  });
-  
-  // Deny a token (charity action)
-  app.post("/api/charity/tokens/:id/deny", async (req, res) => {
-    try {
-      const { charityEmail, note } = req.body;
-      const tokenId = req.params.id;
-      
-      if (!charityEmail) {
-        return res.status(400).json({ error: "Charity email is required" });
-      }
-      
-      // Verify charity owns this token
-      const charity = await storage.getCharityByEmail(charityEmail);
-      if (!charity || !charity.emailVerifiedAt) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      // Get the token and verify it belongs to this charity
-      const tokens = await storage.getTokensByCharityEmail(charityEmail);
-      const token = tokens.find(t => t.id === tokenId);
-      
-      if (!token) {
-        return res.status(404).json({ error: "Token not found or not associated with this charity" });
-      }
-      
-      if (token.charityApprovalStatus !== TOKEN_APPROVAL_STATUS.PENDING) {
-        return res.status(400).json({ error: "Token has already been reviewed" });
-      }
-      
-      // Deny the token
-      const updated = await storage.updateTokenApprovalStatus(tokenId, TOKEN_APPROVAL_STATUS.DENIED, note);
-      
-      await storage.createAuditLog({
-        action: "TOKEN_DENIED_BY_CHARITY",
-        entityType: "token",
-        entityId: tokenId,
-        details: JSON.stringify({ 
-          charityEmail,
-          charityName: charity.name,
-          tokenName: token.name,
-          note,
-        }),
-      });
-      
-      res.json({
-        success: true,
-        message: "Token denied by charity",
-        token: updated ? toPublicToken(updated) : null,
-      });
-    } catch (error) {
-      console.error("Token denial error:", error);
-      res.status(500).json({ error: "Failed to deny token" });
-    }
-  });
+  // Email-based charity approval retired: X-verified charity portal only (server/retired-routes.ts)
+  registerRetiredCharityEmailRoutes(app);
 
   // === CHARITY PORTAL ENDPOINTS (X-verified approval) ===
   

@@ -36,6 +36,7 @@ export interface IStorage {
   updateCharityEmailVerification(id: string, emailVerifiedAt: Date): Promise<Charity | undefined>;
   updateCharityWalletVerification(id: string, walletVerifiedAt: Date): Promise<Charity | undefined>;
   setCharityVerificationTokens(id: string, emailToken: string, walletNonce: string): Promise<Charity | undefined>;
+  setCharityEmailVerificationToken(id: string, emailToken: string): Promise<Charity | undefined>;
   updateCharityWithEveryOrgData(id: string, data: {
     everyOrgId: string;
     everyOrgSlug: string;
@@ -85,7 +86,6 @@ export interface IStorage {
   
   // Token approval methods
   getTokensPendingApproval(): Promise<LaunchedToken[]>;
-  getTokensByCharityEmail(charityEmail: string): Promise<LaunchedToken[]>;
   updateTokenApprovalStatus(
     tokenId: string, 
     status: string, 
@@ -183,6 +183,16 @@ export class DatabaseStorage implements IStorage {
       .from(charities)
       .where(eq(charities.emailVerificationToken, token));
     return charity || undefined;
+  }
+
+  // Replaces only the email token (resend), leaving the wallet nonce the applicant is about to sign
+  async setCharityEmailVerificationToken(id: string, emailToken: string): Promise<Charity | undefined> {
+    const [updated] = await db
+      .update(charities)
+      .set({ emailVerificationToken: emailToken, updatedAt: new Date() })
+      .where(eq(charities.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async setCharityVerificationTokens(id: string, emailToken: string, walletNonce: string): Promise<Charity | undefined> {
@@ -541,15 +551,6 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(launchedTokens)
       .where(eq(launchedTokens.charityApprovalStatus, "pending"))
-      .orderBy(desc(launchedTokens.launchedAt));
-    return this.withVerifiedDonations(tokens);
-  }
-
-  async getTokensByCharityEmail(charityEmail: string): Promise<LaunchedToken[]> {
-    const tokens = await db
-      .select()
-      .from(launchedTokens)
-      .where(eq(launchedTokens.charityEmail, charityEmail))
       .orderBy(desc(launchedTokens.launchedAt));
     return this.withVerifiedDonations(tokens);
   }

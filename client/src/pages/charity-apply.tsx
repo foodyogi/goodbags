@@ -14,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Badge } from "@/components/ui/badge";
 import { 
   Building2, Mail, Globe, Wallet, CheckCircle2, AlertCircle, Shield, 
-  Copy, Check, ArrowRight, ArrowLeft, ExternalLink, Search, Loader2, Twitter
+  ArrowRight, ArrowLeft, ExternalLink, Search, Loader2, Twitter
 } from "lucide-react";
 import { charityApplicationSchema, IMPACT_CATEGORIES, type CharityApplication } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -46,7 +46,7 @@ interface ApplicationResult {
   success: boolean;
   charityId: string;
   message: string;
-  verificationUrl: string;
+  emailSent: boolean;
   walletNonce: string;
 }
 
@@ -63,7 +63,8 @@ export default function CharityApply() {
   const [currentStep, setCurrentStep] = useState(1);
   const [everyOrgData, setEveryOrgData] = useState<EveryOrgData | null>(null);
   const [applicationResult, setApplicationResult] = useState<ApplicationResult | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const [walletVerifying, setWalletVerifying] = useState(false);
   const [walletVerified, setWalletVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -149,7 +150,8 @@ export default function CharityApply() {
         setCurrentStep(3);
         toast({
           title: "Application Submitted",
-          description: "Please verify your email address.",
+          description: data.message,
+          variant: data.emailSent ? undefined : "destructive",
         });
         // If using X account payout, skip wallet verification
         if (payoutMethod === "twitter") {
@@ -237,16 +239,46 @@ export default function CharityApply() {
     }
   };
 
-  const copyVerificationLink = () => {
-    if (applicationResult) {
-      const fullUrl = `${window.location.origin}/api/charities/verify/email/${applicationResult.verificationUrl.split('/').pop()}`;
-      navigator.clipboard.writeText(fullUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // The verification link is only emailed to the charity; this asks for a new one
+  const resendVerificationEmail = async () => {
+    if (!applicationResult) return;
+    setResending(true);
+    try {
+      const res = await fetch(`/api/charities/${applicationResult.charityId}/resend-verification`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      toast({
+        title: res.ok ? "Verification email sent" : "Email not sent",
+        description: res.ok ? "Check your inbox and spam folder." : body.error || "Please try again in a few minutes.",
+        variant: res.ok ? undefined : "destructive",
+      });
+    } catch {
+      toast({ title: "Email not sent", description: "Please try again in a few minutes.", variant: "destructive" });
+    } finally {
+      setResending(false);
     }
   };
 
-  const handleEmailVerified = () => {
+  // Only continue once the server has recorded the email verification
+  const handleEmailVerified = async () => {
+    if (!applicationResult) return;
+    setCheckingEmail(true);
+    try {
+      const res = await fetch(`/api/charities/${applicationResult.charityId}/status`);
+      const status = res.ok ? await res.json() : null;
+      if (!status?.emailVerified) {
+        toast({
+          title: "Email not verified yet",
+          description: "Open the link we emailed to your organization's address, then try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch {
+      toast({ title: "Couldn't check verification", description: "Please try again.", variant: "destructive" });
+      return;
+    } finally {
+      setCheckingEmail(false);
+    }
     setEmailVerified(true);
     // Skip wallet verification step if using X account payout
     if (payoutMethod === "twitter") {
@@ -646,23 +678,22 @@ export default function CharityApply() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold">Check Your Email</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Click the verification link sent to <strong>{applicationForm.getValues("email")}</strong>.
-                If you don't see it, check your spam folder.
+              <p className="text-sm text-muted-foreground mt-1" data-testid="text-verification-email-status">
+                {applicationResult?.emailSent === false
+                  ? "We couldn't send the verification email right now. Your application is saved. Please use \"Resend verification email\" in a few minutes."
+                  : <>We sent a verification link to <strong>{applicationForm.getValues("email")}</strong>. It expires in 24 hours. If you don't see it, check your spam folder.</>}
               </p>
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={copyVerificationLink}
-                  data-testid="button-copy-verification-link"
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resendVerificationEmail}
+                  disabled={resending}
+                  data-testid="button-resend-verification"
                 >
-                  {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                  {copied ? "Copied" : "Copy Verification Link"}
+                  {resending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                  Resend verification email
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  (For testing - in production this is sent via email)
-                </span>
               </div>
             </div>
           </div>
@@ -690,8 +721,10 @@ export default function CharityApply() {
           <Button 
             className="flex-1"
             onClick={handleEmailVerified}
+            disabled={checkingEmail}
             data-testid="button-email-verified"
           >
+            {checkingEmail && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             I've Verified My Email
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>

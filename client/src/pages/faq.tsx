@@ -115,7 +115,7 @@ const faqCategories = [
       },
       {
         question: "How does the Charity Approval Portal work?",
-        answer: "When a token is launched, the charity receives a notification (via email or X). They can visit the Charity Approval Portal, sign in with their verified X account, review the token details, and choose to officially endorse or deny it. Approved tokens display an endorsement badge, while denied tokens are marked as not endorsed."
+        answer: "When a coin is launched, the charity receives a notification by email or X with a link to the Charity Approval Portal for that coin. The charity opens the link, signs in with its official X account, reviews the coin, and endorses or denies it. The X-verified portal is the only way a charity can approve or deny a coin. Endorsed coins display an endorsement badge, while denied coins are marked as not endorsed."
       },
       {
         question: "What if a charity doesn't respond to an approval request?",

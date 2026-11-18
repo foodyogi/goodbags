@@ -281,6 +281,10 @@ export async function setupAuth(app: Express) {
 
   // Debug endpoint to check session state (useful for troubleshooting)
   app.get("/api/auth/debug", (req, res) => {
+    // Development only: session details are not exposed in production
+    if (process.env.NODE_ENV === "production") {
+      return res.status(404).json({ error: "Not found" });
+    }
     const sessionId = req.sessionID;
     const hasSession = !!req.session;
     const isAuth = req.isAuthenticated();
